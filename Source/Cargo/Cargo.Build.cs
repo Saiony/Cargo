@@ -18,7 +18,8 @@ public class Cargo : ModuleRules
 			"StateTreeModule",
 			"GameplayStateTreeModule",
 			"UMG",
-			"Slate"
+			"Slate",
+			"GameplayCameras"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });

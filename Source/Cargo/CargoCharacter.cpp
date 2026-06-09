@@ -36,16 +36,15 @@ ACargoCharacter::ACargoCharacter()
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 
 	// Create a camera boom (pulls in towards the player if there is a collision)
-	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
-	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 400.0f;
-	CameraBoom->bUsePawnControlRotation = true;
+	// GameplayCameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("GameplayCameraBoom"));
+	// GameplayCameraBoom->SetupAttachment(RootComponent);
+	// GameplayCameraBoom->TargetArmLength = 400.0f;
+	// GameplayCameraBoom->bUsePawnControlRotation = true;
 
 	// Create a follow camera
-	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
-	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
-	FollowCamera->bUsePawnControlRotation = false;
-
+	// GameplayCamera = CreateDefaultSubobject<UGameplayCameraComponent>(TEXT("GameplayCamera"));
+	// GameplayCamera->SetupAttachment(RootComponent);
+	
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 }
@@ -65,6 +64,8 @@ void ACargoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ACargoCharacter::Look);
+		
+		EnhancedInputComponent->BindAction(SwitchCameraAction, ETriggerEvent::Completed, this, &ACargoCharacter::SwitchEditMode);
 	}
 	else
 	{
@@ -88,6 +89,25 @@ void ACargoCharacter::Look(const FInputActionValue& Value)
 
 	// route the input
 	DoLook(LookAxisVector.X, LookAxisVector.Y);
+}
+
+void ACargoCharacter::SwitchEditMode(const FInputActionValue& Value)
+{
+	bEditMode = !bEditMode;
+	UE_LOG(LogTemp, Log, TEXT("Switching cameras. Edit mode: %d"), bEditMode);
+	
+	APlayerController* PC = Cast<APlayerController>(GetController());
+
+	if (bEditMode)
+	{
+		
+	}
+	else
+	{
+		
+	}
+	
+	PC->SetViewTargetWithBlend(this, 0.5f);
 }
 
 void ACargoCharacter::DoMove(float Right, float Forward)

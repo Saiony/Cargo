@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "GameFramework/GameplayCameraComponent.h"
 #include "Logging/LogMacros.h"
 #include "CargoCharacter.generated.h"
 
@@ -23,14 +24,10 @@ class ACargoCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
-	/** Camera boom positioning the camera behind the character */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
-	USpringArmComponent* CameraBoom;
-
-	/** Follow camera */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
-	UCameraComponent* FollowCamera;
+	// UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
+	// UGameplayCameraComponent* GameplayCamera;
 	
+	bool bEditMode = false;
 protected:
 
 	/** Jump Input Action */
@@ -49,17 +46,18 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* MouseLookAction;
 
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* SwitchCameraAction;
 public:
 
 	/** Constructor */
 	ACargoCharacter();	
 
 protected:
-
+	
 	/** Initialize input action bindings */
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-protected:
 
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
@@ -83,14 +81,15 @@ public:
 
 	/** Handles jump pressed inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category="Input")
-	virtual void DoJumpEnd();
-
-public:
+	virtual void DoJumpEnd();	
+	
+	UFUNCTION(BlueprintCallable, Category="Input")
+	void SwitchEditMode(const FInputActionValue& Value);
 
 	/** Returns CameraBoom subobject **/
-	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
-
-	/** Returns FollowCamera subobject **/
-	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+	// FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return GameplayCameraBoom; }
+	//
+	// /** Returns FollowCamera subobject **/
+	// FORCEINLINE class UCameraComponent* GetFollowCamera() const { return GameplayCamera; }
 };
 
