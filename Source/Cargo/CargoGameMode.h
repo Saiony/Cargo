@@ -4,20 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+#include "Public/Grid/FROGGrid.h"
 #include "CargoGameMode.generated.h"
 
-/**
- *  Simple GameMode for a third person game
- */
+class APlaceable;
+
 UCLASS(abstract)
 class ACargoGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
-
-public:
 	
-	/** Constructor */
-	ACargoGameMode();
+public:	
+	ACargoGameMode();	
 };
 
 
