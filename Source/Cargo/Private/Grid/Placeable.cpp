@@ -11,8 +11,12 @@ APlaceable::APlaceable()
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
-	RootComponent = MeshComponent;
+	RootMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RootMesh"));
+	RootComponent = RootMesh;
+	
+	ContainerMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ContainerMesh"));
+	ContainerMesh->SetupAttachment(RootComponent);
+	
 }
 
 // Called when the game starts or when spawned
@@ -40,5 +44,10 @@ void APlaceable::Init(TScriptInterface<IGridActorInterface> GridActor, int32 Gri
 {
 	OwningGridActor = GridActor;
 	GridPos = FIntPoint(GridPosX, GridPosY);
+}
+
+void APlaceable::RotateClockwise()
+{
+	RootMesh->SetRelativeRotation(RootMesh->GetRelativeRotation() + FRotator(0, 90, 0));
 }
 

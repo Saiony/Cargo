@@ -9,6 +9,8 @@
 #include "Logging/LogMacros.h"
 #include "CargoCharacter.generated.h"
 
+class UBuoyancyComponent;
+class USphereComponent;
 class UFloatingPawnMovement;
 class APlaceable;
 class USpringArmComponent;
@@ -41,10 +43,19 @@ class ACargoCharacter : public APawn, public IGridActorInterface
 	// bool bEditMode = false;
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UStaticMeshComponent* RootMeshComponent; 
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UStaticMeshComponent* MeshComponent; 
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UStaticMeshComponent* DeckMeshComponent; 
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UFloatingPawnMovement* FloatingMovement;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UBuoyancyComponent* BuoyancyComp; 
 
 	/** Move Input Action */
 	UPROPERTY(EditAnywhere, Category="Input")
@@ -60,7 +71,11 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo")
 	float RotationSpeed = 120;
-
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo")
+	float WeightInbalanceMultiplier = 1;
+	
+	float FR = 0;	
 public:
 
 	/** Constructor */
@@ -100,5 +115,7 @@ public:
 	
 	UFUNCTION(BlueprintImplementableEvent, Category="Cargo")
 	void RotateShip(float FinalAngle);
+	
+	virtual void Tick(float DeltaSeconds) override;
 };
 

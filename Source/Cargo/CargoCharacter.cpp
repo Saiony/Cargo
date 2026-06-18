@@ -7,31 +7,36 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "Cargo.h"
+#include "../../../../../Program Files/Epic Games/UE_5.7/Engine/Plugins/Experimental/Water/Source/Runtime/Public/BuoyancyComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/SphereComponent.h"
 #include "GameFramework/FloatingPawnMovement.h"
 #include "Grid/Placeable.h"
 
 ACargoCharacter::ACargoCharacter()
 {
 	// Set size for collision capsule
-	//GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
-	
-	USceneComponent* Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
-	RootComponent = Root;
+	RootMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RootMeshComp"));
+	SetRootComponent(RootMeshComponent);	
 	
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
 	MeshComponent->SetupAttachment(RootComponent);
+	
+	DeckMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DeckComp"));
+	DeckMeshComponent->SetupAttachment(MeshComponent);
 
-	// Movimento flutuante
 	FloatingMovement = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("FloatingMovement"));
 	FloatingMovement->MaxSpeed = 600.f;
 	FloatingMovement->Acceleration = 400.f;
 	FloatingMovement->Deceleration = 800.f;
 
+	BuoyancyComp = CreateDefaultSubobject<UBuoyancyComponent>("BuoyancyComp");
 		
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationRoll = false;	
+	
 
 	// Configure character movement
 	// GetCharacterMovement()->bOrientRotationToMovement = true;
@@ -82,9 +87,11 @@ void ACargoCharacter::Move(const FInputActionValue& Value)
 {
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
+	
+	auto SideTilt = WeightInbalanceMultiplier * FR / 10000;
 
 	// route the input
-	DoMove(MovementVector.X, MovementVector.Y);
+	DoMove(MovementVector.X + SideTilt, MovementVector.Y);
 }
 
 void ACargoCharacter::Look(const FInputActionValue& Value)
@@ -106,16 +113,18 @@ void ACargoCharacter::DoMove(float Right, float Forward)
 	const FVector RightDirection   = GetActorRightVector();
 
 	AddMovementInput(ForwardDirection, Forward);
-	AddMovementInput(RightDirection, Right);
+	//AddMovementInput(RightDirection, Right);
 
 	// Rotation
 	if (Right != 0.f)
 	{
 		const float DeltaTime = GetWorld()->GetDeltaSeconds();
-
+	
 		FRotator Delta(0.f, Right * RotationSpeed * DeltaTime, 0.f);
 		AddActorLocalRotation(Delta);
 	}
+	if (GetController() == nullptr)
+		return;
 }
 
 void ACargoCharacter::DoLook(float Yaw, float Pitch)
@@ -133,12 +142,14 @@ void ACargoCharacter::AddPlaceableToGrid(APlaceable* Placeable, FVector WorldPos
 	const FVector LocalPosition = GetActorTransform().InverseTransformPosition(WorldPos);	
 	PlaceableGrid.Add(LocalPosition.X, LocalPosition.Y, Placeable);	
 	
+	// WorldPos += FVector(0.0f, 0.0f, 100.0f);
+	
 	//Placeable->MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	
-	Placeable->SetActorLocation(WorldPos);
+	Placeable->SetActorLocation(WorldPos, false);
 	
-	FAttachmentTransformRules AttachmentRules(EAttachmentRule::KeepWorld, true);
-	Placeable->AttachToComponent(MeshComponent, AttachmentRules);
+	FAttachmentTransformRules AttachmentRules(EAttachmentRule::KeepWorld, EAttachmentRule::KeepRelative, EAttachmentRule::KeepWorld, true);
+	Placeable->AttachToComponent(DeckMeshComponent, AttachmentRules);
 	
 	Placeable->Init(this, LocalPosition.X, LocalPosition.Y);
 	
@@ -153,16 +164,23 @@ void ACargoCharacter::OnPlaceableGrabbed_Implementation(APlaceable* Placeable)
 	
 	PlaceableGrid.Remove(Placeable->GridPos.X, Placeable->GridPos.Y);	
 	
+	Placeable->SetActorRotation(FRotator(0.0f, 0.0f, 0.0f));
+	
 	BalanceShip();
+}
+
+void ACargoCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
 }
 
 void ACargoCharacter::BalanceShip()
 {
-	float FR = 0;
+	FR = 0;
 	for (auto PlaceableKV : PlaceableGrid.GetOccupiedSlots())
 	{
-		auto PlaceableWeight = 5.0f;
-		auto Momentum = PlaceableWeight * PlaceableKV.Key.Y;
+		const auto PlaceableWeight = PlaceableKV.Value->Weight;
+		const auto Momentum = PlaceableWeight * PlaceableKV.Key.Y;
 		
 		FR += Momentum;
 	}

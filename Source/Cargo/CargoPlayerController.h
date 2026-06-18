@@ -62,6 +62,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category="Input|Dragging")
 	bool bIsDragging = false;
+	
+	UPROPERTY(EditAnywhere, Category="Cargo")
+	TEnumAsByte<ECollisionChannel> DropSurfaceChannel;
 
 	/** Gameplay initialization */
 	virtual void BeginPlay() override;
@@ -79,6 +82,9 @@ protected:
 	void OnRightClick(const FInputActionValue& Value);
 	void OnCancel(const FInputActionValue& Value);
 	void SwitchEditMode(const FInputActionValue& Value);
+	
+	void OnPossess(APawn* InPawn) override;
+	
 	
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Input")

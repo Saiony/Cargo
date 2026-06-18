@@ -12,16 +12,24 @@ class CARGO_API APlaceable : public AActor
 {
 	GENERATED_BODY()
 
-public:
-	// Sets default values for this actor's properties
+protected:
 	APlaceable();
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	class UStaticMeshComponent* MeshComponent;
+public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cargo")
+	UStaticMeshComponent* RootMesh;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cargo")
+	UStaticMeshComponent* ContainerMesh;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cargo")
+	TObjectPtr<UMaterialInterface> Material;
+	
+	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Cargo")
+	float Weight;
 	
 	TScriptInterface<IGridActorInterface> OwningGridActor;
 	
-	FIntPoint GridPos;
+	FIntPoint GridPos;	
 
 protected:
 	// Called when the game starts or when spawned
@@ -34,4 +42,6 @@ public:
 	void Grab();
 	
 	void Init(TScriptInterface<IGridActorInterface> GridActor, int32 GridPosX, int32 GridPosY);
+	
+	void RotateClockwise();
 };

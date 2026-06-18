@@ -11,7 +11,11 @@
 #include "InputMappingContext.h"
 #include "Blueprint/UserWidget.h"
 #include "Cargo.h"
+#include "CommonLocalPlayer.h"
+#include "Subsystem/CargoUIManagerSubsystem.h"
 #include "Widgets/Input/SVirtualJoystick.h"
+
+class UCargoUIManagerSubsystem;
 
 void ACargoPlayerController::BeginPlay()
 {
@@ -107,17 +111,15 @@ void ACargoPlayerController::OnLeftClickStart(const FInputActionValue& Value)
 	if (!bEditMode)
 		return;
 	
-	if (GetHitResultUnderCursor(ECC_Visibility, false, HitResult))
+	if (GetHitResultUnderCursor(DropSurfaceChannel, false, HitResult))
 	{
 		if (APlaceable* Placeable = Cast<APlaceable>(HitResult.GetActor()))
 		{
 			DraggingObject = Placeable;
 			bIsDragging = true;
 			
-			// Se o objeto estiver anexado a algo, desanexar ao começar a arrastar
 			DraggingObject->Grab();
 			
-			// Opcional: Desativar física se necessário enquanto arrasta
 			//DraggingObject->DisableComponentsSimulatePhysics();
 		}
 	}
@@ -137,11 +139,15 @@ void ACargoPlayerController::OnLeftClickEnd(const FInputActionValue& InputAction
 		FVector TraceStart = DraggingObject->GetActorLocation();
 		FVector TraceEnd   = FVector(TraceStart.X, TraceStart.Y, TraceStart.Z - 10000.f);
 
-		if (GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility, Params))
+		if (GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, DropSurfaceChannel, Params))
 		{
-			if (ACargoCharacter* CharacterHit = Cast<ACargoCharacter>(HitResult.GetActor()))
+			if (auto CharacterHit = Cast<ACargoCharacter>(HitResult.GetActor()))
 			{
 				CharacterHit->AddPlaceableToGrid(DraggingObject, HitResult.ImpactPoint);
+			}
+			else
+			{
+				DraggingObject->SetActorLocation(HitResult.ImpactPoint);
 			}
 		}		
 		
@@ -152,6 +158,11 @@ void ACargoPlayerController::OnLeftClickEnd(const FInputActionValue& InputAction
 
 void ACargoPlayerController::OnRightClick(const FInputActionValue& Value)
 {
+	if (!bEditMode)
+		return;
+	
+	if (DraggingObject)
+		DraggingObject->RotateClockwise();
 }
 
 void ACargoPlayerController::OnCancel(const FInputActionValue& Value)
@@ -173,9 +184,15 @@ void ACargoPlayerController::SwitchEditMode(const FInputActionValue& Value)
 	{
 		SetInputMode(FInputModeGameOnly());
 	}
+	//
+	// if (APawn* ControlledPawn = GetPawn())
+	// {
+	// 	SetViewTargetWithBlend(ControlledPawn, 0.5f);
+	// }
+}
 
-	if (APawn* ControlledPawn = GetPawn())
-	{
-		SetViewTargetWithBlend(ControlledPawn, 0.5f);
-	}
+void ACargoPlayerController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+	GetGameInstance()->GetSubsystem<UCargoUIManagerSubsystem>()->NotifyPlayerAdded(Cast<UCommonLocalPlayer>(GetWorld()->GetFirstLocalPlayerFromController()));
 }
