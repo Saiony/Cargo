@@ -7,7 +7,9 @@
 #include "CargoPlayerController.generated.h"
 
 class UInputMappingContext;
+class UInputAction;
 class UUserWidget;
+struct FInputActionValue;
 
 /**
  *  Basic PlayerController class for a third person game
@@ -40,8 +42,34 @@ protected:
 	UPROPERTY(EditAnywhere, Config, Category = "Input|Touch Controls")
 	bool bForceTouchControls = false;
 
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* LeftClickAction;
+	
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* RightClickAction;
+	
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* CancelAction;
+
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* SwitchCameraAction;
+
+	UPROPERTY(EditAnywhere, Category="Input|Dragging")
+	float DraggingZHeight = 100.0f;
+
+	UPROPERTY(VisibleAnywhere, Category="Input|Dragging")
+	class APlaceable* DraggingObject;
+
+	UPROPERTY(VisibleAnywhere, Category="Input|Dragging")
+	bool bIsDragging = false;
+	
+	UPROPERTY(EditAnywhere, Category="Cargo")
+	TEnumAsByte<ECollisionChannel> DropSurfaceChannel;
+
 	/** Gameplay initialization */
 	virtual void BeginPlay() override;
+
+	virtual void PlayerTick(float DeltaTime) override;
 
 	/** Input mapping context setup */
 	virtual void SetupInputComponent() override;
@@ -49,4 +77,16 @@ protected:
 	/** Returns true if the player should use UMG touch controls */
 	bool ShouldUseTouchControls() const;
 
+	void OnLeftClickStart(const FInputActionValue& Value);
+	void OnLeftClickEnd(const FInputActionValue& InputActionValue);
+	void OnRightClick(const FInputActionValue& Value);
+	void OnCancel(const FInputActionValue& Value);
+	void SwitchEditMode(const FInputActionValue& Value);
+	
+	void OnPossess(APawn* InPawn) override;
+	
+	
+public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Input")
+	bool bEditMode = false;
 };

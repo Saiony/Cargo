@@ -2,38 +2,54 @@
 
 #include "CargoCharacter.h"
 #include "Engine/LocalPlayer.h"
-#include "Camera/CameraComponent.h"
-#include "Components/CapsuleComponent.h"
-#include "GameFramework/CharacterMovementComponent.h"
-#include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/Controller.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "Cargo.h"
+#include "../../../../../Program Files/Epic Games/UE_5.7/Engine/Plugins/Experimental/Water/Source/Runtime/Public/BuoyancyComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/SphereComponent.h"
+#include "GameFramework/FloatingPawnMovement.h"
+#include "Grid/Placeable.h"
 
 ACargoCharacter::ACargoCharacter()
 {
 	// Set size for collision capsule
-	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
+	RootMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RootMeshComp"));
+	SetRootComponent(RootMeshComponent);	
+	
+	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
+	MeshComponent->SetupAttachment(RootComponent);
+	
+	DeckMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DeckComp"));
+	DeckMeshComponent->SetupAttachment(MeshComponent);
+
+	FloatingMovement = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("FloatingMovement"));
+	FloatingMovement->MaxSpeed = 600.f;
+	FloatingMovement->Acceleration = 400.f;
+	FloatingMovement->Deceleration = 800.f;
+
+	BuoyancyComp = CreateDefaultSubobject<UBuoyancyComponent>("BuoyancyComp");
 		
 	// Don't rotate when the controller rotates. Let that just affect the camera.
-	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
-	bUseControllerRotationRoll = false;
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationRoll = false;	
+	
 
 	// Configure character movement
-	GetCharacterMovement()->bOrientRotationToMovement = true;
-	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
+	// GetCharacterMovement()->bOrientRotationToMovement = true;
+	// GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
 
 	// Note: For faster iteration times these variables, and many more, can be tweaked in the Character Blueprint
 	// instead of recompiling to adjust them
-	GetCharacterMovement()->JumpZVelocity = 500.f;
-	GetCharacterMovement()->AirControl = 0.35f;
-	GetCharacterMovement()->MaxWalkSpeed = 500.f;
-	GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
-	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
-	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
+	// GetCharacterMovement()->JumpZVelocity = 500.f;
+	// GetCharacterMovement()->AirControl = 0.35f;
+	// GetCharacterMovement()->MaxWalkSpeed = 500.f;
+	// GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
+	// GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
+	// GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 
 	// Create a camera boom (pulls in towards the player if there is a collision)
 	// GameplayCameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("GameplayCameraBoom"));
@@ -52,20 +68,14 @@ ACargoCharacter::ACargoCharacter()
 void ACargoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	// Set up action bindings
-	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
-		
-		// Jumping
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
-
+	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) 
+	{		
 		// Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ACargoCharacter::Move);
 		EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &ACargoCharacter::Look);
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ACargoCharacter::Look);
-		
-		EnhancedInputComponent->BindAction(SwitchCameraAction, ETriggerEvent::Completed, this, &ACargoCharacter::SwitchEditMode);
 	}
 	else
 	{
@@ -77,9 +87,11 @@ void ACargoCharacter::Move(const FInputActionValue& Value)
 {
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
+	
+	auto SideTilt = WeightInbalanceMultiplier * FR / 10000;
 
 	// route the input
-	DoMove(MovementVector.X, MovementVector.Y);
+	DoMove(MovementVector.X + SideTilt, MovementVector.Y);
 }
 
 void ACargoCharacter::Look(const FInputActionValue& Value)
@@ -91,43 +103,28 @@ void ACargoCharacter::Look(const FInputActionValue& Value)
 	DoLook(LookAxisVector.X, LookAxisVector.Y);
 }
 
-void ACargoCharacter::SwitchEditMode(const FInputActionValue& Value)
-{
-	bEditMode = !bEditMode;
-	UE_LOG(LogTemp, Log, TEXT("Switching cameras. Edit mode: %d"), bEditMode);
-	
-	APlayerController* PC = Cast<APlayerController>(GetController());
-
-	if (bEditMode)
-	{
-		
-	}
-	else
-	{
-		
-	}
-	
-	PC->SetViewTargetWithBlend(this, 0.5f);
-}
-
 void ACargoCharacter::DoMove(float Right, float Forward)
 {
-	if (GetController() != nullptr)
+	if (GetController() == nullptr)
+		return;
+	
+	// Movement relative to actor
+	const FVector ForwardDirection = GetActorForwardVector();
+	const FVector RightDirection   = GetActorRightVector();
+
+	AddMovementInput(ForwardDirection, Forward);
+	//AddMovementInput(RightDirection, Right);
+
+	// Rotation
+	if (Right != 0.f)
 	{
-		// find out which way is forward
-		const FRotator Rotation = GetController()->GetControlRotation();
-		const FRotator YawRotation(0, Rotation.Yaw, 0);
-
-		// get forward vector
-		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-
-		// get right vector 
-		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-
-		// add movement 
-		AddMovementInput(ForwardDirection, Forward);
-		AddMovementInput(RightDirection, Right);
+		const float DeltaTime = GetWorld()->GetDeltaSeconds();
+	
+		FRotator Delta(0.f, Right * RotationSpeed * DeltaTime, 0.f);
+		AddActorLocalRotation(Delta);
 	}
+	if (GetController() == nullptr)
+		return;
 }
 
 void ACargoCharacter::DoLook(float Yaw, float Pitch)
@@ -140,14 +137,60 @@ void ACargoCharacter::DoLook(float Yaw, float Pitch)
 	}
 }
 
-void ACargoCharacter::DoJumpStart()
+void ACargoCharacter::AddPlaceableToGrid(APlaceable* Placeable, FVector WorldPos)
 {
-	// signal the character to jump
-	Jump();
+	const FVector LocalPosition = GetActorTransform().InverseTransformPosition(WorldPos);	
+	PlaceableGrid.Add(LocalPosition.X, LocalPosition.Y, Placeable);	
+	
+	// WorldPos += FVector(0.0f, 0.0f, 100.0f);
+	
+	//Placeable->MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	
+	Placeable->SetActorLocation(WorldPos, false);
+	
+	FAttachmentTransformRules AttachmentRules(EAttachmentRule::KeepWorld, EAttachmentRule::KeepRelative, EAttachmentRule::KeepWorld, true);
+	Placeable->AttachToComponent(DeckMeshComponent, AttachmentRules);
+	
+	Placeable->Init(this, LocalPosition.X, LocalPosition.Y);
+	
+	UE_LOG(LogTemp, Log, TEXT("LocalPos: %s"), *LocalPosition.ToString());
+	
+	BalanceShip();
 }
 
-void ACargoCharacter::DoJumpEnd()
+void ACargoCharacter::OnPlaceableGrabbed_Implementation(APlaceable* Placeable)
+{	
+	Placeable->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	
+	PlaceableGrid.Remove(Placeable->GridPos.X, Placeable->GridPos.Y);	
+	
+	Placeable->SetActorRotation(FRotator(0.0f, 0.0f, 0.0f));
+	
+	BalanceShip();
+}
+
+void ACargoCharacter::Tick(float DeltaSeconds)
 {
-	// signal the character to stop jumping
-	StopJumping();
+	Super::Tick(DeltaSeconds);
+}
+
+void ACargoCharacter::BalanceShip()
+{
+	FR = 0;
+	for (auto PlaceableKV : PlaceableGrid.GetOccupiedSlots())
+	{
+		const auto PlaceableWeight = PlaceableKV.Value->Weight;
+		const auto Momentum = PlaceableWeight * PlaceableKV.Key.Y;
+		
+		FR += Momentum;
+	}
+	
+	UE_LOG(LogTemp, Log, TEXT("FR: %f"), FR);
+	
+	float FinalAngle = FMath::GetMappedRangeValueClamped(
+	FVector2D(-1000.f, 1000.f),
+	FVector2D(-30.f, 30.f),
+	FR);
+	
+	RotateShip(FinalAngle);
 }

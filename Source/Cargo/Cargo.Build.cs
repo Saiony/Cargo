@@ -19,10 +19,19 @@ public class Cargo : ModuleRules
 			"GameplayStateTreeModule",
 			"UMG",
 			"Slate",
-			"GameplayCameras"
+			"GameplayCameras",
+			"Water",
+			"CommonUI", 
+			"FrogsmithUI",
+			"SlateCore",
+			"GameplayTags",
+			"DeveloperSettings",
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { });
+		PrivateDependencyModuleNames.AddRange(new string[]
+		{
+			"UMG"
+		});
 
 		PublicIncludePaths.AddRange(new string[] {
 			"Cargo",

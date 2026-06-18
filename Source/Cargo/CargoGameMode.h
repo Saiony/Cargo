@@ -4,20 +4,24 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+#include "Kismet/GameplayStatics.h"
+#include "Public/Grid/FROGGrid.h"
 #include "CargoGameMode.generated.h"
 
-/**
- *  Simple GameMode for a third person game
- */
+class APlaceable;
+
 UCLASS(abstract)
 class ACargoGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
-
-public:
 	
-	/** Constructor */
+public:	
 	ACargoGameMode();
+	
+	static ACargoGameMode* Get(const UObject* WorldContextObject)
+	{
+		return Cast<ACargoGameMode>(UGameplayStatics::GetGameMode(WorldContextObject));
+	};
 };
 
 
