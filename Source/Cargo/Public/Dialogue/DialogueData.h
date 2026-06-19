@@ -8,6 +8,7 @@
 #include "DialogueData.generated.h"
 
 
+class UDialogueData;
 class UARCDialogueCallbackBase;
 
 UENUM(BlueprintType)
@@ -15,6 +16,18 @@ enum EARCDialoguePortraitSide : uint8
 {
 	Left = 0,
 	Right
+};
+
+USTRUCT(BlueprintType)
+struct FCargoDialogueChoice
+{
+	GENERATED_BODY()
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(MultiLine=true), Category="Cargo")
+	FText Text;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo")
+	TSoftObjectPtr<UDialogueData> DialogueData; 
 };
 
 USTRUCT(BlueprintType)
@@ -53,6 +66,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Arcade")
 	TArray<FARCDialogueLine> DialogueLines;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo")
+	TArray<FCargoDialogueChoice> Choices;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Instanced, Category="Arcade")
 	TArray<UARCDialogueCallbackBase*> PreDialogueCallbacks;

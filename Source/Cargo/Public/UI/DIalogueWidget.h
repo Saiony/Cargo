@@ -3,7 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "DialogueOptionButton.h"
 #include "FrogsmithActivatableWidget.h"
+#include "Components/VerticalBox.h"
 #include "Dialogue/DialogueData.h"
 
 #include "DIalogueWidget.generated.h"
@@ -37,7 +39,10 @@ protected:
 private:
 	void ShowNextLine();
 	void UpdateVisualsForLine(const FARCDialogueLine& Line);
-	void RequestClose();
+	void OnDialogueFinished();
+	void DisplayChoices();
+	void OnChoiceSelected(int buttonIndex);
+	void Hide();
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Arcade", meta=(AllowPrivateAccess))
@@ -61,6 +66,9 @@ protected:
 
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UCommonTextBlock> TextDialogue;
+	
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UVerticalBox> OptionsVerticalBox;
 
 	UPROPERTY(Transient, meta=(BindWidgetAnimOptional))
 	TObjectPtr<UWidgetAnimation> ShowAnimation;
@@ -71,9 +79,12 @@ protected:
 	UPROPERTY(Transient, meta=(BindWidgetAnimOptional))
 	TObjectPtr<UWidgetAnimation> LineTransitionAnimation;
 	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	TSubclassOf<UDialogueOptionButton> DialogueOptionButtonClass;
+	
 private:
 	UPROPERTY()
-	TObjectPtr<UDialogueData> DialogueDefinition;
+	TObjectPtr<UDialogueData> CurrentDialogueData;
 	
 	int32 CurrentLineIndex = -1;
 	FText FullLineText;
