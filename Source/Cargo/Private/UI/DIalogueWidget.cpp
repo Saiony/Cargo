@@ -8,6 +8,7 @@
 #include "PrimaryGameLayout.h"
 #include "Animation/WidgetAnimation.h"
 #include "Components/Image.h"
+#include "Components/VerticalBoxSlot.h"
 #include "Input/CommonUIInputTypes.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -201,12 +202,15 @@ void UDIalogueWidget::DisplayChoices()
 		OptionButton->Init(CurrentDialogueData->Choices[i]);
 		OptionButton->OnClicked().AddUObject(this, &ThisClass::OnChoiceSelected, i);
 		
-		OptionsVerticalBox->AddChildToVerticalBox(OptionButton);
+		const auto ChildrenSlot = OptionsVerticalBox->AddChildToVerticalBox(OptionButton);
+		ChildrenSlot->SetPadding(FMargin(0.f, 0.f, 0.f, ChildrenPadding)); 
 	}
 }
 
 void UDIalogueWidget::OnChoiceSelected(int buttonIndex)
 {
+	OptionsVerticalBox->ClearChildren();
+	
 	auto SelectedChoice = CurrentDialogueData->Choices[buttonIndex];
 	
 	if (!SelectedChoice.DialogueData.IsNull())

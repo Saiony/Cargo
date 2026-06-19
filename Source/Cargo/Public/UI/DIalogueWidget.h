@@ -80,6 +80,9 @@ protected:
 	TObjectPtr<UWidgetAnimation> LineTransitionAnimation;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	float ChildrenPadding = 15.0f;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
 	TSubclassOf<UDialogueOptionButton> DialogueOptionButtonClass;
 	
 private:
