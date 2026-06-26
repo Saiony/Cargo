@@ -12,6 +12,10 @@
 #include "Blueprint/UserWidget.h"
 #include "Cargo.h"
 #include "CommonLocalPlayer.h"
+#include "Engine/OverlapResult.h"
+#include "Interaction/CargoInteractable.h"
+#include "Island/CargoIsland.h"
+#include "Port/CargoPort.h"
 #include "Subsystem/CargoUIManagerSubsystem.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 
@@ -72,6 +76,7 @@ void ACargoPlayerController::SetupInputComponent()
 			EnhancedInputComponent->BindAction(RightClickAction, ETriggerEvent::Started, this, &ACargoPlayerController::OnRightClick);
 			EnhancedInputComponent->BindAction(CancelAction, ETriggerEvent::Started, this, &ACargoPlayerController::OnCancel);
 			EnhancedInputComponent->BindAction(SwitchCameraAction, ETriggerEvent::Completed, this, &ACargoPlayerController::SwitchEditMode);
+			EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Completed, this, &ACargoPlayerController::Interact);
 		}
 	}
 }
@@ -141,9 +146,15 @@ void ACargoPlayerController::OnLeftClickEnd(const FInputActionValue& InputAction
 
 		if (GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, DropSurfaceChannel, Params))
 		{
-			if (auto CharacterHit = Cast<ACargoCharacter>(HitResult.GetActor()))
+			auto HitActor = HitResult.GetActor();
+			if (auto CharacterHit = Cast<ACargoCharacter>(HitActor))
 			{
 				CharacterHit->AddPlaceableToGrid(DraggingObject, HitResult.ImpactPoint);
+			}
+			else if (auto IslandHit = Cast<ACargoIsland>(HitActor))
+			{				
+				const auto PortHit = IslandHit->FindComponentByClass<UCargoPortComponent>();				
+				PortHit->AddPlaceableToGrid(DraggingObject, HitResult.ImpactPoint);
 			}
 			else
 			{
@@ -184,11 +195,52 @@ void ACargoPlayerController::SwitchEditMode(const FInputActionValue& Value)
 	{
 		SetInputMode(FInputModeGameOnly());
 	}
-	//
-	// if (APawn* ControlledPawn = GetPawn())
-	// {
-	// 	SetViewTargetWithBlend(ControlledPawn, 0.5f);
-	// }
+}
+
+void ACargoPlayerController::Interact(const FInputActionValue& InputActionValue)
+{
+	auto ControlledPawn = GetPawn();
+
+	const FVector Origin = ControlledPawn->GetActorLocation();
+
+	TArray<FOverlapResult> OverlapResults;
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(ControlledPawn);
+
+	const bool bHasOverlaps = GetWorld()->OverlapMultiByChannel(OverlapResults, Origin, FQuat::Identity,
+													ECC_WorldDynamic, FCollisionShape::MakeSphere(InteractRange),
+																QueryParams );
+	
+#if WITH_EDITOR || !UE_BUILD_SHIPPING
+	DrawDebugSphere(GetWorld(), Origin, InteractRange, 16, FColor::Green,
+					false, 1.5f, 0, 1.0f);
+#endif
+
+	if (!bHasOverlaps)
+		return;
+
+	AActor* BestTarget = nullptr;
+	float BestDistSq = TNumericLimits<float>::Max();
+
+	//finds the one closer to the player
+	for (const FOverlapResult& Overlap : OverlapResults)
+	{
+		AActor* Actor = Overlap.GetActor();
+		if (!Actor || !Actor->GetClass()->ImplementsInterface(UCargoInteractable::StaticClass()))
+			continue;
+
+		const float DistSq = FVector::DistSquared(Origin, Actor->GetActorLocation());
+		if (DistSq < BestDistSq)
+		{
+			BestDistSq = DistSq;
+			BestTarget = Actor;
+		}
+	}
+
+	if (BestTarget)
+		ICargoInteractable::Execute_Interact(BestTarget, ControlledPawn);
+	else
+		UE_LOG(LogTemp, Log, TEXT("Nothing to interact with"));
 }
 
 void ACargoPlayerController::OnPossess(APawn* InPawn)

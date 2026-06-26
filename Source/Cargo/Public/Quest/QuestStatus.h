@@ -1,0 +1,71 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
+#include "Quest/QuestData.h"
+#include "QuestStatus.generated.h"
+
+USTRUCT(BlueprintType)
+struct FCargoStatus
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (Categories = "Cargo"))
+	FGameplayTag CargoType;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1"))
+	int32 DeliveredQuantity = 0;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1"))
+	int32 TotalQuantity = 0;
+	
+	void Initialize(FGameplayTag InCargoType, int32 InDeliveredQuantity, int32 InTotalQuantity)
+	{
+		this->CargoType = InCargoType;
+		this->DeliveredQuantity = InDeliveredQuantity;
+		this->TotalQuantity = InTotalQuantity;
+	}
+	
+	bool IsComplete()
+	{
+		return DeliveredQuantity >= TotalQuantity;
+	}
+};
+
+/**
+ * 
+ */
+UCLASS(BlueprintType)
+class CARGO_API UQuestStatus : public UObject
+{
+	GENERATED_BODY()
+
+public:
+	void Initialize(UQuestData* QuestData, FGameplayTag StartIsland);
+
+	UPROPERTY(BlueprintReadOnly, Category = "Quest")
+	TMap<FGameplayTag, FCargoStatus> DeliveredQuantities = TMap<FGameplayTag, FCargoStatus>();
+
+	UPROPERTY(BlueprintReadOnly, Category = "Quest")
+	FGameplayTag QuestTag;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Quest")
+	FText Title;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "Quest")
+	FGameplayTag StartIslandTag;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Quest")
+	FGameplayTag DestinationTag;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Quest")
+	FGameplayTag StartDeliveryDialogueTag;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "Quest")
+	FGameplayTag EndDeliveryDialogueTag;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Quest")
+	TObjectPtr<UQuestData> OriginalQuestData;
+};

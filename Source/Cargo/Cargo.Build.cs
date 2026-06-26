@@ -25,7 +25,7 @@ public class Cargo : ModuleRules
 			"FrogsmithUI",
 			"SlateCore",
 			"GameplayTags",
-			"DeveloperSettings",
+			"DeveloperSettings"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]

@@ -142,10 +142,6 @@ void ACargoCharacter::AddPlaceableToGrid(APlaceable* Placeable, FVector WorldPos
 	const FVector LocalPosition = GetActorTransform().InverseTransformPosition(WorldPos);	
 	PlaceableGrid.Add(LocalPosition.X, LocalPosition.Y, Placeable);	
 	
-	// WorldPos += FVector(0.0f, 0.0f, 100.0f);
-	
-	//Placeable->MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	
 	Placeable->SetActorLocation(WorldPos, false);
 	
 	FAttachmentTransformRules AttachmentRules(EAttachmentRule::KeepWorld, EAttachmentRule::KeepRelative, EAttachmentRule::KeepWorld, true);

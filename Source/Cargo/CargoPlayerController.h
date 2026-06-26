@@ -53,6 +53,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* SwitchCameraAction;
+	
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* InteractAction;
 
 	UPROPERTY(EditAnywhere, Category="Input|Dragging")
 	float DraggingZHeight = 100.0f;
@@ -62,6 +65,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category="Input|Dragging")
 	bool bIsDragging = false;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Cargo")
+	float InteractRange = 1000;
 	
 	UPROPERTY(EditAnywhere, Category="Cargo")
 	TEnumAsByte<ECollisionChannel> DropSurfaceChannel;
@@ -82,6 +88,8 @@ protected:
 	void OnRightClick(const FInputActionValue& Value);
 	void OnCancel(const FInputActionValue& Value);
 	void SwitchEditMode(const FInputActionValue& Value);
+	
+	void Interact(const FInputActionValue& InputActionValue);
 	
 	void OnPossess(APawn* InPawn) override;
 	

@@ -10,6 +10,8 @@
 
 #include "DIalogueWidget.generated.h"
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnDialoguefinished, UDialogueData*);
+
 class UCommonTextBlock;
 class UImage;
 /**
@@ -21,11 +23,15 @@ class CARGO_API UDIalogueWidget : public UFrogsmithActivatableWidget
 	GENERATED_BODY()
 	
 public:
+	FOnDialoguefinished OnDialogueFinishedDelegate;
+	
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
 	
 	UFUNCTION(BlueprintCallable, Category="Arcade")
 	void InitializeDialogue(UDialogueData* InDialogueDefinition);
+
+	void SetInstigator(AActor* InInstigator) { CurrentInstigator = InInstigator; }
 
 	virtual void OnAnimationFinished_Implementation(const UWidgetAnimation* Animation) override;
 	void SetupAndPlayDialogue();
@@ -88,6 +94,9 @@ protected:
 private:
 	UPROPERTY()
 	TObjectPtr<UDialogueData> CurrentDialogueData;
+
+	UPROPERTY()
+	TWeakObjectPtr<AActor> CurrentInstigator;
 	
 	int32 CurrentLineIndex = -1;
 	FText FullLineText;

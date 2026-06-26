@@ -20,6 +20,12 @@ void AContainer::Init()
 	Weight = ContainerDA->Weight;
 }
 
+void AContainer::Init(TObjectPtr<UContainerDA> InContainerDA)
+{
+	ContainerDA = InContainerDA;
+	Init();
+}
+
 // Called when the game starts or when spawned
 void AContainer::BeginPlay()
 {

@@ -2,7 +2,7 @@
 
 
 #include "UI/DIalogueWidget.h"
-
+#include "Subsystem/FROGDialogueSubsystem.h"
 #include "CommonTextBlock.h"
 #include "CommonUIExtensions.h"
 #include "PrimaryGameLayout.h"
@@ -185,6 +185,8 @@ void UDIalogueWidget::UpdateVisualsForLine(const FARCDialogueLine& Line)
 
 void UDIalogueWidget::OnDialogueFinished()
 {
+	OnDialogueFinishedDelegate.Broadcast(CurrentDialogueData);
+	
 	if (CurrentDialogueData->Choices.IsEmpty())
 	{		
 		Hide();
@@ -233,6 +235,17 @@ void UDIalogueWidget::InitializeDialogue(UDialogueData* InDialogueDefinition)
 	
 	CurrentDialogueData = InDialogueDefinition;
 	UE_LOG(LogTemp, Log, TEXT("InitializeDialogue called with definition: %s"), InDialogueDefinition ? *InDialogueDefinition->GetName() : TEXT("nullptr"));
+
+	if (const UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GI = World->GetGameInstance())
+		{
+			if (UFROGDialogueSubsystem* DialogueSubsystem = GI->GetSubsystem<UFROGDialogueSubsystem>())
+			{
+				DialogueSubsystem->NotifyDialogueStarted(InDialogueDefinition, CurrentInstigator.Get());
+			}
+		}
+	}
 	
 	if(ShowAnimation)
 	{

@@ -12,6 +12,7 @@ class CARGO_API AContainer : public APlaceable
 {
 	GENERATED_BODY()
 
+	void Init();
 public:
 	// Sets default values for this actor's properties
 	AContainer();
@@ -19,8 +20,7 @@ public:
 	UPROPERTY(EditAnywhere, Category="Cargo")
 	TObjectPtr<UContainerDA> ContainerDA;
 
-	void Init();
-	
+	void Init(TObjectPtr<UContainerDA> InContainerDA);
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

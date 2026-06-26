@@ -11,13 +11,13 @@
 /**
  * 
  */
-UCLASS()
+UCLASS(EditInlineNew, Abstract)
 class CARGO_API UARCDialogueCallbackBase : public UObject
 {
 	GENERATED_BODY()
 	
 public:
-	virtual void ExecuteCallback(UDialogueData* DialogueDefinition, ACargoGameMode* GameMode);
+	virtual void ExecuteCallback(UDialogueData* DialogueDefinition, ACargoGameMode* GameMode, AActor* Instigator = nullptr);
 	
 private:
 	/** Cached world context set before ExecuteTask is invoked. */
