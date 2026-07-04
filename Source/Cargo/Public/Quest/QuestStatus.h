@@ -67,6 +67,9 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Quest")
 	FGameplayTag EndDeliveryDialogueTag;	
 	
+	UPROPERTY(BlueprintReadOnly, Category = "Quest")
+	FGameplayTag InProgressDialogueTag;	
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo")
 	FDialogueWithCondition AlternativeEndDeliveryDialogue;
 

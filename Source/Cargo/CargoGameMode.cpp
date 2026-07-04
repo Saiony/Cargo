@@ -47,6 +47,18 @@ TObjectPtr<UQuestStatus> ACargoGameMode::GetQuestStatusByDestination(FGameplayTa
 	return nullptr;
 }
 
+TObjectPtr<UQuestStatus> ACargoGameMode::GetQuestStatusByOrigin(FGameplayTag OriginIsland)
+{
+	for (const auto& [Tag, Status] : ActiveQuests)
+	{
+		if (Status && Status->StartIslandTag == OriginIsland)
+		{
+			return Status;
+		}
+	}
+	return nullptr;
+}
+
 
 void ACargoGameMode::RegisterCargoDelivery(FGameplayTag QuestTag, FGameplayTag CargoType)
 {

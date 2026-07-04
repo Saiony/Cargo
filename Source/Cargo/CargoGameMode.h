@@ -52,6 +52,7 @@ public:
 
 	TObjectPtr<UQuestStatus> GetQuestStatus(FGameplayTag QuestTag);
 	TObjectPtr<UQuestStatus> GetQuestStatusByDestination(FGameplayTag Destination);
+	TObjectPtr<UQuestStatus> GetQuestStatusByOrigin(FGameplayTag OriginIsland);
 
 	void RegisterCargoDelivery(FGameplayTag QuestTag, FGameplayTag CargoType);
 	void RemoveCargoDelivery(FGameplayTag QuestTag, FGameplayTag CargoType);

@@ -48,6 +48,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo", meta = (Categories = "Dialogue"))
 	FGameplayTag EndDeliveryDialogueTag;
 	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo", meta = (Categories = "Dialogue"))
+	FGameplayTag InProgressDialogueTag;
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
 	FDialogueWithCondition AlternativeEndDeliveryDialogue;
 };

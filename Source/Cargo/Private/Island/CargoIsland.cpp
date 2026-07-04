@@ -40,10 +40,18 @@ void ACargoIsland::Interact_Implementation(AActor* Interactor)
 	//if we have an active quest to deliver things here, play the quest dialogue instead
 	if (auto ActiveQuest = ACargoGameMode::Get(this)->GetQuestStatusByDestination(LocationTag))
 	{
-		UE_LOG(LogTemp, Log, TEXT("Quest is active!"));		
+		UE_LOG(LogTemp, Log, TEXT("Play start delivery quest dialogue"));		
 		DialogueSubsystem->PlayDialogue(ActiveQuest->StartDeliveryDialogueTag, this);	
 		PortComponent->StartQuestDelivery(ActiveQuest->QuestTag);
 		
+		return;
+	}
+	
+	//if we have an active quest that started here, play in progress dialogue instead
+	if (auto ActiveQuest = ACargoGameMode::Get(this)->GetQuestStatusByOrigin(LocationTag))
+	{
+		UE_LOG(LogTemp, Log, TEXT("Play in progress quest dialogue"));		
+		DialogueSubsystem->PlayDialogue(ActiveQuest->InProgressDialogueTag, this);	
 		return;
 	}
 	
