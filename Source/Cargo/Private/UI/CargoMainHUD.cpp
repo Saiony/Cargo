@@ -2,3 +2,8 @@
 
 
 #include "UI/CargoMainHUD.h"
+
+void UCargoMainHUD::NativeConstruct()
+{
+	Super::NativeConstruct();
+}

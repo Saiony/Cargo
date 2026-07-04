@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
+#include "Dialogue/DialogueData.h"
 #include "Engine/DataAsset.h"
 #include "QuestData.generated.h"
 
@@ -46,4 +47,7 @@ public:
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo", meta = (Categories = "Dialogue"))
 	FGameplayTag EndDeliveryDialogueTag;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	FDialogueWithCondition AlternativeEndDeliveryDialogue;
 };

@@ -17,6 +17,7 @@ void UQuestStatus::Initialize(UQuestData* QuestData, FGameplayTag StartIsland)
 	DestinationTag = QuestData->DestinationTag;
 	StartDeliveryDialogueTag = QuestData->StartDeliveryDialogueTag;
 	EndDeliveryDialogueTag = QuestData->EndDeliveryDialogueTag;
+	AlternativeEndDeliveryDialogue = QuestData->AlternativeEndDeliveryDialogue;
 	
 	StartIslandTag = StartIsland;
 	

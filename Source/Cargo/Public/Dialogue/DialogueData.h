@@ -26,6 +26,9 @@ struct FCargoDialogueChoice
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(MultiLine=true), Category="Cargo")
 	FText Text;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo", meta = (Categories = "Choice"))
+	FGameplayTag ChoiceTag;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo")
 	TSoftObjectPtr<UDialogueData> DialogueData; 
 };
@@ -48,6 +51,18 @@ struct FARCDialogueLine
 	FSlateBrush PortraitOverride;
 };
 
+USTRUCT(BlueprintType)
+struct FDialogueWithCondition
+{
+	GENERATED_BODY()	
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo", meta=(Categories="Choice"))
+	FGameplayTagContainer RequiredChoiceTags;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo")
+	TSoftObjectPtr<UDialogueData> AlternativeDialogue;	
+};
+
 /**
  * 
  */
@@ -66,6 +81,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Arcade")
 	TArray<FARCDialogueLine> DialogueLines;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo")
+	FGameplayTag EndDialogueTag;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo")
 	TArray<FCargoDialogueChoice> Choices;

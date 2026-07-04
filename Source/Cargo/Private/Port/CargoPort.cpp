@@ -108,6 +108,9 @@ void UCargoPortComponent::AddPlaceableToGrid(APlaceable* Placeable, FVector Worl
 	//add to cargomap and register for quest
 	if (auto Container = Cast<AContainer>(Placeable))
 	{
+		if (Container == nullptr)
+			UE_LOG(LogTemp, Warning, TEXT("CargoPortComponent: Placeable is not a container"));
+		
 		CargoMap.FindOrAdd(Container->ContainerDA->CargoTag)++;
 		ACargoGameMode::Get(this)->RegisterCargoDelivery(CurrentQuestTag, Container->ContainerDA->CargoTag);		
 	}

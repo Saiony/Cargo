@@ -74,6 +74,16 @@ void ACargoGameMode::RemoveCargoDelivery(FGameplayTag QuestTag, FGameplayTag Car
 	OnQuestProgressUpdatedDelegate.Broadcast(QuestStatus, CargoType, CargoStatus.DeliveredQuantity);
 }
 
+void ACargoGameMode::AddChoice(FGameplayTag ChoiceTag)
+{
+	ChoicesContainer.AddTag(ChoiceTag);
+}
+
+bool ACargoGameMode::HasChoice(FGameplayTag ChoiceName)
+{
+	return ChoicesContainer.HasTag(ChoiceName);
+}
+
 void ACargoGameMode::CheckIfQuestEnded(TObjectPtr<UQuestStatus> QuestStatus)
 {
 	for (auto Delivered : QuestStatus->DeliveredQuantities)

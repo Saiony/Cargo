@@ -61,7 +61,7 @@ private:
 	float Spacing = 150.0f;
 	
 	UPROPERTY()
-	TMap<FGameplayTag, int> CargoMap;  
+	TMap<FGameplayTag, int> CargoMap = TMap<FGameplayTag, int>();  
 	
 	FGameplayTag CurrentQuestTag;
 };

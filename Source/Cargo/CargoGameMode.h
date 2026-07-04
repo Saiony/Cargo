@@ -30,6 +30,8 @@ class ACargoGameMode : public AGameModeBase
 	int QuestFinishedDelegate;
 
 	void CheckIfQuestEnded(TObjectPtr<UQuestStatus> QuestStatus);
+	
+	FGameplayTagContainer ChoicesContainer = FGameplayTagContainer();
 public:	
 	ACargoGameMode();
 	
@@ -39,7 +41,7 @@ public:
 
 	FOnQuestProgressUpdatedDelegate OnQuestProgressUpdatedDelegate;
 	
-	FQuestCompletedDelegate QuestCompletedDelegate;
+	FQuestCompletedDelegate QuestCompletedDelegate;	
 	
 	static ACargoGameMode* Get(const UObject* WorldContextObject)
 	{
@@ -53,4 +55,7 @@ public:
 
 	void RegisterCargoDelivery(FGameplayTag QuestTag, FGameplayTag CargoType);
 	void RemoveCargoDelivery(FGameplayTag QuestTag, FGameplayTag CargoType);
+	
+	void AddChoice(FGameplayTag ChoiceTag);
+	bool HasChoice(FGameplayTag ChoiceName);
 };

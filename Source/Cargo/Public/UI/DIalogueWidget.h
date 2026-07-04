@@ -86,7 +86,10 @@ protected:
 	TObjectPtr<UWidgetAnimation> LineTransitionAnimation;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
-	float ChildrenPadding = 15.0f;
+	float ChildrenPadding = 15.0f;	
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cargo")
+	int32 CharsPerSound = 2;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
 	TSubclassOf<UDialogueOptionButton> DialogueOptionButtonClass;
@@ -102,4 +105,6 @@ private:
 	FText FullLineText;
 	float CurrentCharCount;
 	bool bIsTyping;
+	
+	int32 LastCharsShown = 0;
 };

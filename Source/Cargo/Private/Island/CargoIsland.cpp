@@ -3,6 +3,7 @@
 
 #include "Island/CargoIsland.h"
 
+#include "Components/WidgetComponent.h"
 #include "DeveloperSettings/CargoSettings.h"
 #include "Quest/QuestStatus.h"
 #include "Subsystem/FROGDialogueSubsystem.h"
@@ -15,7 +16,10 @@ ACargoIsland::ACargoIsland()
 	RootComponent = IslandMeshComp;
 
 	PortComponent = CreateDefaultSubobject<UCargoPortComponent>(TEXT("PortComponent"));
-	PortComponent->SetupAttachment(IslandMeshComp);
+	PortComponent->SetupAttachment(RootComponent);
+	
+	InteractableWidgetComp = CreateDefaultSubobject<UWidgetComponent>(TEXT("InteractableWidgetComp"));
+	InteractableWidgetComp->SetupAttachment(RootComponent);
 }
 
 void ACargoIsland::BeginPlay()
@@ -25,6 +29,8 @@ void ACargoIsland::BeginPlay()
 	const auto GM = ACargoGameMode::Get(this);
 	GM->QuestAcceptedDelegate.AddUObject(this, &ACargoIsland::OnQuestAccepted);
 	GM->QuestCompletedDelegate.AddUObject(this, &ACargoIsland::OnQuestCompleted);
+	
+	Unfocus();
 }
 
 void ACargoIsland::Interact_Implementation(AActor* Interactor)
@@ -42,6 +48,16 @@ void ACargoIsland::Interact_Implementation(AActor* Interactor)
 	}
 	
 	DialogueSubsystem->PlayDialogue(InteractionDialogueTag, this);
+}
+
+void ACargoIsland::Focus()
+{
+	InteractableWidgetComp->SetVisibility(true);
+}
+
+void ACargoIsland::Unfocus()
+{
+	InteractableWidgetComp->SetVisibility(false);	
 }
 
 void ACargoIsland::OnQuestAccepted(TObjectPtr<UQuestData> QuestData, AActor* QuestInstigator)
@@ -91,6 +107,21 @@ void ACargoIsland::OnQuestCompleted(TObjectPtr<UQuestStatus> QuestStatus)
 		return;
 	
 	UFROGDialogueSubsystem* DialogueSubsystem = GetGameInstance()->GetSubsystem<UFROGDialogueSubsystem>();
-	DialogueSubsystem->PlayDialogue(QuestStatus->EndDeliveryDialogueTag, this);
+
+	bool ShouldPlayAlternative = true;
+	for (FGameplayTag RequiredChoiceTag : QuestStatus->AlternativeEndDeliveryDialogue.RequiredChoiceTags)
+	{	
+		if (!ACargoGameMode::Get(this)->HasChoice(RequiredChoiceTag))
+		{
+			ShouldPlayAlternative = false;	
+			break;
+		}
+	}
+	
+	if (ShouldPlayAlternative)
+		DialogueSubsystem->PlayDialogue(QuestStatus->AlternativeEndDeliveryDialogue.AlternativeDialogue.Get()->DialogueTag, this);
+	else
+		DialogueSubsystem->PlayDialogue(QuestStatus->EndDeliveryDialogueTag, this);
+	
 	PortComponent->Clear();
 }

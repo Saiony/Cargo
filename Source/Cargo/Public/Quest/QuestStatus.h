@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
+#include "Dialogue/DialogueData.h"
 #include "Quest/QuestData.h"
 #include "QuestStatus.generated.h"
 
@@ -64,7 +65,10 @@ public:
 	FGameplayTag StartDeliveryDialogueTag;
 	
 	UPROPERTY(BlueprintReadOnly, Category = "Quest")
-	FGameplayTag EndDeliveryDialogueTag;
+	FGameplayTag EndDeliveryDialogueTag;	
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo")
+	FDialogueWithCondition AlternativeEndDeliveryDialogue;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Quest")
 	TObjectPtr<UQuestData> OriginalQuestData;

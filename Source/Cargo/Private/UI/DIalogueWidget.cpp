@@ -2,6 +2,8 @@
 
 
 #include "UI/DIalogueWidget.h"
+
+#include "CargoGameMode.h"
 #include "Subsystem/FROGDialogueSubsystem.h"
 #include "CommonTextBlock.h"
 #include "CommonUIExtensions.h"
@@ -92,19 +94,35 @@ void UDIalogueWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 
 	CurrentCharCount += (TypewriterSpeed * InDeltaTime);
 	const int32 CharsToShow = FMath::FloorToInt(CurrentCharCount);
-	if(CharsToShow >= FullLineText.ToString().Len())
+	const FString FullStr = FullLineText.ToString();
+
+	if(CharsToShow >= FullStr.Len())
 	{
 		TextDialogue->SetText(FullLineText);
 		bIsTyping = false;
+		return;
 	}
-	else
+
+	// só atualiza texto/som se algum caractere novo foi revelado neste frame
+	if (CharsToShow > LastCharsShown)
 	{
-		const FString PartialText = FullLineText.ToString().Left(CharsToShow);
-		TextDialogue->SetText(FText::FromString(PartialText));
-		if (DialogueAudio)
+		TextDialogue->SetText(FText::FromString(FullStr.Left(CharsToShow)));
+
+		// percorre só os caracteres novos revelados desde o último frame
+		for (int32 i = LastCharsShown; i < CharsToShow; ++i)
 		{
-			UGameplayStatics::PlaySound2D(this, DialogueAudio, 1.0f, FMath::FRandRange(0.9f, 1.1f), 0, DialogueConcurrency);
+			const TCHAR Ch = FullStr[i];
+
+			// pula espaços e toca o som só a cada CharsPerSound caracteres
+			const bool bShouldPlaySound = !FChar::IsWhitespace(Ch) && (i % FMath::Max(1, CharsPerSound) == 0);
+
+			if (bShouldPlaySound && DialogueAudio)
+			{
+				UGameplayStatics::PlaySound2D(this, DialogueAudio, 1.0f, FMath::FRandRange(0.9f, 1.1f), 0, DialogueConcurrency);
+			}
 		}
+
+		LastCharsShown = CharsToShow;
 	}
 }
 
@@ -136,6 +154,7 @@ void UDIalogueWidget::ShowNextLine()
 	FullLineText = Line.Text;
 	TextDialogue->SetText(FText::GetEmpty());
 	CurrentCharCount = 0.0f;
+	LastCharsShown = 0;
 	bIsTyping = true;
 
 	UE_LOG(LogTemp, Warning, TEXT("ShowNextLine: Line text set, calling UpdateVisualsForLine"));
@@ -219,6 +238,8 @@ void UDIalogueWidget::OnChoiceSelected(int buttonIndex)
 	{
 		UE_LOG(LogTemp, Log, TEXT("New Dialogue started"));
 		InitializeDialogue(SelectedChoice.DialogueData.Get());
+		
+		ACargoGameMode::Get(this)->AddChoice(SelectedChoice.ChoiceTag);
 		return;
 	}
 	

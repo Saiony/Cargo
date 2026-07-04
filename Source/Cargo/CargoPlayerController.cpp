@@ -30,18 +30,15 @@ void ACargoPlayerController::BeginPlay()
 	{
 		// spawn the mobile controls widget
 		MobileControlsWidget = CreateWidget<UUserWidget>(this, MobileControlsWidgetClass);
-
-		if (MobileControlsWidget)
-		{
-			// add the controls to the player screen
-			MobileControlsWidget->AddToPlayerScreen(0);
-
-		} else {
-
-			UE_LOG(LogCargo, Error, TEXT("Could not spawn mobile controls widget."));
-		}
-
 	}
+	
+	GetWorldTimerManager().SetTimer(
+		InteractionTimerHandle,
+		this,
+		&ACargoPlayerController::UpdateInteractionFocus,
+		InteractionCheckInterval,
+		true
+	);
 }
 
 void ACargoPlayerController::SetupInputComponent()
@@ -247,4 +244,63 @@ void ACargoPlayerController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 	GetGameInstance()->GetSubsystem<UCargoUIManagerSubsystem>()->NotifyPlayerAdded(Cast<UCommonLocalPlayer>(GetWorld()->GetFirstLocalPlayerFromController()));
+}
+
+void ACargoPlayerController::UpdateInteractionFocus()
+{
+	TScriptInterface<ICargoInteractable> NewTarget = FindBestInteractable();
+
+	if (NewTarget.GetObject() != CurrentInteractable.GetObject())
+	{
+		if (CurrentInteractable != nullptr)
+			CurrentInteractable->Unfocus();
+		
+		CurrentInteractable = NewTarget.GetObject();
+		
+		if (CurrentInteractable != nullptr)
+			CurrentInteractable->Focus();
+		
+		OnInteractableChanged.Broadcast(NewTarget);
+	}
+}
+
+TScriptInterface<ICargoInteractable> ACargoPlayerController::FindBestInteractable() const
+{
+	APawn* ControlledPawn = GetPawn();
+	if (!ControlledPawn)
+		return nullptr;
+
+	const FVector Origin = ControlledPawn->GetActorLocation();
+
+	TArray<FOverlapResult> OverlapResults;
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(ControlledPawn);
+
+	const bool bHasOverlaps = GetWorld()->OverlapMultiByChannel(
+		OverlapResults, Origin, FQuat::Identity,
+		ECC_WorldDynamic, FCollisionShape::MakeSphere(InteractRange),
+		QueryParams
+	);
+
+	if (!bHasOverlaps)
+		return nullptr;
+
+	AActor* BestTarget = nullptr;
+	float BestDistSq = TNumericLimits<float>::Max();
+
+	for (const FOverlapResult& Overlap : OverlapResults)
+	{
+		AActor* Actor = Overlap.GetActor();
+		if (!Actor || !Actor->GetClass()->ImplementsInterface(UCargoInteractable::StaticClass()))
+			continue;
+
+		const float DistSq = FVector::DistSquared(Origin, Actor->GetActorLocation());
+		if (DistSq < BestDistSq)
+		{
+			BestDistSq = DistSq;
+			BestTarget = Actor;
+		}
+	}
+
+	return BestTarget;
 }
