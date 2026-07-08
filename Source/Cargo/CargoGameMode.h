@@ -58,5 +58,6 @@ public:
 	void RemoveCargoDelivery(FGameplayTag QuestTag, FGameplayTag CargoType);
 	
 	void AddChoice(FGameplayTag ChoiceTag);
-	bool HasChoice(FGameplayTag ChoiceName);
+	bool HasChoice(FGameplayTag ChoiceName);	
+	float GetGridCellSize() const { return 100.0f; }
 };

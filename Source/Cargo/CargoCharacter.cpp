@@ -7,9 +7,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "Cargo.h"
-#include "../../../../../Program Files/Epic Games/UE_5.7/Engine/Plugins/Experimental/Water/Source/Runtime/Public/BuoyancyComponent.h"
-#include "Components/CapsuleComponent.h"
-#include "Components/SphereComponent.h"
+#include "BuoyancyComponent.h"
 #include "GameFramework/FloatingPawnMovement.h"
 #include "Grid/Placeable.h"
 
@@ -137,15 +135,20 @@ void ACargoCharacter::DoLook(float Yaw, float Pitch)
 	}
 }
 
+void ACargoCharacter::AttachPlaceable(APlaceable* Placeable, FVector WorldPos)
+{    
+	FAttachmentTransformRules AttachmentRules(EAttachmentRule::KeepWorld, EAttachmentRule::KeepWorld, EAttachmentRule::KeepWorld, true);
+	Placeable->AttachToActor(this, AttachmentRules);
+}
+
 void ACargoCharacter::AddPlaceableToGrid(APlaceable* Placeable, FVector WorldPos)
 {
 	const FVector LocalPosition = GetActorTransform().InverseTransformPosition(WorldPos);	
 	PlaceableGrid.Add(LocalPosition.X, LocalPosition.Y, Placeable);	
 	
-	Placeable->SetActorLocation(WorldPos, false);
 	
-	FAttachmentTransformRules AttachmentRules(EAttachmentRule::KeepWorld, EAttachmentRule::KeepRelative, EAttachmentRule::KeepWorld, true);
-	Placeable->AttachToComponent(DeckMeshComponent, AttachmentRules);
+	Placeable->SetActorLocation(WorldPos, false);
+	AttachPlaceable(Placeable, WorldPos);
 	
 	Placeable->Init(this, LocalPosition.X, LocalPosition.Y);
 	
@@ -159,8 +162,6 @@ void ACargoCharacter::OnPlaceableGrabbed_Implementation(APlaceable* Placeable)
 	Placeable->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 	
 	PlaceableGrid.Remove(Placeable->GridPos.X, Placeable->GridPos.Y);	
-	
-	Placeable->SetActorRotation(FRotator(0.0f, 0.0f, 0.0f));
 	
 	BalanceShip();
 }

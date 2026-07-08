@@ -48,6 +48,13 @@ void APlaceable::Init(TScriptInterface<IGridActorInterface> GridActor, int32 Gri
 
 void APlaceable::RotateClockwise()
 {
-	RootMesh->SetRelativeRotation(RootMesh->GetRelativeRotation() + FRotator(0, 90, 0));
+	FRotator NewRotation = GetActorRotation();
+	NewRotation.Yaw = FMath::Fmod(NewRotation.Yaw + 90.f, 360.f);
+	SetActorRotation(NewRotation);
+}
+
+void APlaceable::AlignToRotation(const FRotator& ReferenceRotation)
+{
+	SetActorRotation(FRotator(0.f, ReferenceRotation.Yaw, 0.f));
 }
 

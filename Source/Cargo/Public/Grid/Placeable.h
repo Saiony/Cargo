@@ -32,6 +32,9 @@ public:
 	FIntPoint GridPos;	
 
 protected:
+	UPROPERTY(VisibleAnywhere, Category = "Placement")
+	float LocalYaw = 0.f;
+	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
@@ -39,9 +42,14 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 	
+	UFUNCTION(BlueprintCallable, Category = "Placement")
+	float GetLocalYaw() const { return LocalYaw; }
+	
 	void Grab();
 	
 	void Init(TScriptInterface<IGridActorInterface> GridActor, int32 GridPosX, int32 GridPosY);
 	
+	//Rotates the root mesh internally
 	void RotateClockwise();
+	void AlignToRotation(const FRotator& ReferenceRotation);
 };

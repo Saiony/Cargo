@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "Components/SceneComponent.h"
+#include "DeveloperSettings/CargoSettings.h"
 #include "Grid/Placeable.h"
 #include "CargoPort.generated.h"
 
@@ -21,10 +22,7 @@ public:
 
 protected:
 	//Positions relative to the ship
-	UFROGGrid<APlaceable*> PlaceableGrid = UFROGGrid<APlaceable*>(GetGridCellSize(), FIntPoint(0, 0));
-	
-	float GetGridCellSize() const { return 100.0f; }
-
+	UFROGGrid<APlaceable*> PlaceableGrid = UFROGGrid<APlaceable*>(GetDefault<UCargoSettings>()->GridCellSize, FIntPoint(0, 0));
 	
 	virtual void BeginPlay() override;
 
@@ -44,7 +42,8 @@ public:
 	FVector GetNextSpawnLocation();
 	
 	void DebugDrawSpawnGrid(float Duration) const;
-	
+	void AttachPlaceable(APlaceable* Placeable, FVector WorldPos);
+
 	void AddPlaceableToGrid(APlaceable* Placeable, FVector WorldPos);
 
 	void StartQuestDelivery(FGameplayTag QuestTag);

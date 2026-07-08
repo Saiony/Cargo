@@ -13,6 +13,7 @@
 #include "Cargo.h"
 #include "CommonLocalPlayer.h"
 #include "Engine/OverlapResult.h"
+#include "Engine/StaticMeshActor.h"
 #include "Interaction/CargoInteractable.h"
 #include "Island/CargoIsland.h"
 #include "Port/CargoPort.h"
@@ -32,13 +33,11 @@ void ACargoPlayerController::BeginPlay()
 		MobileControlsWidget = CreateWidget<UUserWidget>(this, MobileControlsWidgetClass);
 	}
 	
-	GetWorldTimerManager().SetTimer(
-		InteractionTimerHandle,
-		this,
-		&ACargoPlayerController::UpdateInteractionFocus,
-		InteractionCheckInterval,
-		true
-	);
+	GetWorldTimerManager().SetTimer(InteractionTimerHandle,this,&ACargoPlayerController::UpdateInteractionFocus,
+								InteractionCheckInterval,true);
+
+	const auto PlaceablePreviewClass = GetDefault<UCargoSettings>()->PlaceablePreviewClass.LoadSynchronous();
+	PlaceablePreview = GetWorld()->SpawnActor<APlaceablePreview>(PlaceablePreviewClass, FVector::ZeroVector, FRotator::ZeroRotator);
 }
 
 void ACargoPlayerController::SetupInputComponent()
@@ -90,19 +89,57 @@ void ACargoPlayerController::PlayerTick(float DeltaTime)
 
 	if (!bEditMode)
 		return;
-	
-	if (bIsDragging && DraggingObject)
+
+	if (!bIsDragging || !DraggingObject)
+		return;
+
+	FVector MouseWorldLocation, MouseWorldDirection;
+	if (!DeprojectMousePositionToWorld(MouseWorldLocation, MouseWorldDirection))
+		return;
+
+	if (FMath::IsNearlyZero(MouseWorldDirection.Z))
+		return;
+
+	const float T = (DraggingZHeight - MouseWorldLocation.Z) / MouseWorldDirection.Z;
+	const FVector TargetLocation = MouseWorldLocation + MouseWorldDirection * T;
+
+	// Move o objeto sendo arrastado para acompanhar o mouse
+	DraggingObject->SetActorLocation(TargetLocation);
+
+	// Procura a superfície abaixo dele
+	FHitResult HitResult;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(DraggingObject);
+
+	const FVector TraceStart = DraggingObject->GetActorLocation();
+	const FVector TraceEnd = TraceStart - FVector(0.f, 0.f, 10000.f);
+
+	CurrentHoveredGrid = GetWorld()->LineTraceSingleByChannel(HitResult,TraceStart,TraceEnd,DropSurfaceChannel,Params)
+		? HitResult.GetActor()
+		: nullptr;
+
+	// Atualiza o preview
+	if (CurrentHoveredGrid)
 	{
-		FVector MouseWorldLocation, MouseWorldDirection;
-		if (DeprojectMousePositionToWorld(MouseWorldLocation, MouseWorldDirection))
-		{
-			// Projetar para o plano Z do DraggingZHeight
-			// P = L + D*t -> Pz = Lz + Dz*t -> t = (Pz - Lz) / Dz
-			float t = (DraggingZHeight - MouseWorldLocation.Z) / MouseWorldDirection.Z;
-			FVector TargetLocation = MouseWorldLocation + MouseWorldDirection * t;
-			
-			DraggingObject->SetActorLocation(TargetLocation);
-		}
+		PlaceablePreview->SetActorHiddenInGame(false);
+
+		PlaceablePreview->AttachToActor(CurrentHoveredGrid,FAttachmentTransformRules::KeepWorldTransform);
+
+		PlaceablePreview->SetActorRotation(FRotator(CurrentHoveredGrid->GetActorRotation().Pitch, PlaceablePreview->GetActorRotation().Yaw, CurrentHoveredGrid->GetActorRotation().Roll));
+
+		FVector LocalLocation =CurrentHoveredGrid->GetActorTransform().InverseTransformPosition(HitResult.ImpactPoint);
+
+		const float GridSize = GetDefault<UCargoSettings>()->GridCellSize;
+
+		LocalLocation.X = FMath::GridSnap(LocalLocation.X, GridSize);
+		LocalLocation.Y = FMath::GridSnap(LocalLocation.Y, GridSize);
+		LocalLocation.Z = FMath::GridSnap(LocalLocation.Z, GridSize);
+
+		PlaceablePreview->SetActorRelativeLocation(LocalLocation);
+	}
+	else
+	{
+		PlaceablePreview->SetActorHiddenInGame(true);
 	}
 }
 
@@ -113,55 +150,55 @@ void ACargoPlayerController::OnLeftClickStart(const FInputActionValue& Value)
 	if (!bEditMode)
 		return;
 	
-	if (GetHitResultUnderCursor(DropSurfaceChannel, false, HitResult))
-	{
-		if (APlaceable* Placeable = Cast<APlaceable>(HitResult.GetActor()))
-		{
-			DraggingObject = Placeable;
-			bIsDragging = true;
-			
-			DraggingObject->Grab();
-			
-			//DraggingObject->DisableComponentsSimulatePhysics();
-		}
-	}
+	if (!GetHitResultUnderCursor(DropSurfaceChannel, false, HitResult))
+		return;
+	
+	APlaceable* Placeable = Cast<APlaceable>(HitResult.GetActor());
+	
+	if (!Placeable)
+		return;
+	
+	DraggingObject = Placeable;
+	bIsDragging = true;
+		
+	DraggingObject->Grab();
+	DraggingObject->AlignToRotation(GetPawn()->GetActorRotation());
+		
+	PlaceablePreview->Initialize(DraggingObject);			
 }
 
 void ACargoPlayerController::OnLeftClickEnd(const FInputActionValue& InputActionValue)
 {
 	if (!bEditMode)
 		return;
-	
-	if (bIsDragging && DraggingObject)
-	{
-		FHitResult HitResult;		
-		FCollisionQueryParams Params;
-		Params.AddIgnoredActor(DraggingObject);
-		
-		FVector TraceStart = DraggingObject->GetActorLocation();
-		FVector TraceEnd   = FVector(TraceStart.X, TraceStart.Y, TraceStart.Z - 10000.f);
 
-		if (GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, DropSurfaceChannel, Params))
-		{
-			auto HitActor = HitResult.GetActor();
-			if (auto CharacterHit = Cast<ACargoCharacter>(HitActor))
-			{
-				CharacterHit->AddPlaceableToGrid(DraggingObject, HitResult.ImpactPoint);
-			}
-			else if (auto IslandHit = Cast<ACargoIsland>(HitActor))
-			{				
-				const auto PortHit = IslandHit->FindComponentByClass<UCargoPortComponent>();				
-				PortHit->AddPlaceableToGrid(DraggingObject, HitResult.ImpactPoint);
-			}
-			else
-			{
-				DraggingObject->SetActorLocation(HitResult.ImpactPoint);
-			}
-		}		
-		
-		bIsDragging = false;
-		DraggingObject = nullptr;
-	}
+	if (!bIsDragging || !DraggingObject || !CurrentHoveredGrid)
+		return;
+
+	// Anexa ao mesmo pai do preview
+	DraggingObject->AttachToActor(CurrentHoveredGrid,FAttachmentTransformRules::KeepWorldTransform);
+
+	// Copia exatamente o transform relativo do preview
+	DraggingObject->GetRootComponent()->SetRelativeTransform(PlaceablePreview->GetRootComponent()->GetRelativeTransform());
+
+	PlaceablePreview->SetActorHiddenInGame(true);
+
+	bIsDragging = false;
+	DraggingObject = nullptr;
+	
+	// if (auto CharacterHit = Cast<ACargoCharacter>(HitActor))
+	// {
+	// 	CharacterHit->AddPlaceableToGrid(DraggingObject, HitResult.ImpactPoint);
+	// }
+	// else if (auto IslandHit = Cast<ACargoIsland>(HitActor))
+	// {				
+	// 	const auto PortHit = IslandHit->FindComponentByClass<UCargoPortComponent>();				
+	// 	PortHit->AddPlaceableToGrid(DraggingObject, HitResult.ImpactPoint);
+	// }
+	// else
+	// {
+	// 	DraggingObject->SetActorLocation(HitResult.ImpactPoint);
+	// }
 }
 
 void ACargoPlayerController::OnRightClick(const FInputActionValue& Value)
@@ -171,6 +208,9 @@ void ACargoPlayerController::OnRightClick(const FInputActionValue& Value)
 	
 	if (DraggingObject)
 		DraggingObject->RotateClockwise();
+	
+	if (PlaceablePreview)
+		PlaceablePreview->MimicPlaceableYaw(DraggingObject);
 }
 
 void ACargoPlayerController::OnCancel(const FInputActionValue& Value)

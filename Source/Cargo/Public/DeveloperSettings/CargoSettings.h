@@ -8,6 +8,8 @@
 #include "GameplayTagContainer.h"
 #include "CargoSettings.generated.h"
 
+class APlaceablePreview;
+
 struct FGameplayTag;
 /**
  * 
@@ -20,4 +22,10 @@ class CARGO_API UCargoSettings : public UDeveloperSettings
 public:
 	UPROPERTY(EditAnywhere, Config, Category = "Data Assets")
 	TMap<FGameplayTag, TSoftObjectPtr<UContainerDA>> ContainersMap;
+	
+	UPROPERTY(EditAnywhere, Config, Category = "Grid")
+	float GridCellSize;
+	
+	UPROPERTY(EditAnywhere, Config, Category = "Container")
+	TSoftClassPtr<APlaceablePreview> PlaceablePreviewClass;
 };

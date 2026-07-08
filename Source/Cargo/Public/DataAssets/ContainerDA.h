@@ -24,4 +24,9 @@ public:
  
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cargo")
 	float Weight = 1.0f;	
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Arcade")
+	FVector2D Size = FVector2D(1, 1);
+	
+	TArray<FVector> GetAllGridPositions(const FVector& BaseLocation, float Rotation, float CellSize) const;
 };

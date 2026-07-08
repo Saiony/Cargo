@@ -3,8 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Character.h"
-#include "GameFramework/GameplayCameraComponent.h"
+#include "DeveloperSettings/CargoSettings.h"
 #include "Grid/FROGGrid.h"
 #include "Logging/LogMacros.h"
 #include "CargoCharacter.generated.h"
@@ -90,11 +89,9 @@ protected:
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);	
-
-	float GetGridCellSize() const { return 100.0f; }
 	
 	//Positions relative to the ship
-	UFROGGrid<APlaceable*> PlaceableGrid = UFROGGrid<APlaceable*>(GetGridCellSize(), FIntPoint(0, 0));
+	UFROGGrid<APlaceable*> PlaceableGrid = UFROGGrid<APlaceable*>(GetDefault<UCargoSettings>()->GridCellSize, FIntPoint(0, 0));
 	
 	void MoveForward(const FInputActionValue& InputActionValue);
 	
@@ -109,6 +106,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoLook(float Yaw, float Pitch);
 	
+	void AttachPlaceable(APlaceable* Placeable, FVector WorldPos);
+
 	void AddPlaceableToGrid(APlaceable* Placeable, FVector WorldPos);
 	
 	virtual void OnPlaceableGrabbed_Implementation(APlaceable* Placeable) override;

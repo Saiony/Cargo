@@ -44,8 +44,8 @@ FVector UCargoPortComponent::GetNextSpawnLocation()
 	int32 ContainersPerRow = FMath::Max(1, FMath::FloorToInt((BoxExtent.X * 2.0f) / Spacing));
 
 	// Posição local baseada nos índices atuais (grid)
-	float LocalX = -BoxExtent.X + (CurrentColumn * Spacing);
-	float LocalY = -BoxExtent.Y + (CurrentRow * Spacing);
+	float LocalX = -BoxExtent.X + (CurrentRow * Spacing);
+	float LocalY = -BoxExtent.Y + (CurrentColumn * Spacing);
 
 	FVector LocalOffset(LocalX, LocalY, 0.0f);
 	FVector NewLocation = Origin + Rotation.RotateVector(LocalOffset);
@@ -87,6 +87,12 @@ void UCargoPortComponent::DebugDrawSpawnGrid(float Duration) const
 #endif
 }
 
+void UCargoPortComponent::AttachPlaceable(APlaceable* Placeable, FVector WorldPos)
+{    
+	FAttachmentTransformRules AttachmentRules(EAttachmentRule::KeepWorld, EAttachmentRule::KeepWorld, EAttachmentRule::KeepWorld, true);
+	Placeable->AttachToComponent(this, AttachmentRules);
+}
+
 void UCargoPortComponent::AddPlaceableToGrid(APlaceable* Placeable, FVector WorldPos)
 {
 	if (!IsOpen)
@@ -98,10 +104,10 @@ void UCargoPortComponent::AddPlaceableToGrid(APlaceable* Placeable, FVector Worl
 	const FVector LocalPosition = GetOwner()->GetActorTransform().InverseTransformPosition(WorldPos);	
 	PlaceableGrid.Add(LocalPosition.X, LocalPosition.Y, Placeable);	
 	
-	Placeable->SetActorLocation(WorldPos, false);
 	
-	FAttachmentTransformRules AttachmentRules(EAttachmentRule::KeepWorld, EAttachmentRule::KeepRelative, EAttachmentRule::KeepWorld, true);
-	Placeable->AttachToComponent(this, AttachmentRules);
+	Placeable->SetActorLocation(WorldPos, false);	
+	AttachPlaceable(Placeable, WorldPos);
+	Placeable->SetActorRotation(FRotator(0, 0, 0));
 	
 	Placeable->Init(this, LocalPosition.X, LocalPosition.Y);
 	
@@ -128,7 +134,6 @@ void UCargoPortComponent::OnPlaceableGrabbed_Implementation(APlaceable* Placeabl
 	
 	Placeable->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);	
 	PlaceableGrid.Remove(Placeable->GridPos.X, Placeable->GridPos.Y);		
-	Placeable->SetActorRotation(FRotator(0.0f, 0.0f, 0.0f));
 	
 	if (auto Container = Cast<AContainer>(Placeable))
 	{
