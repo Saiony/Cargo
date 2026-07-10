@@ -7,6 +7,7 @@
 #include "Components/SceneComponent.h"
 #include "DeveloperSettings/CargoSettings.h"
 #include "Grid/Placeable.h"
+#include "GridActorInterface/MyClass.h"
 #include "CargoPort.generated.h"
 
 struct FGameplayTag;
@@ -20,10 +21,7 @@ class CARGO_API UCargoPortComponent : public USceneComponent, public IGridActorI
 public:	
 	UCargoPortComponent();
 
-protected:
-	//Positions relative to the ship
-	UFROGGrid<APlaceable*> PlaceableGrid = UFROGGrid<APlaceable*>(GetDefault<UCargoSettings>()->GridCellSize, FIntPoint(0, 0));
-	
+protected:	
 	virtual void BeginPlay() override;
 
 	/** Área de spawn (extensão da grade) */

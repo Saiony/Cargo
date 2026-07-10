@@ -18,10 +18,25 @@ public:
 	
 	void Initialize(TObjectPtr<APlaceable> Placeable);
 	void MimicPlaceableYaw(TObjectPtr<APlaceable> Placeable);
+	
+	void SetValid();
+	void SetInvalid();
 
 protected:	
-	UPROPERTY(EditAnywhere, Config, Category = "Cargo")
-	TSoftObjectPtr<UMaterialInterface> PreviewMaterial;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cargo")
+	TObjectPtr<USceneComponent> RootComp;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cargo")
+	TObjectPtr<USceneComponent> PivotComp;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cargo")
+	TObjectPtr<UStaticMeshComponent> ContainerMeshComp;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Cargo")
+	TObjectPtr<UMaterialInterface> ValidMaterial;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Cargo")
+	TObjectPtr<UMaterialInterface> InvalidMaterial;
 	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

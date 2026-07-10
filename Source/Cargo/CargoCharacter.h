@@ -3,8 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "CargoPlayerController.h"
 #include "DeveloperSettings/CargoSettings.h"
 #include "Grid/FROGGrid.h"
+#include "GridActorInterface/MyClass.h"
 #include "Logging/LogMacros.h"
 #include "CargoCharacter.generated.h"
 
@@ -18,17 +20,6 @@ class UInputAction;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
-
-UINTERFACE(MinimalAPI, Blueprintable)
-class UGridActorInterface : public UInterface { GENERATED_BODY() };
-
-class IGridActorInterface
-{
-	GENERATED_BODY()
-public:
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Notify")
-	void OnPlaceableGrabbed(APlaceable* Placeable);
-};
 
 /**
  *  A simple player-controllable third person character
@@ -75,6 +66,8 @@ protected:
 	float WeightInbalanceMultiplier = 1;
 	
 	float FR = 0;	
+	
+	virtual void OnPlaceableAdded(APlaceable* Placeable) override;
 public:
 
 	/** Constructor */
@@ -90,10 +83,9 @@ protected:
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);	
 	
-	//Positions relative to the ship
-	UFROGGrid<APlaceable*> PlaceableGrid = UFROGGrid<APlaceable*>(GetDefault<UCargoSettings>()->GridCellSize, FIntPoint(0, 0));
-	
 	void MoveForward(const FInputActionValue& InputActionValue);
+	
+	virtual void BeginPlay() override;
 	
 	void BalanceShip();
 
@@ -107,8 +99,6 @@ public:
 	virtual void DoLook(float Yaw, float Pitch);
 	
 	void AttachPlaceable(APlaceable* Placeable, FVector WorldPos);
-
-	void AddPlaceableToGrid(APlaceable* Placeable, FVector WorldPos);
 	
 	virtual void OnPlaceableGrabbed_Implementation(APlaceable* Placeable) override;
 	

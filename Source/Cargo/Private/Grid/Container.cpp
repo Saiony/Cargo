@@ -16,12 +16,13 @@ void AContainer::Init()
 	if (ContainerDA == nullptr)
 		return;
 	
-	ContainerMesh->SetMaterial(0, ContainerDA->Material);
+	ContainerMeshComp->SetMaterial(0, ContainerDA->Material);
 	Weight = ContainerDA->Weight;
 }
 
 void AContainer::Init(TObjectPtr<UContainerDA> InContainerDA)
 {
+	Size = InContainerDA->Size;
 	ContainerDA = InContainerDA;
 	Init();
 }

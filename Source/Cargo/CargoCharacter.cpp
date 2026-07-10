@@ -11,6 +11,7 @@
 #include "GameFramework/FloatingPawnMovement.h"
 #include "Grid/Placeable.h"
 
+
 ACargoCharacter::ACargoCharacter()
 {
 	// Set size for collision capsule
@@ -141,18 +142,9 @@ void ACargoCharacter::AttachPlaceable(APlaceable* Placeable, FVector WorldPos)
 	Placeable->AttachToActor(this, AttachmentRules);
 }
 
-void ACargoCharacter::AddPlaceableToGrid(APlaceable* Placeable, FVector WorldPos)
+void ACargoCharacter::OnPlaceableAdded(APlaceable* Placeable)
 {
-	const FVector LocalPosition = GetActorTransform().InverseTransformPosition(WorldPos);	
-	PlaceableGrid.Add(LocalPosition.X, LocalPosition.Y, Placeable);	
-	
-	
-	Placeable->SetActorLocation(WorldPos, false);
-	AttachPlaceable(Placeable, WorldPos);
-	
-	Placeable->Init(this, LocalPosition.X, LocalPosition.Y);
-	
-	UE_LOG(LogTemp, Log, TEXT("LocalPos: %s"), *LocalPosition.ToString());
+	IGridActorInterface::OnPlaceableAdded(Placeable);
 	
 	BalanceShip();
 }
@@ -161,7 +153,7 @@ void ACargoCharacter::OnPlaceableGrabbed_Implementation(APlaceable* Placeable)
 {	
 	Placeable->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 	
-	PlaceableGrid.Remove(Placeable->GridPos.X, Placeable->GridPos.Y);	
+	RemovePlaceableFromGrid(Placeable);	
 	
 	BalanceShip();
 }
@@ -169,6 +161,15 @@ void ACargoCharacter::OnPlaceableGrabbed_Implementation(APlaceable* Placeable)
 void ACargoCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	
+	DrawDebugGrid(0.0f);
+}
+
+void ACargoCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	InitializeGrid(GetDefault<UCargoSettings>()->GridCellSize, FIntPoint(0, 0), FIntPoint(10, 10));
 }
 
 void ACargoCharacter::BalanceShip()

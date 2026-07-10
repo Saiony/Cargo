@@ -22,6 +22,8 @@ UCargoPortComponent::UCargoPortComponent()
 void UCargoPortComponent::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	InitializeGrid(GetDefault<UCargoSettings>()->GridCellSize, FIntPoint(0, 0), FIntPoint(4, 4));
 }
 
 void UCargoPortComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -133,7 +135,7 @@ void UCargoPortComponent::OnPlaceableGrabbed_Implementation(APlaceable* Placeabl
 	}
 	
 	Placeable->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);	
-	PlaceableGrid.Remove(Placeable->GridPos.X, Placeable->GridPos.Y);		
+	RemovePlaceableFromGrid(Placeable);	
 	
 	if (auto Container = Cast<AContainer>(Placeable))
 	{

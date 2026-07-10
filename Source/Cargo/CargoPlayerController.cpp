@@ -114,33 +114,50 @@ void ACargoPlayerController::PlayerTick(float DeltaTime)
 	const FVector TraceStart = DraggingObject->GetActorLocation();
 	const FVector TraceEnd = TraceStart - FVector(0.f, 0.f, 10000.f);
 
-	CurrentHoveredGrid = GetWorld()->LineTraceSingleByChannel(HitResult,TraceStart,TraceEnd,DropSurfaceChannel,Params)
+	auto HitActor = GetWorld()->LineTraceSingleByChannel(HitResult,TraceStart,TraceEnd,DropSurfaceChannel,Params)
 		? HitResult.GetActor()
 		: nullptr;
+	
+	if (!HitActor)
+	{		
+		PlaceablePreview->SetActorHiddenInGame(true);
+		return;
+	}
+	
+	if (!HitActor->Implements<UGridActorInterface>())
+	{
+		UE_LOG(LogTemp, Error, TEXT("HitActor has DropSurfaceChannel but doesn't implement IGridActorInterface"));
+		return;
+	}	
+	
+	CurrentHoveredGrid = HitActor;
+	
 
 	// Atualiza o preview
-	if (CurrentHoveredGrid)
+	if(CurrentHoveredGrid->CanAddPlaceableToGrid(DraggingObject, HitResult.ImpactPoint, DraggingObject->GetLocalYaw()))
 	{
-		PlaceablePreview->SetActorHiddenInGame(false);
-
-		PlaceablePreview->AttachToActor(CurrentHoveredGrid,FAttachmentTransformRules::KeepWorldTransform);
-
-		PlaceablePreview->SetActorRotation(FRotator(CurrentHoveredGrid->GetActorRotation().Pitch, PlaceablePreview->GetActorRotation().Yaw, CurrentHoveredGrid->GetActorRotation().Roll));
-
-		FVector LocalLocation =CurrentHoveredGrid->GetActorTransform().InverseTransformPosition(HitResult.ImpactPoint);
-
-		const float GridSize = GetDefault<UCargoSettings>()->GridCellSize;
-
-		LocalLocation.X = FMath::GridSnap(LocalLocation.X, GridSize);
-		LocalLocation.Y = FMath::GridSnap(LocalLocation.Y, GridSize);
-		LocalLocation.Z = FMath::GridSnap(LocalLocation.Z, GridSize);
-
-		PlaceablePreview->SetActorRelativeLocation(LocalLocation);
+		PlaceablePreview->SetValid();
 	}
 	else
 	{
-		PlaceablePreview->SetActorHiddenInGame(true);
+		PlaceablePreview->SetInvalid();
 	}
+	
+	PlaceablePreview->SetActorHiddenInGame(false);
+
+	auto GridActor = Cast<AActor>(CurrentHoveredGrid.GetObject());
+	PlaceablePreview->AttachToActor(GridActor,FAttachmentTransformRules::KeepWorldTransform);
+	PlaceablePreview->MimicPlaceableYaw(DraggingObject);
+
+	FVector LocalLocation = GridActor->GetActorTransform().InverseTransformPosition(HitResult.ImpactPoint);
+
+	const float GridSize = GetDefault<UCargoSettings>()->GridCellSize;
+
+	LocalLocation.X = FMath::GridSnap(LocalLocation.X, GridSize);
+	LocalLocation.Y = FMath::GridSnap(LocalLocation.Y, GridSize);
+	LocalLocation.Z = FMath::GridSnap(LocalLocation.Z, GridSize);
+
+	PlaceablePreview->SetActorRelativeLocation(LocalLocation);
 }
 
 void ACargoPlayerController::OnLeftClickStart(const FInputActionValue& Value)
@@ -173,32 +190,20 @@ void ACargoPlayerController::OnLeftClickEnd(const FInputActionValue& InputAction
 		return;
 
 	if (!bIsDragging || !DraggingObject || !CurrentHoveredGrid)
-		return;
+		return;	
 
 	// Anexa ao mesmo pai do preview
-	DraggingObject->AttachToActor(CurrentHoveredGrid,FAttachmentTransformRules::KeepWorldTransform);
+	auto GridActor = Cast<AActor>(CurrentHoveredGrid.GetObject());
+	DraggingObject->AttachToActor(GridActor, FAttachmentTransformRules::KeepWorldTransform);
 
 	// Copia exatamente o transform relativo do preview
 	DraggingObject->GetRootComponent()->SetRelativeTransform(PlaceablePreview->GetRootComponent()->GetRelativeTransform());
 
-	PlaceablePreview->SetActorHiddenInGame(true);
-
-	bIsDragging = false;
-	DraggingObject = nullptr;
+	CurrentHoveredGrid->AddPlaceableToGrid(DraggingObject, PlaceablePreview->GetActorLocation(), DraggingObject->GetLocalYaw());
 	
-	// if (auto CharacterHit = Cast<ACargoCharacter>(HitActor))
-	// {
-	// 	CharacterHit->AddPlaceableToGrid(DraggingObject, HitResult.ImpactPoint);
-	// }
-	// else if (auto IslandHit = Cast<ACargoIsland>(HitActor))
-	// {				
-	// 	const auto PortHit = IslandHit->FindComponentByClass<UCargoPortComponent>();				
-	// 	PortHit->AddPlaceableToGrid(DraggingObject, HitResult.ImpactPoint);
-	// }
-	// else
-	// {
-	// 	DraggingObject->SetActorLocation(HitResult.ImpactPoint);
-	// }
+	PlaceablePreview->SetActorHiddenInGame(true);
+	bIsDragging = false;
+	DraggingObject = nullptr;	
 }
 
 void ACargoPlayerController::OnRightClick(const FInputActionValue& Value)

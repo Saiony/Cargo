@@ -85,7 +85,7 @@ protected:
 	TScriptInterface<ICargoInteractable> CurrentInteractable = nullptr;
 	
 	UPROPERTY()
-	TObjectPtr<AActor> CurrentHoveredGrid = nullptr;
+	TScriptInterface<IGridActorInterface> CurrentHoveredGrid = nullptr;
 	
 	UPROPERTY()
 	TObjectPtr<APlaceablePreview> PlaceablePreview;

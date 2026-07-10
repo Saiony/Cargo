@@ -8,11 +8,18 @@
 template <typename T>
 class UFROGGrid 
 {
+	TMap<FIntPoint, T> OccupiedSlots;
+	int32 CellSize;
+	FIntPoint GridOrigin;
+	
+	FIntPoint GridSize;
+	
 public:
-	UFROGGrid(const int32 CellSize, const FIntPoint Origin) :
+	UFROGGrid(const int32 CellSize, const FIntPoint Origin, const FIntPoint GridSize) :
 		OccupiedSlots(TMap<FIntPoint, T>()),
 		CellSize(CellSize),
-		GridOrigin(Origin)
+		GridOrigin(Origin),
+		GridSize(GridSize)
 	{
 	}
 
@@ -70,36 +77,50 @@ public:
 		);
 	}
 	
-	FIntPoint WorldToGrid(const FVector& PositionXY) const
+	FIntPoint GetMin() const
 	{
-		return WorldToGrid(PositionXY.X, PositionXY.Y);
+		return FIntPoint(-GridSize.X / 2, -GridSize.Y / 2);
 	}
 
-	FIntPoint WorldToGrid(const float WorldX, const float WorldY) const
+	FIntPoint GetMax() const
 	{
-		return FIntPoint
-		(
-			FMath::FloorToInt((WorldX - GridOrigin.X) / CellSize),
-			FMath::FloorToInt((WorldY - GridOrigin.Y) / CellSize)
-		);
-	}
-
-	FVector GridToWorld(const FIntPoint& GridIndex) const
-	{
-		return FVector(
-			GridOrigin.X + GridIndex.X * CellSize,
-			GridOrigin.Y + GridIndex.Y * CellSize,
-			0.0f
-		);
+		return FIntPoint(GridSize.X / 2, GridSize.Y / 2);
 	}
 
 	friend bool operator!=(const UFROGGrid& lhs, const UFROGGrid& rhs)
 	{
 		return !(lhs == rhs);
 	}
+	
+	FIntPoint LocalToGrid(const FVector& LocalPositionXY) const
+	{
+		return LocalToGrid(LocalPositionXY.X, LocalPositionXY.Y);
+	}
 
-private:
-	TMap<FIntPoint, T> OccupiedSlots;
-	int32 CellSize;
-	FIntPoint GridOrigin;
+	FIntPoint LocalToGrid(const float LocalX, const float LocalY) const
+	{
+		return FIntPoint
+		(
+		   FMath::FloorToInt((LocalX - GridOrigin.X) / CellSize),
+		   FMath::FloorToInt((LocalY - GridOrigin.Y) / CellSize)
+		);
+	}
+
+	FVector GridToLocal(const FIntPoint& GridIndex) const
+	{
+		return FVector(
+		   GridOrigin.X + GridIndex.X * CellSize,
+		   GridOrigin.Y + GridIndex.Y * CellSize,
+		   0.0f
+		);
+	}
+	
+	bool IsWithinBounds(const FIntPoint& GridIndex) const
+	{
+		const FIntPoint Min = GetMin();
+		const FIntPoint Max = GetMax();
+
+		return GridIndex.X >= Min.X && GridIndex.X <= Max.X &&
+			   GridIndex.Y >= Min.Y && GridIndex.Y <= Max.Y;
+	}
 };

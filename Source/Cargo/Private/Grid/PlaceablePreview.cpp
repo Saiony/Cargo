@@ -7,8 +7,18 @@
 // Sets default values
 APlaceablePreview::APlaceablePreview()
 {
-	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	
+	RootComp = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+	SetRootComponent(RootComp);
+	
+	PivotComp = CreateDefaultSubobject<USceneComponent>(TEXT("Pivot"));
+	PivotComp->SetupAttachment(RootComponent);
+	
+	ContainerMeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ContainerMesh"));
+	ContainerMeshComp->SetupAttachment(PivotComp);
+	
+	SetActorEnableCollision(false);
 }
 
 void APlaceablePreview::Initialize(TObjectPtr<APlaceable> Placeable)
@@ -18,7 +28,18 @@ void APlaceablePreview::Initialize(TObjectPtr<APlaceable> Placeable)
 
 void APlaceablePreview::MimicPlaceableYaw(TObjectPtr<APlaceable> Placeable)
 {
-	SetActorRotation(FRotator(0.0f, Placeable->GetActorRotation().Yaw, 0.0f));
+	SetActorRotation(Placeable->GetActorRotation());
+	PivotComp->SetRelativeRotation(FRotator(0.0f, Placeable->GetLocalYaw(), 0.0f));
+}
+
+void APlaceablePreview::SetValid()
+{
+	ContainerMeshComp->SetMaterial(0, ValidMaterial);
+}
+
+void APlaceablePreview::SetInvalid()
+{
+	ContainerMeshComp->SetMaterial(0, InvalidMaterial);
 }
 
 // Called when the game starts or when spawned
