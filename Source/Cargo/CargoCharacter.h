@@ -6,7 +6,8 @@
 #include "CargoPlayerController.h"
 #include "DeveloperSettings/CargoSettings.h"
 #include "Grid/FROGGrid.h"
-#include "GridActorInterface/MyClass.h"
+#include "Grid/GridComponent.h"
+#include "GridActorInterface/GridActorInterface.h"
 #include "Logging/LogMacros.h"
 #include "CargoCharacter.generated.h"
 
@@ -26,11 +27,10 @@ DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
  *  Implements a controllable orbiting camera
  */
 UCLASS(abstract)
-class ACargoCharacter : public APawn, public IGridActorInterface
+class ACargoCharacter : public APawn
 {
 	GENERATED_BODY()	
 	
-	// bool bEditMode = false;
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UStaticMeshComponent* RootMeshComponent; 
@@ -39,13 +39,13 @@ protected:
 	UStaticMeshComponent* MeshComponent; 
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	UStaticMeshComponent* DeckMeshComponent; 
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UFloatingPawnMovement* FloatingMovement;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UBuoyancyComponent* BuoyancyComp; 
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TObjectPtr<UGridComponent> GridComp;
 
 	/** Move Input Action */
 	UPROPERTY(EditAnywhere, Category="Input")
@@ -66,8 +66,6 @@ protected:
 	float WeightInbalanceMultiplier = 1;
 	
 	float FR = 0;	
-	
-	virtual void OnPlaceableAdded(APlaceable* Placeable) override;
 public:
 
 	/** Constructor */
@@ -85,9 +83,13 @@ protected:
 	
 	void MoveForward(const FInputActionValue& InputActionValue);
 	
-	virtual void BeginPlay() override;
-	
 	void BalanceShip();
+	
+	UFUNCTION()
+	void OnPlaceableAdded(APlaceable* Placeable);
+	
+	UFUNCTION()
+	void OnPlaceableRemoved(APlaceable* Placeable);
 
 public:
 	/** Handles move inputs from either controls or UI interfaces */
@@ -100,10 +102,10 @@ public:
 	
 	void AttachPlaceable(APlaceable* Placeable, FVector WorldPos);
 	
-	virtual void OnPlaceableGrabbed_Implementation(APlaceable* Placeable) override;
-	
 	UFUNCTION(BlueprintImplementableEvent, Category="Cargo")
-	void RotateShip(float FinalAngle);
+	void RotateShip(float FinalAngle);	
+	
+	virtual void BeginPlay() override;
 	
 	virtual void Tick(float DeltaSeconds) override;
 };

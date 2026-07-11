@@ -3,7 +3,7 @@
 
 #include "Public/Grid/Placeable.h"
 #include "Components/StaticMeshComponent.h"
-#include "GridActorInterface/MyClass.h"
+#include "GridActorInterface/GridActorInterface.h"
 
 
 // Sets default values
@@ -41,14 +41,13 @@ void APlaceable::Grab()
 	if (OwningGridActor == nullptr)
 		return;
 	
-	IGridActorInterface::Execute_OnPlaceableGrabbed(OwningGridActor.GetObject(), this);
+	OwningGridActor->RemovePlaceableFromGrid(this);
 }
 
 void APlaceable::Init(TScriptInterface<IGridActorInterface> GridActor, int32 GridPosX, int32 GridPosY)
 {
 	OwningGridActor = GridActor;
 	PivotGridPos = FIntPoint(GridPosX, GridPosY);
-	//LocalYaw = ContainerMeshComp->GetComponentRotation().Yaw;
 }
 
 void APlaceable::RotateClockwise()

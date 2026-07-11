@@ -7,7 +7,7 @@
 #include "Grid/FROGGrid.h"
 #include "Grid/Placeable.h"
 #include "UObject/Interface.h"
-#include "MyClass.generated.h"
+#include "GridActorInterface.generated.h"
 
 
 class APlaceable;
@@ -28,20 +28,20 @@ protected:
 	
 	virtual void OnPlaceableAdded(APlaceable* Placeable){}
 	
-	AActor* GetOwningActor()
+	USceneComponent* GetOwningComponent()
 	{
-		return Cast<AActor>(Cast<UObject>(this));
+		return Cast<USceneComponent>(this);
 	}
 
 	FVector WorldToLocalGridSpace(const FVector& WorldLocation)
 	{
-		return GetOwningActor()->GetActorTransform().InverseTransformPosition(WorldLocation);
+		const USceneComponent* SceneComp = Cast<USceneComponent>(this);
+		check(SceneComp);
+
+		return SceneComp->GetComponentTransform().InverseTransformPosition(WorldLocation);
 	}
 	
-public:
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Notify")
-	void OnPlaceableGrabbed(APlaceable* Placeable);
-	
+public:	
 	bool CanAddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const FVector& WorldLocation, float Rotation)
 	{
 		if(!Placeable)
@@ -71,14 +71,14 @@ public:
 		if(!Placeable)
 			return;
 		
-		const auto LocalLocation = WorldToLocalGridSpace(WorldLocation);
 		
-		if (!CanAddPlaceableToGrid(Placeable, LocalLocation, Rotation))
+		if (!CanAddPlaceableToGrid(Placeable, WorldLocation, Rotation))
 		{
 			UE_LOG(LogTemp, Error, TEXT("Unable to place Placeable on Grid"));
 			return;
 		}
 		
+		const auto LocalLocation = WorldToLocalGridSpace(WorldLocation);
 		const TArray<FVector> OccupiedLocations = Placeable->GetAllGridPositions(LocalLocation, Rotation, PlaceableGrid.GetCellSize());
 
 		for (const FVector& Pos : OccupiedLocations)
@@ -89,7 +89,7 @@ public:
 			UE_LOG(LogTemp, Log, TEXT("Placeable added to grid [%d, %d] at world pos [%f, %f]"), GridIndex.X, GridIndex.Y, Pos.X, Pos.Y);
 		}
 
-		Placeable->Init(GetOwningActor(), LocalLocation.X, LocalLocation.Y);
+		Placeable->Init(GetOwningComponent(), LocalLocation.X, LocalLocation.Y);
 		OnPlaceableAdded(Placeable);
 	}
 	
@@ -110,14 +110,19 @@ public:
 		}
 	}
 	
+	TMap<FIntPoint, APlaceable*> GetOccupiedSlots() const
+	{
+		return PlaceableGrid.GetOccupiedSlots();
+	}
+	
 #if !UE_BUILD_SHIPPING
 	void DrawDebugGrid(float Duration = 0.f) const
 	{
-		auto OwningActor = Cast<AActor>(Cast<UObject>(this));
-		if (!OwningActor || !OwningActor->GetWorld())
+		const USceneComponent* SceneComp = Cast<USceneComponent>(this);
+		if (!SceneComp || !SceneComp->GetWorld())
 			return;
 
-		UWorld* World = OwningActor->GetWorld();
+		UWorld* World = SceneComp->GetWorld();
 		const float CellSize = PlaceableGrid.GetCellSize();
 
 		for (int32 X = PlaceableGrid.GetMin().X; X <= PlaceableGrid.GetMax().X; X++)
@@ -127,12 +132,12 @@ public:
 				const bool bOccupied = PlaceableGrid.GetValue(X, Y) != nullptr;
 
 				const FVector LocalCellCenter = FVector(X * CellSize, Y * CellSize, 0.f);
-				const FVector WorldCellCenter = OwningActor->GetActorTransform().TransformPosition(LocalCellCenter) + FVector(0, 0, 150);
+				const FVector WorldCellCenter = SceneComp->GetComponentTransform().TransformPosition(LocalCellCenter) + FVector(0, 0, 150);
 
 				const FColor DebugColor = bOccupied ? FColor::Red : FColor::Green;
 
 				DrawDebugBox(World, WorldCellCenter, FVector(CellSize * 0.4f, CellSize * 0.4f, 5.f),
-					OwningActor->GetActorQuat(), DebugColor, false, Duration, 0);
+					SceneComp->GetComponentQuat(), DebugColor, false, Duration, 0);
 			}
 		}
 	}

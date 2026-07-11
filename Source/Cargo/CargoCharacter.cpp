@@ -20,9 +20,6 @@ ACargoCharacter::ACargoCharacter()
 	
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
 	MeshComponent->SetupAttachment(RootComponent);
-	
-	DeckMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DeckComp"));
-	DeckMeshComponent->SetupAttachment(MeshComponent);
 
 	FloatingMovement = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("FloatingMovement"));
 	FloatingMovement->MaxSpeed = 600.f;
@@ -30,6 +27,9 @@ ACargoCharacter::ACargoCharacter()
 	FloatingMovement->Deceleration = 800.f;
 
 	BuoyancyComp = CreateDefaultSubobject<UBuoyancyComponent>("BuoyancyComp");
+	
+	GridComp = CreateDefaultSubobject<UGridComponent>(TEXT("GridComp"));
+	GridComp->SetupAttachment(RootComponent);
 		
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationYaw = false;
@@ -144,38 +144,30 @@ void ACargoCharacter::AttachPlaceable(APlaceable* Placeable, FVector WorldPos)
 
 void ACargoCharacter::OnPlaceableAdded(APlaceable* Placeable)
 {
-	IGridActorInterface::OnPlaceableAdded(Placeable);
-	
 	BalanceShip();
 }
 
-void ACargoCharacter::OnPlaceableGrabbed_Implementation(APlaceable* Placeable)
+void ACargoCharacter::OnPlaceableRemoved(APlaceable* Placeable)
 {	
-	Placeable->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-	
-	RemovePlaceableFromGrid(Placeable);	
-	
 	BalanceShip();
 }
-
 void ACargoCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-	
-	DrawDebugGrid(0.0f);
 }
 
 void ACargoCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	InitializeGrid(GetDefault<UCargoSettings>()->GridCellSize, FIntPoint(0, 0), FIntPoint(10, 10));
+	GridComp->OnPlaceableAddedToGrid.AddDynamic(this, &ThisClass::OnPlaceableAdded);
+	GridComp->OnPlaceableRemovedFromGrid.AddDynamic(this, &ThisClass::OnPlaceableRemoved);
 }
 
 void ACargoCharacter::BalanceShip()
 {
 	FR = 0;
-	for (auto PlaceableKV : PlaceableGrid.GetOccupiedSlots())
+	for (auto PlaceableKV : GridComp->GetOccupiedSlots())
 	{
 		const auto PlaceableWeight = PlaceableKV.Value->Weight;
 		const auto Momentum = PlaceableWeight * PlaceableKV.Key.Y;

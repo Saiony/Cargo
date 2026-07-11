@@ -85,79 +85,82 @@ bool ACargoPlayerController::ShouldUseTouchControls() const
 
 void ACargoPlayerController::PlayerTick(float DeltaTime)
 {
-	Super::PlayerTick(DeltaTime);
+    Super::PlayerTick(DeltaTime);
 
-	if (!bEditMode)
-		return;
+    if (!bEditMode)
+        return;
 
-	if (!bIsDragging || !DraggingObject)
-		return;
+    if (!bIsDragging || !DraggingObject)
+        return;
 
-	FVector MouseWorldLocation, MouseWorldDirection;
-	if (!DeprojectMousePositionToWorld(MouseWorldLocation, MouseWorldDirection))
-		return;
+    FVector MouseWorldLocation, MouseWorldDirection;
+    if (!DeprojectMousePositionToWorld(MouseWorldLocation, MouseWorldDirection))
+        return;
 
-	if (FMath::IsNearlyZero(MouseWorldDirection.Z))
-		return;
+    if (FMath::IsNearlyZero(MouseWorldDirection.Z))
+        return;
 
-	const float T = (DraggingZHeight - MouseWorldLocation.Z) / MouseWorldDirection.Z;
-	const FVector TargetLocation = MouseWorldLocation + MouseWorldDirection * T;
+    const float T = (DraggingZHeight - MouseWorldLocation.Z) / MouseWorldDirection.Z;
+    const FVector TargetLocation = MouseWorldLocation + MouseWorldDirection * T;
 
-	// Move o objeto sendo arrastado para acompanhar o mouse
-	DraggingObject->SetActorLocation(TargetLocation);
+    DraggingObject->SetActorLocation(TargetLocation);
 
-	// Procura a superfície abaixo dele
-	FHitResult HitResult;
-	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(DraggingObject);
+    FHitResult HitResult;
+    FCollisionQueryParams Params;
+    Params.AddIgnoredActor(DraggingObject);
 
-	const FVector TraceStart = DraggingObject->GetActorLocation();
-	const FVector TraceEnd = TraceStart - FVector(0.f, 0.f, 10000.f);
+    const FVector TraceStart = DraggingObject->GetActorLocation();
+    const FVector TraceEnd = TraceStart - FVector(0.f, 0.f, 10000.f);
 
-	auto HitActor = GetWorld()->LineTraceSingleByChannel(HitResult,TraceStart,TraceEnd,DropSurfaceChannel,Params)
-		? HitResult.GetActor()
-		: nullptr;
-	
-	if (!HitActor)
-	{		
-		PlaceablePreview->SetActorHiddenInGame(true);
-		return;
-	}
-	
-	if (!HitActor->Implements<UGridActorInterface>())
-	{
-		UE_LOG(LogTemp, Error, TEXT("HitActor has DropSurfaceChannel but doesn't implement IGridActorInterface"));
-		return;
-	}	
-	
-	CurrentHoveredGrid = HitActor;
-	
+    UPrimitiveComponent* HitComponent = GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, DropSurfaceChannel, Params)
+        ? HitResult.GetComponent()
+        : nullptr;
 
-	// Atualiza o preview
-	if(CurrentHoveredGrid->CanAddPlaceableToGrid(DraggingObject, HitResult.ImpactPoint, DraggingObject->GetLocalYaw()))
-	{
-		PlaceablePreview->SetValid();
-	}
-	else
-	{
-		PlaceablePreview->SetInvalid();
-	}
-	
-	PlaceablePreview->SetActorHiddenInGame(false);
+    if (!HitComponent)
+    {     
+        PlaceablePreview->SetActorHiddenInGame(true);
+        return;
+    }
 
-	auto GridActor = Cast<AActor>(CurrentHoveredGrid.GetObject());
-	PlaceablePreview->AttachToActor(GridActor,FAttachmentTransformRules::KeepWorldTransform);
-	PlaceablePreview->MimicPlaceableYaw(DraggingObject);
+    if (!HitComponent->Implements<UGridActorInterface>())
+    {
+        UE_LOG(LogTemp, Error, TEXT("HitComponent has DropSurfaceChannel but doesn't implement IGridActorInterface"));
+        PlaceablePreview->SetActorHiddenInGame(true);
+        return;
+    }  
 
-	FVector LocalLocation = GridActor->GetActorTransform().InverseTransformPosition(HitResult.ImpactPoint);
+    CurrentHoveredGrid = HitComponent;
 
-	const float GridSize = GetDefault<UCargoSettings>()->GridCellSize;
+    if (CurrentHoveredGrid->CanAddPlaceableToGrid(DraggingObject, HitResult.ImpactPoint, DraggingObject->GetLocalYaw()))
+    {
+        PlaceablePreview->SetValid();
+    }
+    else
+    {
+        PlaceablePreview->SetInvalid();
+    }
+    
+    PlaceablePreview->SetActorHiddenInGame(false);
 
-	LocalLocation.X = FMath::GridSnap(LocalLocation.X, GridSize);
-	LocalLocation.Y = FMath::GridSnap(LocalLocation.Y, GridSize);
-	LocalLocation.Z = FMath::GridSnap(LocalLocation.Z, GridSize);
+    USceneComponent* GridComponent = Cast<USceneComponent>(CurrentHoveredGrid.GetObject());
+    if (!GridComponent)
+    {
+        PlaceablePreview->SetActorHiddenInGame(true);
+        return;
+    }
 
-	PlaceablePreview->SetActorRelativeLocation(LocalLocation);
+    PlaceablePreview->AttachToComponent(GridComponent, FAttachmentTransformRules::KeepWorldTransform);
+    PlaceablePreview->MimicPlaceableYaw(DraggingObject);
+
+    FVector LocalLocation = GridComponent->GetComponentTransform().InverseTransformPosition(HitResult.ImpactPoint);
+
+    const float GridSize = GetDefault<UCargoSettings>()->GridCellSize;
+
+    LocalLocation.X = FMath::GridSnap(LocalLocation.X, GridSize);
+    LocalLocation.Y = FMath::GridSnap(LocalLocation.Y, GridSize);
+    LocalLocation.Z = FMath::GridSnap(LocalLocation.Z, GridSize);
+
+    PlaceablePreview->SetActorRelativeLocation(LocalLocation);
 }
 
 void ACargoPlayerController::OnLeftClickStart(const FInputActionValue& Value)
@@ -191,10 +194,16 @@ void ACargoPlayerController::OnLeftClickEnd(const FInputActionValue& InputAction
 
 	if (!bIsDragging || !DraggingObject || !CurrentHoveredGrid)
 		return;	
+	
+	if (!CurrentHoveredGrid->CanAddPlaceableToGrid(DraggingObject, PlaceablePreview->GetActorLocation(), DraggingObject->GetLocalYaw()))
+	{		
+		return;
+	}
+
+	const auto GridComp =  Cast<USceneComponent>(CurrentHoveredGrid.GetObject());
 
 	// Anexa ao mesmo pai do preview
-	auto GridActor = Cast<AActor>(CurrentHoveredGrid.GetObject());
-	DraggingObject->AttachToActor(GridActor, FAttachmentTransformRules::KeepWorldTransform);
+	DraggingObject->AttachToComponent(GridComp, FAttachmentTransformRules::KeepWorldTransform);
 
 	// Copia exatamente o transform relativo do preview
 	DraggingObject->GetRootComponent()->SetRelativeTransform(PlaceablePreview->GetRootComponent()->GetRelativeTransform());
@@ -209,6 +218,9 @@ void ACargoPlayerController::OnLeftClickEnd(const FInputActionValue& InputAction
 void ACargoPlayerController::OnRightClick(const FInputActionValue& Value)
 {
 	if (!bEditMode)
+		return;
+	
+	if (!bIsDragging)
 		return;
 	
 	if (DraggingObject)

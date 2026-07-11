@@ -23,6 +23,9 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<USceneComponent> Root;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Island", meta = (Categories = "Location"))
 	FGameplayTag LocationTag;

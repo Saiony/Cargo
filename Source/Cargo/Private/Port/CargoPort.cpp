@@ -8,12 +8,6 @@
 #include "Grid/Placeable.h"
 #include "CargoGameMode.h"
 
-static TAutoConsoleVariable<bool> CVarCargoDebugDraw(TEXT("Cargo.DebugDraw"), false,
-                                                     TEXT("Ativa o debug draw das áreas de spawn de containers (box + grid).\n")
-                                                     TEXT("0: desativado, 1: ativado"),
-                                                     ECVF_Cheat
-);
-
 UCargoPortComponent::UCargoPortComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
@@ -22,37 +16,32 @@ UCargoPortComponent::UCargoPortComponent()
 void UCargoPortComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	InitializeGrid(GetDefault<UCargoSettings>()->GridCellSize, FIntPoint(0, 0), FIntPoint(4, 4));
+
+	OnPlaceableAddedToGrid.AddDynamic(this, &UCargoPortComponent::HandlePlaceableAddedToGrid);
+	OnPlaceableRemovedFromGrid.AddDynamic(this, &UCargoPortComponent::HandlePlaceableRemovedFromGrid);
 }
 
 void UCargoPortComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	
-	if (CVarCargoDebugDraw.GetValueOnGameThread())
-	{
-		DebugDrawSpawnGrid(0.1f);
-	}	
+#if !UE_BUILD_SHIPPING
+		DrawDebugGrid(0.1f);
+#endif
 }
 
 FVector UCargoPortComponent::GetNextSpawnLocation()
 {
-	FVector Origin = GetComponentLocation();
-	FVector BoxExtent = SpawnAreaExtent;
-	FRotator Rotation = GetComponentRotation();
+	const int32 CellSize = PlaceableGrid.GetCellSize();
+	const FIntPoint Min = PlaceableGrid.GetMin();
+	const FIntPoint Max = PlaceableGrid.GetMax();
 
-	// Quantos containers cabem por linha, baseado no espaçamento
-	int32 ContainersPerRow = FMath::Max(1, FMath::FloorToInt((BoxExtent.X * 2.0f) / Spacing));
+	const int32 ContainersPerRow = FMath::Max(1, Max.X - Min.X + 1);
 
-	// Posição local baseada nos índices atuais (grid)
-	float LocalX = -BoxExtent.X + (CurrentRow * Spacing);
-	float LocalY = -BoxExtent.Y + (CurrentColumn * Spacing);
+	const FIntPoint GridIndex(Min.X + CurrentColumn, Min.Y + CurrentRow);
+	const FVector LocalPos = PlaceableGrid.GridToLocal(GridIndex);
+	const FVector WorldPos = GetComponentTransform().TransformPosition(LocalPos);
 
-	FVector LocalOffset(LocalX, LocalY, 0.0f);
-	FVector NewLocation = Origin + Rotation.RotateVector(LocalOffset);
-
-	// Avança para a próxima posição da grade
 	CurrentColumn++;
 	if (CurrentColumn >= ContainersPerRow)
 	{
@@ -60,33 +49,7 @@ FVector UCargoPortComponent::GetNextSpawnLocation()
 		CurrentRow++;
 	}
 
-	return NewLocation;
-}
-
-void UCargoPortComponent::DebugDrawSpawnGrid(float Duration) const
-{
-#if ENABLE_DRAW_DEBUG
-	FVector Origin = GetComponentLocation();
-	FRotator Rotation = GetComponentRotation();
-	FVector BoxExtent = SpawnAreaExtent;
-
-	int32 ContainersPerRow = FMath::Max(1, FMath::FloorToInt((BoxExtent.X * 2.0f) / Spacing));
-	int32 RowsPerArea = FMath::Max(1, FMath::FloorToInt((BoxExtent.Y * 2.0f) / Spacing));
-
-	for (int32 Row = 0; Row < RowsPerArea; Row++)
-	{
-		for (int32 Col = 0; Col < ContainersPerRow; Col++)
-		{
-			float LocalX = -BoxExtent.X + (Col * Spacing);
-			float LocalY = -BoxExtent.Y + (Row * Spacing);
-
-			FVector LocalOffset(LocalX, LocalY, 0.0f);
-			FVector WorldPos = Origin + Rotation.RotateVector(LocalOffset);
-
-			DrawDebugSphere(GetWorld(), WorldPos, 25.0f, 8, FColor::Yellow, false, Duration);
-		}
-	}
-#endif
+	return WorldPos;
 }
 
 void UCargoPortComponent::AttachPlaceable(APlaceable* Placeable, FVector WorldPos)
@@ -95,52 +58,47 @@ void UCargoPortComponent::AttachPlaceable(APlaceable* Placeable, FVector WorldPo
 	Placeable->AttachToComponent(this, AttachmentRules);
 }
 
-void UCargoPortComponent::AddPlaceableToGrid(APlaceable* Placeable, FVector WorldPos)
+void UCargoPortComponent::AddPlaceable(APlaceable* Placeable, FVector WorldPos)
 {
 	if (!IsOpen)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("CargoPortComponent: Attempt to add placeable to a closed port"));
 		return;
 	}
-	
-	const FVector LocalPosition = GetOwner()->GetActorTransform().InverseTransformPosition(WorldPos);	
-	PlaceableGrid.Add(LocalPosition.X, LocalPosition.Y, Placeable);	
-	
-	
-	Placeable->SetActorLocation(WorldPos, false);	
+
+	AddPlaceableToGrid(Placeable, WorldPos, 0.0f);
+
+	Placeable->SetActorLocation(WorldPos, false);
 	AttachPlaceable(Placeable, WorldPos);
 	Placeable->SetActorRotation(FRotator(0, 0, 0));
-	
-	Placeable->Init(this, LocalPosition.X, LocalPosition.Y);
-	
-	//add to cargomap and register for quest
+}
+
+void UCargoPortComponent::HandlePlaceableAddedToGrid(APlaceable* Placeable)
+{
 	if (auto Container = Cast<AContainer>(Placeable))
 	{
-		if (Container == nullptr)
-			UE_LOG(LogTemp, Warning, TEXT("CargoPortComponent: Placeable is not a container"));
-		
-		CargoMap.FindOrAdd(Container->ContainerDA->CargoTag)++;
-		ACargoGameMode::Get(this)->RegisterCargoDelivery(CurrentQuestTag, Container->ContainerDA->CargoTag);		
+		if (ACargoGameMode* GM = ACargoGameMode::Get(this))
+		{
+			GM->RegisterCargoDelivery(CurrentQuestTag, Container->ContainerDA->CargoTag);
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CargoPortComponent: Placeable is not a container"));
 	}
 }
 
-void UCargoPortComponent::OnPlaceableGrabbed_Implementation(APlaceable* Placeable)
+void UCargoPortComponent::HandlePlaceableRemovedFromGrid(APlaceable* Placeable)
 {
-	IGridActorInterface::OnPlaceableGrabbed_Implementation(Placeable);
-	
 	if (!IsOpen)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("CargoPortComponent: Attempt to add placeable to a closed port"));
-		return;
+		UE_LOG(LogTemp, Warning, TEXT("CargoPortComponent: Placeable removed while port is closed"));
 	}
-	
-	Placeable->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);	
-	RemovePlaceableFromGrid(Placeable);	
-	
+
+	Placeable->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+
 	if (auto Container = Cast<AContainer>(Placeable))
 	{
-		CargoMap[Container->ContainerDA->CargoTag]--;
-
 		if (ACargoGameMode* GM = ACargoGameMode::Get(this))
 		{
 			GM->RemoveCargoDelivery(CurrentQuestTag, Container->ContainerDA->CargoTag);
@@ -158,10 +116,6 @@ void UCargoPortComponent::Clear()
 {
 	IsOpen = false;
 	CurrentQuestTag = FGameplayTag();
-	PlaceableGrid.Clear();
-	
-	for (auto Placeable : PlaceableGrid.GetValuesArray())
-	{
-		Placeable->Destroy();
-	}	
+
+	ClearGrid();
 }

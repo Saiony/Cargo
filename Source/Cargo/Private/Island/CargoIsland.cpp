@@ -12,8 +12,11 @@ ACargoIsland::ACargoIsland()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	
+	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+	SetRootComponent(Root);
+	
 	IslandMeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("IslandMesh"));
-	RootComponent = IslandMeshComp;
+	IslandMeshComp->SetupAttachment(RootComponent);
 
 	PortComponent = CreateDefaultSubobject<UCargoPortComponent>(TEXT("PortComponent"));
 	PortComponent->SetupAttachment(RootComponent);
