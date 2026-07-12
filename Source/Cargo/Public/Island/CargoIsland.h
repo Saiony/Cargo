@@ -44,9 +44,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Island")
 	TArray<TObjectPtr<AContainer>> SpawnedContainers;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo|Island")
-	TSubclassOf<AContainer> ContainerClass;	
 
 public:
 	// ICargoInteractable Interface

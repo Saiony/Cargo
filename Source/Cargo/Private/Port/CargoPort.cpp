@@ -24,32 +24,6 @@ void UCargoPortComponent::BeginPlay()
 void UCargoPortComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	
-#if !UE_BUILD_SHIPPING
-		DrawDebugGrid(0.1f);
-#endif
-}
-
-FVector UCargoPortComponent::GetNextSpawnLocation()
-{
-	const int32 CellSize = PlaceableGrid.GetCellSize();
-	const FIntPoint Min = PlaceableGrid.GetMin();
-	const FIntPoint Max = PlaceableGrid.GetMax();
-
-	const int32 ContainersPerRow = FMath::Max(1, Max.X - Min.X + 1);
-
-	const FIntPoint GridIndex(Min.X + CurrentColumn, Min.Y + CurrentRow);
-	const FVector LocalPos = PlaceableGrid.GridToLocal(GridIndex);
-	const FVector WorldPos = GetComponentTransform().TransformPosition(LocalPos);
-
-	CurrentColumn++;
-	if (CurrentColumn >= ContainersPerRow)
-	{
-		CurrentColumn = 0;
-		CurrentRow++;
-	}
-
-	return WorldPos;
 }
 
 void UCargoPortComponent::AttachPlaceable(APlaceable* Placeable, FVector WorldPos)
@@ -58,7 +32,7 @@ void UCargoPortComponent::AttachPlaceable(APlaceable* Placeable, FVector WorldPo
 	Placeable->AttachToComponent(this, AttachmentRules);
 }
 
-void UCargoPortComponent::AddPlaceable(APlaceable* Placeable, FVector WorldPos)
+void UCargoPortComponent::AddPlaceable(APlaceable* Placeable, FVector WorldPos, float Rotation)
 {
 	if (!IsOpen)
 	{
@@ -66,11 +40,13 @@ void UCargoPortComponent::AddPlaceable(APlaceable* Placeable, FVector WorldPos)
 		return;
 	}
 
-	AddPlaceableToGrid(Placeable, WorldPos, 0.0f);
+	AddPlaceableToGrid(Placeable, WorldPos, Rotation);
+
+	const FRotator WorldRotation = GetComponentRotation() + FRotator(0, Rotation, 0);
 
 	Placeable->SetActorLocation(WorldPos, false);
 	AttachPlaceable(Placeable, WorldPos);
-	Placeable->SetActorRotation(FRotator(0, 0, 0));
+	Placeable->SetActorRotation(WorldRotation);
 }
 
 void UCargoPortComponent::HandlePlaceableAddedToGrid(APlaceable* Placeable)
@@ -106,6 +82,55 @@ void UCargoPortComponent::HandlePlaceableRemovedFromGrid(APlaceable* Placeable)
 	}
 }
 
+void UCargoPortComponent::SpawnSingleContainer(FGameplayTag CargoType)
+{
+	const auto SoftDA = GetDefault<UCargoSettings>()->ContainersMap.Find(CargoType);
+	if (!SoftDA)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CargoPortComponent: No container data asset found for cargo type %s"), *CargoType.ToString());
+		return;
+	}
+
+	auto ContainerDA = SoftDA->LoadSynchronous();
+
+	constexpr float GridRelativeRotation = 0.0f;
+	const FRotator SpawnRotation = GetComponentRotation();
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = GetOwner();
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+	AContainer* NewContainer = GetWorld()->SpawnActor<AContainer>(ContainerClass, GetComponentLocation(), SpawnRotation, SpawnParams);
+
+	if (!NewContainer)
+	{
+		UE_LOG(LogTemp, Error, TEXT("CargoPortComponent: Failed to spawn container"));
+		return;
+	}
+
+	NewContainer->Init(ContainerDA); // agora o Size já está correto ANTES de qualquer validação
+
+	for (int32 X = PlaceableGrid.GetMin().X; X <= PlaceableGrid.GetMax().X; X++)
+	{
+		for (int32 Y = PlaceableGrid.GetMin().Y; Y <= PlaceableGrid.GetMax().Y; Y++)
+		{
+			const FVector LocalPos = PlaceableGrid.GridToLocal(FIntPoint(X, Y));
+			const FVector WorldPos = GetComponentTransform().TransformPosition(LocalPos);
+
+			if (!CanAddPlaceableToGrid(NewContainer, WorldPos, GridRelativeRotation))
+				continue;
+
+			AddPlaceable(NewContainer, WorldPos, GridRelativeRotation);
+
+			UE_LOG(LogTemp, Log, TEXT("- Spawned %s at %s"), *NewContainer->GetName(), *WorldPos.ToString());
+			return;
+		}
+	}
+
+	UE_LOG(LogTemp, Error, TEXT("CargoPortComponent: No valid grid slot found for cargo type %s"), *CargoType.ToString());
+	NewContainer->Destroy();
+}
+
 void UCargoPortComponent::StartQuestDelivery(FGameplayTag QuestTag)
 {
 	IsOpen = true;
@@ -118,4 +143,15 @@ void UCargoPortComponent::Clear()
 	CurrentQuestTag = FGameplayTag();
 
 	ClearGrid();
+}
+
+void UCargoPortComponent::SpawnCargo(const TArray<FCargoRequirement>& Requirements)
+{
+	for (const FCargoRequirement& Req : Requirements)
+	{
+		for (int32 i = 0; i < Req.Quantity; ++i)
+		{
+			SpawnSingleContainer(Req.CargoType);
+		}
+	}
 }

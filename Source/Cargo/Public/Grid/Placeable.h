@@ -3,10 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GridComponent.h"
 #include "GameFramework/Actor.h"
 #include "Placeable.generated.h"
-
-class IGridActorInterface;
 
 UCLASS()
 class CARGO_API APlaceable : public AActor
@@ -31,11 +30,9 @@ public:
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Cargo")
 	float Weight;
 	
-	TScriptInterface<IGridActorInterface> OwningGridActor;
-	
-	
-	FVector2D Size;
-	
+	TObjectPtr<UGridComponent> OwningGridActor;
+		
+	FVector2D Size;	
 
 protected:
 	UPROPERTY(VisibleAnywhere, Category = "Placement")
@@ -55,7 +52,7 @@ public:
 	
 	void Grab();
 	
-	void Init(TScriptInterface<IGridActorInterface> GridActor, int32 GridPosX, int32 GridPosY);
+	void Init(TObjectPtr<UGridComponent> GridActor, int32 GridPosX, int32 GridPosY);
 	
 	//Rotates the root mesh internally
 	void RotateClockwise();

@@ -6,9 +6,10 @@
 #include "GameplayTagContainer.h"
 #include "Components/SceneComponent.h"
 #include "Grid/GridComponent.h"
-#include "Grid/Placeable.h"
 #include "CargoPort.generated.h"
 
+struct FCargoRequirement;
+class AContainer;
 struct FGameplayTag;
 class UStaticMeshComponent;
 
@@ -22,7 +23,10 @@ public:
 
 protected:  
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Cargo")
-	TObjectPtr<UGridComponent> GridComp;
+	TObjectPtr<UGridComponent> GridComp;	
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo|Island")
+	TSubclassOf<AContainer> ContainerClass;	
     
 	virtual void BeginPlay() override;
     
@@ -33,28 +37,25 @@ protected:
 
 	UFUNCTION()
 	void HandlePlaceableRemovedFromGrid(APlaceable* Placeable);
+	
+	void SpawnSingleContainer(FGameplayTag CargoType);
 
 public:
 	UPROPERTY(VisibleAnywhere, Category="Cargo|Port")
 	bool IsOpen = false;
     
-	UFUNCTION(BlueprintCallable, Category = "Cargo|Port")
-	FVector GetNextSpawnLocation();
-    
 	void DebugDrawSpawnGrid(float Duration) const;
+	
 	void AttachPlaceable(APlaceable* Placeable, FVector WorldPos);
 
-	void AddPlaceable(APlaceable* Placeable, FVector WorldPos);
+	void AddPlaceable(APlaceable* Placeable, FVector WorldPos, float Rotation);
 
 	void StartQuestDelivery(FGameplayTag QuestTag);
-	void Clear();
-
-private:
-	UPROPERTY()
-	int32 CurrentColumn = 0;
-
-	UPROPERTY()
-	int32 CurrentRow = 0;    
 	
+	void Clear();
+	
+	void SpawnCargo(const TArray<FCargoRequirement>& Requirements);
+
+private:	
 	FGameplayTag CurrentQuestTag;
 };

@@ -4,10 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "CargoPlayerController.h"
-#include "DeveloperSettings/CargoSettings.h"
-#include "Grid/FROGGrid.h"
 #include "Grid/GridComponent.h"
-#include "GridActorInterface/GridActorInterface.h"
 #include "Logging/LogMacros.h"
 #include "CargoCharacter.generated.h"
 
@@ -23,7 +20,7 @@ struct FInputActionValue;
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
 /**
- *  A simple player-controllable third person character
+ *  A simple player-controllable third-person character
  *  Implements a controllable orbiting camera
  */
 UCLASS(abstract)

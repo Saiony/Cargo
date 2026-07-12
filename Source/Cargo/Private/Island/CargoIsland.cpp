@@ -87,29 +87,7 @@ void ACargoIsland::OnQuestAccepted(TObjectPtr<UQuestData> QuestData, AActor* Que
 	UE_LOG(LogTemp, Log, TEXT("Island %s: Quest accepted! Spawning containers at PortComponent..."), *LocationTag.ToString());
 	
 	PortComponent->IsOpen = true;
-
-	for (const FCargoRequirement& Req : QuestData->CargoRequirements)
-	{
-		for (int32 i = 0; i < Req.Quantity; ++i)
-		{			
-			FVector SpawnLocation = PortComponent->GetNextSpawnLocation();
-			FRotator SpawnRotation = PortComponent->GetComponentRotation();
-
-			FActorSpawnParameters SpawnParams;
-			SpawnParams.Owner = this;
-			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-
-			AContainer* NewContainer = GetWorld()->SpawnActor<AContainer>(ContainerClass, SpawnLocation, SpawnRotation, SpawnParams);
-			
-			const auto SoftDA = GetDefault<UCargoSettings>()->ContainersMap.Find(Req.CargoType);
-			auto ContainerDA = SoftDA->LoadSynchronous();
-			
-			NewContainer->Init(ContainerDA);
-			UE_LOG(LogTemp, Log, TEXT("- Spawned %s at %s"), *NewContainer->GetName(), *SpawnLocation.ToString());
-			
-			//TODO: should the port keep track about this too?
-		}
-	}
+	PortComponent->SpawnCargo(QuestData->CargoRequirements);
 }
 
 void ACargoIsland::OnQuestCompleted(TObjectPtr<UQuestStatus> QuestStatus)

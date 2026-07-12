@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "Grid/GridComponent.h"
 #include "Grid/PlaceablePreview.h"
 #include "Interaction/CargoInteractable.h"
 #include "CargoPlayerController.generated.h"
@@ -85,7 +86,7 @@ protected:
 	TScriptInterface<ICargoInteractable> CurrentInteractable = nullptr;
 	
 	UPROPERTY()
-	TScriptInterface<IGridActorInterface> CurrentHoveredGrid = nullptr;
+	TObjectPtr<UGridComponent> CurrentHoveredGrid = nullptr;
 	
 	UPROPERTY()
 	TObjectPtr<APlaceablePreview> PlaceablePreview;

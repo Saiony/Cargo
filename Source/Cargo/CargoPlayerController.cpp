@@ -6,17 +6,13 @@
 #include "Public/Grid/Placeable.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "InputActionValue.h"
 #include "Engine/LocalPlayer.h"
 #include "InputMappingContext.h"
 #include "Blueprint/UserWidget.h"
-#include "Cargo.h"
 #include "CommonLocalPlayer.h"
+#include "ConsoleVariables.h"
 #include "Engine/OverlapResult.h"
-#include "Engine/StaticMeshActor.h"
 #include "Interaction/CargoInteractable.h"
-#include "Island/CargoIsland.h"
-#include "Port/CargoPort.h"
 #include "Subsystem/CargoUIManagerSubsystem.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 
@@ -122,14 +118,16 @@ void ACargoPlayerController::PlayerTick(float DeltaTime)
         return;
     }
 
-    if (!HitComponent->Implements<UGridActorInterface>())
+    UGridComponent* GridComponent = Cast<UGridComponent>(HitComponent);
+
+    if (!GridComponent)
     {
-        UE_LOG(LogTemp, Error, TEXT("HitComponent has DropSurfaceChannel but doesn't implement IGridActorInterface"));
+        UE_LOG(LogTemp, Error, TEXT("HitComponent has DropSurfaceChannel but isn't a UGridComponent"));
         PlaceablePreview->SetActorHiddenInGame(true);
         return;
     }  
 
-    CurrentHoveredGrid = HitComponent;
+    CurrentHoveredGrid = GridComponent;
 
     if (CurrentHoveredGrid->CanAddPlaceableToGrid(DraggingObject, HitResult.ImpactPoint, DraggingObject->GetLocalYaw()))
     {
@@ -142,17 +140,10 @@ void ACargoPlayerController::PlayerTick(float DeltaTime)
     
     PlaceablePreview->SetActorHiddenInGame(false);
 
-    USceneComponent* GridComponent = Cast<USceneComponent>(CurrentHoveredGrid.GetObject());
-    if (!GridComponent)
-    {
-        PlaceablePreview->SetActorHiddenInGame(true);
-        return;
-    }
-
-    PlaceablePreview->AttachToComponent(GridComponent, FAttachmentTransformRules::KeepWorldTransform);
+    PlaceablePreview->AttachToComponent(CurrentHoveredGrid, FAttachmentTransformRules::KeepWorldTransform);
     PlaceablePreview->MimicPlaceableYaw(DraggingObject);
 
-    FVector LocalLocation = GridComponent->GetComponentTransform().InverseTransformPosition(HitResult.ImpactPoint);
+    FVector LocalLocation = CurrentHoveredGrid->GetComponentTransform().InverseTransformPosition(HitResult.ImpactPoint);
 
     const float GridSize = GetDefault<UCargoSettings>()->GridCellSize;
 
@@ -200,10 +191,8 @@ void ACargoPlayerController::OnLeftClickEnd(const FInputActionValue& InputAction
 		return;
 	}
 
-	const auto GridComp =  Cast<USceneComponent>(CurrentHoveredGrid.GetObject());
-
 	// Anexa ao mesmo pai do preview
-	DraggingObject->AttachToComponent(GridComp, FAttachmentTransformRules::KeepWorldTransform);
+	DraggingObject->AttachToComponent(CurrentHoveredGrid, FAttachmentTransformRules::KeepWorldTransform);
 
 	// Copia exatamente o transform relativo do preview
 	DraggingObject->GetRootComponent()->SetRelativeTransform(PlaceablePreview->GetRootComponent()->GetRelativeTransform());
@@ -266,8 +255,11 @@ void ACargoPlayerController::Interact(const FInputActionValue& InputActionValue)
 																QueryParams );
 	
 #if WITH_EDITOR || !UE_BUILD_SHIPPING
-	DrawDebugSphere(GetWorld(), Origin, InteractRange, 16, FColor::Green,
-					false, 1.5f, 0, 1.0f);
+	if (CVarCargoShowDebugs.GetValueOnGameThread())
+	{
+		DrawDebugSphere(GetWorld(), Origin, InteractRange, 16, FColor::Green,
+						false, 1.5f, 0, 1.0f);
+	}
 #endif
 
 	if (!bHasOverlaps)

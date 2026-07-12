@@ -3,8 +3,6 @@
 
 #include "Public/Grid/Placeable.h"
 #include "Components/StaticMeshComponent.h"
-#include "GridActorInterface/GridActorInterface.h"
-
 
 // Sets default values
 APlaceable::APlaceable()
@@ -44,7 +42,7 @@ void APlaceable::Grab()
 	OwningGridActor->RemovePlaceableFromGrid(this);
 }
 
-void APlaceable::Init(TScriptInterface<IGridActorInterface> GridActor, int32 GridPosX, int32 GridPosY)
+void APlaceable::Init(TObjectPtr<UGridComponent>GridActor, int32 GridPosX, int32 GridPosY)
 {
 	OwningGridActor = GridActor;
 	PivotGridPos = FIntPoint(GridPosX, GridPosY);

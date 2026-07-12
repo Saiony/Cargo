@@ -4,31 +4,51 @@
 
 #include "CoreMinimal.h"
 #include "Components/BoxComponent.h"
-#include "GridActorInterface/GridActorInterface.h"
+#include "DeveloperSettings/CargoSettings.h"
+#include "Grid/FROGGrid.h"
 #include "GridComponent.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlaceableAddedToGrid, APlaceable*, Placeable);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlaceableRemovedFromGrid, APlaceable*, Placeable);
 
+class APlaceable;
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
-class CARGO_API UGridComponent : public UBoxComponent, public IGridActorInterface
+class CARGO_API UGridComponent : public UBoxComponent
 {
 	GENERATED_BODY()
-protected:	
+protected:  
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
 	FIntPoint GridSize = FIntPoint(1, 1);
-	
+
+	UFROGGrid<APlaceable*> PlaceableGrid = UFROGGrid<APlaceable*>(GetDefault<UCargoSettings>()->GridCellSize, FIntPoint(0, 0), FIntPoint(0, 0));
+    
 	virtual void BeginPlay() override;
-	
-	virtual void OnPlaceableAdded(APlaceable* Placeable) override;	
-	
+    
+	virtual void OnPlaceableAdded(APlaceable* Placeable);
+
+	void InitializeGrid(int32 InCellSize, const FIntPoint& InOrigin, const FIntPoint& InGridSize);
+
+	FVector WorldToLocalGridSpace(const FVector& WorldLocation);
 
 public:
 	UGridComponent();
-	
+    
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-	
+    
 	void ClearGrid();
+
+	bool CanAddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const FVector& WorldLocation, float Rotation);
+
+	void AddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const FVector& WorldLocation, float Rotation);
+	
+	void RemovePlaceableFromGrid(TObjectPtr<APlaceable> Placeable);
+	
+	TMap<FIntPoint, APlaceable*> GetOccupiedSlots() const;
+
+#if !UE_BUILD_SHIPPING
+	void DrawDebugGrid(float Duration = 0.f) const;
+#endif
 
 	FOnPlaceableAddedToGrid OnPlaceableAddedToGrid;
 	FOnPlaceableRemovedFromGrid OnPlaceableRemovedFromGrid;
