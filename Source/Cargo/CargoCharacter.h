@@ -62,6 +62,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo")
 	float WeightInbalanceMultiplier = 1;
 	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	FVector2D FRMinMax = FVector2D(-10.0f, 10.0f);
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	FVector2D ShipAngleMinMax = FVector2D(-45.0f, 45.0f);
+	
 	float FR = 0;	
 public:
 

@@ -29,7 +29,7 @@ ACargoCharacter::ACargoCharacter()
 	BuoyancyComp = CreateDefaultSubobject<UBuoyancyComponent>("BuoyancyComp");
 	
 	GridComp = CreateDefaultSubobject<UGridComponent>(TEXT("GridComp"));
-	GridComp->SetupAttachment(RootComponent);
+	GridComp->SetupAttachment(MeshComponent);
 		
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationYaw = false;
@@ -167,7 +167,7 @@ void ACargoCharacter::BeginPlay()
 void ACargoCharacter::BalanceShip()
 {
 	FR = 0;
-	for (auto PlaceableKV : GridComp->GetOccupiedSlots())
+	for (const auto PlaceableKV : GridComp->GetOccupiedSlots())
 	{
 		const auto PlaceableWeight = PlaceableKV.Value->Weight;
 		const auto Momentum = PlaceableWeight * PlaceableKV.Key.Y;
@@ -177,10 +177,6 @@ void ACargoCharacter::BalanceShip()
 	
 	UE_LOG(LogTemp, Log, TEXT("FR: %f"), FR);
 	
-	float FinalAngle = FMath::GetMappedRangeValueClamped(
-	FVector2D(-1000.f, 1000.f),
-	FVector2D(-30.f, 30.f),
-	FR);
-	
+	const float FinalAngle = FMath::GetMappedRangeValueClamped(FRMinMax,ShipAngleMinMax, FR);	
 	RotateShip(FinalAngle);
 }

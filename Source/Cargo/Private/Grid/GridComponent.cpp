@@ -79,6 +79,7 @@ void UGridComponent::AddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const 
 	}
 
 	Placeable->Init(this, LocalLocation.X, LocalLocation.Y);
+	OnPlaceableAddedToGrid.Broadcast(Placeable);
 	OnPlaceableAdded(Placeable);
 }
 
@@ -97,6 +98,8 @@ void UGridComponent::RemovePlaceableFromGrid(TObjectPtr<APlaceable> Placeable)
 		PlaceableGrid.Remove(GridIndex.X, GridIndex.Y);
 		UE_LOG(LogTemp, Log, TEXT("Placeable removed from grid [%d, %d] at local pos [%f, %f]"), GridIndex.X, GridIndex.Y, Pos.X, Pos.Y);
 	}
+	
+	OnPlaceableRemovedFromGrid.Broadcast(Placeable);
 }
 
 TMap<FIntPoint, APlaceable*> UGridComponent::GetOccupiedSlots() const

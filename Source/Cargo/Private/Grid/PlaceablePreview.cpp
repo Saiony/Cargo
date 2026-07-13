@@ -28,7 +28,6 @@ void APlaceablePreview::Initialize(TObjectPtr<APlaceable> Placeable)
 
 void APlaceablePreview::MimicPlaceableYaw(TObjectPtr<APlaceable> Placeable)
 {
-	SetActorRotation(Placeable->GetActorRotation());
 	PivotComp->SetRelativeRotation(FRotator(0.0f, Placeable->GetLocalYaw(), 0.0f));
 }
 

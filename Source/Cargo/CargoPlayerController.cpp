@@ -140,8 +140,7 @@ void ACargoPlayerController::PlayerTick(float DeltaTime)
     
     PlaceablePreview->SetActorHiddenInGame(false);
 
-    PlaceablePreview->AttachToComponent(CurrentHoveredGrid, FAttachmentTransformRules::KeepWorldTransform);
-    PlaceablePreview->MimicPlaceableYaw(DraggingObject);
+    PlaceablePreview->AttachToComponent(CurrentHoveredGrid, FAttachmentTransformRules::SnapToTargetIncludingScale);	
 
     FVector LocalLocation = CurrentHoveredGrid->GetComponentTransform().InverseTransformPosition(HitResult.ImpactPoint);
 
@@ -152,6 +151,8 @@ void ACargoPlayerController::PlayerTick(float DeltaTime)
     LocalLocation.Z = FMath::GridSnap(LocalLocation.Z, GridSize);
 
     PlaceablePreview->SetActorRelativeLocation(LocalLocation);
+	PlaceablePreview->SetActorRelativeRotation(FRotator(0.f, 0.f, 0.f));
+	PlaceablePreview->MimicPlaceableYaw(DraggingObject);
 }
 
 void ACargoPlayerController::OnLeftClickStart(const FInputActionValue& Value)
@@ -191,11 +192,12 @@ void ACargoPlayerController::OnLeftClickEnd(const FInputActionValue& InputAction
 		return;
 	}
 
-	// Anexa ao mesmo pai do preview
-	DraggingObject->AttachToComponent(CurrentHoveredGrid, FAttachmentTransformRules::KeepWorldTransform);
-
-	// Copia exatamente o transform relativo do preview
-	DraggingObject->GetRootComponent()->SetRelativeTransform(PlaceablePreview->GetRootComponent()->GetRelativeTransform());
+	DraggingObject->AttachToComponent(CurrentHoveredGrid, FAttachmentTransformRules::SnapToTargetIncludingScale);
+	
+	// inherit location but zeroes the local rotation
+	const FVector RelativeLocation = PlaceablePreview->GetRootComponent()->GetRelativeLocation();
+	DraggingObject->SetActorRelativeLocation(RelativeLocation);
+	DraggingObject->SetActorRelativeRotation(FRotator(0.f, 0.f, 0.f));
 
 	CurrentHoveredGrid->AddPlaceableToGrid(DraggingObject, PlaceablePreview->GetActorLocation(), DraggingObject->GetLocalYaw());
 	
