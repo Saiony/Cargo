@@ -13,7 +13,10 @@ class CARGO_API APlaceable : public AActor
 	GENERATED_BODY()
 
 protected:
-	APlaceable();
+	APlaceable();	
+	
+	int32 GridLevel = -1;
+	
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cargo")
 	TObjectPtr<USceneComponent> RootComp;
@@ -52,7 +55,7 @@ public:
 	
 	void Grab();
 	
-	void Init(TObjectPtr<UGridComponent> GridActor, int32 GridPosX, int32 GridPosY);
+	void Init(TObjectPtr<UGridComponent> GridActor, int32 GridPosX, int32 GridPosY, int32 GridPosZ);
 	
 	//Rotates the root mesh internally
 	void RotateClockwise();
@@ -61,4 +64,6 @@ public:
 	TArray<FVector> GetAllGridPositions(const FVector& BaseLocation, float Rotation, float CellSize) const;
 	
 	FIntPoint GetGridPos() const { return PivotGridPos; }
+	
+	int32 GetGridLevel() const { return GridLevel; }
 };

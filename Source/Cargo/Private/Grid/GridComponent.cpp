@@ -15,14 +15,14 @@ UGridComponent::UGridComponent()
 void UGridComponent::BeginPlay()
 {
 	Super::BeginPlay();    
-	InitializeGrid(GetDefault<UCargoSettings>()->GridCellSize, FIntPoint(0, 0), GridSize);
+	InitializeGrid(GetDefault<UCargoSettings>()->GridCellSize, FIntVector(0, 0, 0), GridSize);
 }
 
 void UGridComponent::OnPlaceableAdded(APlaceable* Placeable)
 {
 }
 
-void UGridComponent::InitializeGrid(int32 InCellSize, const FIntPoint& InOrigin, const FIntPoint& InGridSize)
+void UGridComponent::InitializeGrid(int32 InCellSize, const FIntVector& InOrigin, const FIntVector& InGridSize)
 {
 	PlaceableGrid = UFROGGrid<APlaceable*>(InCellSize, InOrigin, InGridSize);
 }
@@ -44,9 +44,9 @@ bool UGridComponent::CanAddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, con
 
 	for (const FVector& Pos : OccupiedGridPositions)
 	{
-		const FIntPoint GridIndex = PlaceableGrid.LocalToGrid(Pos);
+		const auto GridIndex = PlaceableGrid.LocalToGrid(Pos);
     
-		if (PlaceableGrid.GetValue(GridIndex.X, GridIndex.Y))
+		if (PlaceableGrid.GetValue(GridIndex.X, GridIndex.Y, GridIndex.Z))
 			return false;
     
 		if (!PlaceableGrid.IsWithinBounds(GridIndex))
@@ -72,13 +72,13 @@ void UGridComponent::AddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const 
 
 	for (const FVector& Pos : OccupiedLocations)
 	{
-		const FIntPoint GridIndex = PlaceableGrid.LocalToGrid(Pos);
-		PlaceableGrid.Add(GridIndex.X, GridIndex.Y, Placeable);
+		const auto GridIndex = PlaceableGrid.LocalToGrid(Pos);
+		PlaceableGrid.Add(GridIndex.X, GridIndex.Y, GridIndex.Z, Placeable);
 
 		UE_LOG(LogTemp, Log, TEXT("Placeable added to grid [%d, %d] at world pos [%f, %f]"), GridIndex.X, GridIndex.Y, Pos.X, Pos.Y);
 	}
 
-	Placeable->Init(this, LocalLocation.X, LocalLocation.Y);
+	Placeable->Init(this, LocalLocation.X, LocalLocation.Y, LocalLocation.Z);
 	OnPlaceableAddedToGrid.Broadcast(Placeable);
 	OnPlaceableAdded(Placeable);
 }
@@ -94,15 +94,15 @@ void UGridComponent::RemovePlaceableFromGrid(TObjectPtr<APlaceable> Placeable)
 
 	for (const FVector& Pos : OccupiedPos)
 	{
-		const FIntPoint GridIndex = PlaceableGrid.LocalToGrid(Pos);
-		PlaceableGrid.Remove(GridIndex.X, GridIndex.Y);
+		const auto GridIndex = PlaceableGrid.LocalToGrid(Pos);
+		PlaceableGrid.Remove(GridIndex.X, GridIndex.Y, GridIndex.Z);
 		UE_LOG(LogTemp, Log, TEXT("Placeable removed from grid [%d, %d] at local pos [%f, %f]"), GridIndex.X, GridIndex.Y, Pos.X, Pos.Y);
 	}
 	
 	OnPlaceableRemovedFromGrid.Broadcast(Placeable);
 }
 
-TMap<FIntPoint, APlaceable*> UGridComponent::GetOccupiedSlots() const
+TMap<FIntVector, APlaceable*> UGridComponent::GetOccupiedSlots() const
 {
 	return PlaceableGrid.GetOccupiedSlots();
 }
@@ -119,15 +119,18 @@ void UGridComponent::DrawDebugGrid(float Duration) const
 	{
 		for (int32 Y = PlaceableGrid.GetMin().Y; Y <= PlaceableGrid.GetMax().Y; Y++)
 		{
-			const bool bOccupied = PlaceableGrid.GetValue(X, Y) != nullptr;
+			for (int32 Z = PlaceableGrid.GetMin().Z; Z <= PlaceableGrid.GetMax().Z; Z++)
+			{
+				const bool bOccupied = PlaceableGrid.GetValue(X, Y, Z) != nullptr;
 
-			const FVector LocalCellCenter = FVector(X * CellSize, Y * CellSize, 0.f);
-			const FVector WorldCellCenter = GetComponentTransform().TransformPosition(LocalCellCenter);
+				const FVector LocalCellCenter = FVector(X * CellSize, Y * CellSize, Z * CellSize);
+				const FVector WorldCellCenter = GetComponentTransform().TransformPosition(LocalCellCenter);
 
-			const FColor DebugColor = bOccupied ? FColor::Red : FColor::Green;
+				const FColor DebugColor = bOccupied ? FColor::Red : FColor::Green;
 
-			DrawDebugBox(GetWorld(), WorldCellCenter, FVector(CellSize * 0.4f, CellSize * 0.4f, 1.f),
-				GetComponentQuat(), DebugColor, false, Duration, 0);
+				DrawDebugBox(GetWorld(), WorldCellCenter, FVector(CellSize * 0.4f, CellSize * 0.4f, CellSize * 0.4f),
+					GetComponentQuat(), DebugColor, false, Duration, 0);
+			}
 		}
 	}
 }

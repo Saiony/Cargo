@@ -89,18 +89,18 @@ void ACargoPlayerController::PlayerTick(float DeltaTime)
     if (!bIsDragging || !DraggingObject)
         return;
 
-    FVector MouseWorldLocation, MouseWorldDirection;
+	//gets mouse pos in world
+    FVector MouseWorldLocation;
+	FVector MouseWorldDirection;
+	
     if (!DeprojectMousePositionToWorld(MouseWorldLocation, MouseWorldDirection))
-        return;
-
-    if (FMath::IsNearlyZero(MouseWorldDirection.Z))
         return;
 
     const float T = (DraggingZHeight - MouseWorldLocation.Z) / MouseWorldDirection.Z;
     const FVector TargetLocation = MouseWorldLocation + MouseWorldDirection * T;
-
     DraggingObject->SetActorLocation(TargetLocation);
 
+	//gets hit component
     FHitResult HitResult;
     FCollisionQueryParams Params;
     Params.AddIgnoredActor(DraggingObject);
@@ -108,9 +108,9 @@ void ACargoPlayerController::PlayerTick(float DeltaTime)
     const FVector TraceStart = DraggingObject->GetActorLocation();
     const FVector TraceEnd = TraceStart - FVector(0.f, 0.f, 10000.f);
 
-    UPrimitiveComponent* HitComponent = GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, DropSurfaceChannel, Params)
-        ? HitResult.GetComponent()
-        : nullptr;
+    const auto HitComponent = GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, DropSurfaceChannel, Params)
+						        ? HitResult.GetComponent()
+						        : nullptr;
 
     if (!HitComponent)
     {     

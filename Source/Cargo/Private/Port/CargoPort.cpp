@@ -110,20 +110,24 @@ void UCargoPortComponent::SpawnSingleContainer(FGameplayTag CargoType)
 
 	NewContainer->Init(ContainerDA); // agora o Size já está correto ANTES de qualquer validação
 
+	//finds first empty location
 	for (int32 X = PlaceableGrid.GetMin().X; X <= PlaceableGrid.GetMax().X; X++)
 	{
 		for (int32 Y = PlaceableGrid.GetMin().Y; Y <= PlaceableGrid.GetMax().Y; Y++)
 		{
-			const FVector LocalPos = PlaceableGrid.GridToLocal(FIntPoint(X, Y));
-			const FVector WorldPos = GetComponentTransform().TransformPosition(LocalPos);
+			for (int32 Z = PlaceableGrid.GetMin().Z; Z <= PlaceableGrid.GetMax().Z; Z++)
+			{
+				const FVector LocalPos = PlaceableGrid.GridToLocal(FIntVector(X, Y, Z));
+				const FVector WorldPos = GetComponentTransform().TransformPosition(LocalPos);
 
-			if (!CanAddPlaceableToGrid(NewContainer, WorldPos, GridRelativeRotation))
-				continue;
+				if (!CanAddPlaceableToGrid(NewContainer, WorldPos, GridRelativeRotation))
+					continue;
 
-			AddPlaceable(NewContainer, WorldPos, GridRelativeRotation);
+				AddPlaceable(NewContainer, WorldPos, GridRelativeRotation);
 
-			UE_LOG(LogTemp, Log, TEXT("- Spawned %s at %s"), *NewContainer->GetName(), *WorldPos.ToString());
-			return;
+				UE_LOG(LogTemp, Log, TEXT("- Spawned %s at %s"), *NewContainer->GetName(), *WorldPos.ToString());
+				return;
+			}
 		}
 	}
 

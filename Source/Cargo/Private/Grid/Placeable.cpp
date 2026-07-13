@@ -42,10 +42,11 @@ void APlaceable::Grab()
 	OwningGridActor->RemovePlaceableFromGrid(this);
 }
 
-void APlaceable::Init(TObjectPtr<UGridComponent>GridActor, int32 GridPosX, int32 GridPosY)
+void APlaceable::Init(TObjectPtr<UGridComponent>GridActor, int32 GridPosX, int32 GridPosY, int32 GridPosZ)
 {
 	OwningGridActor = GridActor;
 	PivotGridPos = FIntPoint(GridPosX, GridPosY);
+	this->GridLevel = GridLevel;
 }
 
 void APlaceable::RotateClockwise()

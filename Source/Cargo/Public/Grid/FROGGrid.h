@@ -8,24 +8,23 @@
 template <typename T>
 class UFROGGrid 
 {
-	TMap<FIntPoint, T> OccupiedSlots;
+	TMap<FIntVector, T> OccupiedSlots;
 	int32 CellSize;
-	FIntPoint GridOrigin;
-	
-	FIntPoint GridSize;
+	FIntVector GridOrigin;	
+	FIntVector GridSize;
 	
 public:
-	UFROGGrid(const int32 CellSize, const FIntPoint Origin, const FIntPoint GridSize) :
-		OccupiedSlots(TMap<FIntPoint, T>()),
+	UFROGGrid(const int32 CellSize, const FIntVector Origin, const FIntVector GridSize) :
+		OccupiedSlots(TMap<FIntVector, T>()),
 		CellSize(CellSize),
 		GridOrigin(Origin),
 		GridSize(GridSize)
 	{
 	}
 
-	const T* GetValue(const int32 X, const int32 Y) const
+	const T* GetValue(const int32 X, const int32 Y, const int32 Z) const
 	{
-		FIntPoint Cell(X, Y);
+		FIntVector Cell(X, Y, Z);
 		return OccupiedSlots.Find(Cell);
 	}
 
@@ -39,15 +38,15 @@ public:
 		return Values;
 	}
 
-	void Add(const int32 X, const int32 Y, const T Value)
+	void Add(const int32 X, const int32 Y, const int32 Z, const T Value)
 	{
-		FIntPoint Cell(X, Y);
+		FIntVector Cell(X, Y, Z);
 		OccupiedSlots.Add(Cell, Value);
 	}
 
-	void Remove(const int32 X, const int32 Y)
+	void Remove(const int32 X, const int32 Y, const int32 Z)
 	{
-		FIntPoint Cell(X, Y);
+		FIntVector Cell(X, Y, Z);
 		
 		OccupiedSlots.Remove(Cell);
 	}
@@ -62,7 +61,7 @@ public:
 		return CellSize;
 	}
 
-	TMap<FIntPoint, T> GetOccupiedSlots() const
+	TMap<FIntVector, T> GetOccupiedSlots() const
 	{
 		return OccupiedSlots;
 	}
@@ -73,18 +72,18 @@ public:
 		(
 			GridOrigin.X + FMath::RoundToInt((WorldLocation.X - GridOrigin.X) / CellSize) * CellSize,
 			GridOrigin.Y + FMath::RoundToInt((WorldLocation.Y - GridOrigin.Y) / CellSize) * CellSize,
-			WorldLocation.Z
+			GridOrigin.Z + FMath::RoundToInt((WorldLocation.Z - GridOrigin.Z) / CellSize) * CellSize
 		);
 	}
 	
-	FIntPoint GetMin() const
+	FIntVector GetMin() const
 	{
-		return FIntPoint(-GridSize.X / 2, -GridSize.Y / 2);
+		return FIntVector(-GridSize.X / 2, -GridSize.Y / 2, 0);
 	}
 
-	FIntPoint GetMax() const
+	FIntVector GetMax() const
 	{
-		return FIntPoint(GridSize.X / 2, GridSize.Y / 2);
+		return FIntVector(GridSize.X / 2, GridSize.Y / 2, GridSize.Z);
 	}
 
 	friend bool operator!=(const UFROGGrid& lhs, const UFROGGrid& rhs)
@@ -92,21 +91,22 @@ public:
 		return !(lhs == rhs);
 	}
 	
-	FIntPoint LocalToGrid(const FVector& LocalPositionXY) const
+	FIntVector LocalToGrid(const FVector& LocalPosition) const
 	{
-		return LocalToGrid(LocalPositionXY.X, LocalPositionXY.Y);
+		return LocalToGrid(LocalPosition.X, LocalPosition.Y, LocalPosition.Z);
 	}
 
-	FIntPoint LocalToGrid(const float LocalX, const float LocalY) const
+	FIntVector LocalToGrid(const float LocalX, const float LocalY, const float LocalZ) const
 	{
-		return FIntPoint
+		return FIntVector
 		(
 		   FMath::FloorToInt((LocalX - GridOrigin.X) / CellSize),
-		   FMath::FloorToInt((LocalY - GridOrigin.Y) / CellSize)
+		   FMath::FloorToInt((LocalY - GridOrigin.Y) / CellSize),
+		   FMath::FloorToInt((LocalZ - GridOrigin.Z) / CellSize)
 		);
 	}
 
-	FVector GridToLocal(const FIntPoint& GridIndex) const
+	FVector GridToLocal(const FIntVector& GridIndex) const
 	{
 		return FVector(
 		   GridOrigin.X + GridIndex.X * CellSize,
@@ -115,10 +115,10 @@ public:
 		);
 	}
 	
-	bool IsWithinBounds(const FIntPoint& GridIndex) const
+	bool IsWithinBounds(const FIntVector& GridIndex) const
 	{
-		const FIntPoint Min = GetMin();
-		const FIntPoint Max = GetMax();
+		const FIntVector Min = GetMin();
+		const FIntVector Max = GetMax();
 
 		return GridIndex.X >= Min.X && GridIndex.X <= Max.X &&
 			   GridIndex.Y >= Min.Y && GridIndex.Y <= Max.Y;

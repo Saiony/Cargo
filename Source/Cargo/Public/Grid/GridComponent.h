@@ -19,15 +19,15 @@ class CARGO_API UGridComponent : public UBoxComponent
 	GENERATED_BODY()
 protected:  
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
-	FIntPoint GridSize = FIntPoint(1, 1);
+	FIntVector GridSize = FIntVector(1, 1, 1);
 
-	UFROGGrid<APlaceable*> PlaceableGrid = UFROGGrid<APlaceable*>(GetDefault<UCargoSettings>()->GridCellSize, FIntPoint(0, 0), FIntPoint(0, 0));
+	UFROGGrid<APlaceable*> PlaceableGrid = UFROGGrid<APlaceable*>(GetDefault<UCargoSettings>()->GridCellSize, FIntVector(0, 0, 0), FIntVector(0, 0, 0));
     
 	virtual void BeginPlay() override;
     
 	virtual void OnPlaceableAdded(APlaceable* Placeable);
 
-	void InitializeGrid(int32 InCellSize, const FIntPoint& InOrigin, const FIntPoint& InGridSize);
+	void InitializeGrid(int32 InCellSize, const FIntVector& InOrigin, const FIntVector& InGridSize);
 
 	FVector WorldToLocalGridSpace(const FVector& WorldLocation);
 
@@ -44,7 +44,7 @@ public:
 	
 	void RemovePlaceableFromGrid(TObjectPtr<APlaceable> Placeable);
 	
-	TMap<FIntPoint, APlaceable*> GetOccupiedSlots() const;
+	TMap<FIntVector, APlaceable*> GetOccupiedSlots() const;
 
 #if !UE_BUILD_SHIPPING
 	void DrawDebugGrid(float Duration = 0.f) const;
