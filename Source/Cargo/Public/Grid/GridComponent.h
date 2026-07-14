@@ -38,13 +38,16 @@ public:
     
 	void ClearGrid();
 
-	bool CanAddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const FVector& WorldLocation, float Rotation);
+	bool CanAddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const FVector WorldLocation, float Rotation);
 
 	void AddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const FVector& WorldLocation, float Rotation);
 	
 	void RemovePlaceableFromGrid(TObjectPtr<APlaceable> Placeable);
 	
 	TMap<FIntVector, APlaceable*> GetOccupiedSlots() const;
+	
+	FVector GetNextFreeZPositionWorld(const FVector& WorldLocation);
+	bool IsPlaceableBlocked(TObjectPtr<APlaceable> Placeable);
 
 #if !UE_BUILD_SHIPPING
 	void DrawDebugGrid(float Duration = 0.f) const;

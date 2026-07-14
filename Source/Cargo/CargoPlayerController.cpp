@@ -12,7 +12,9 @@
 #include "CommonLocalPlayer.h"
 #include "ConsoleVariables.h"
 #include "Engine/OverlapResult.h"
+#include "Grid/Container.h"
 #include "Interaction/CargoInteractable.h"
+#include "Runtime/Experimental/Voronoi/Private/voro++/src/container.hh"
 #include "Subsystem/CargoUIManagerSubsystem.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 
@@ -119,17 +121,26 @@ void ACargoPlayerController::PlayerTick(float DeltaTime)
     }
 
     UGridComponent* GridComponent = Cast<UGridComponent>(HitComponent);
+	FVector ImpactPoint = HitResult.ImpactPoint;	
+
+	CurrentHoveredGrid = GridComponent;
 
     if (!GridComponent)
-    {
-        UE_LOG(LogTemp, Error, TEXT("HitComponent has DropSurfaceChannel but isn't a UGridComponent"));
-        PlaceablePreview->SetActorHiddenInGame(true);
-        return;
+    {    	
+    	if (auto Container = Cast<AContainer>(HitComponent->GetOwner()))
+    	{
+    		UE_LOG(LogTemp, Log, TEXT("HitComponent is a container. OriginalPos:"));    		
+    		CurrentHoveredGrid = Container->OwningGridActor;
+    		ImpactPoint = CurrentHoveredGrid->GetNextFreeZPositionWorld(ImpactPoint);
+    	}
+    	else
+    	{
+	        PlaceablePreview->SetActorHiddenInGame(true);
+	        return;
+    	}
     }  
 
-    CurrentHoveredGrid = GridComponent;
-
-    if (CurrentHoveredGrid->CanAddPlaceableToGrid(DraggingObject, HitResult.ImpactPoint, DraggingObject->GetLocalYaw()))
+    if (CurrentHoveredGrid->CanAddPlaceableToGrid(DraggingObject, ImpactPoint, DraggingObject->GetLocalYaw()))
     {
         PlaceablePreview->SetValid();
     }
@@ -142,7 +153,7 @@ void ACargoPlayerController::PlayerTick(float DeltaTime)
 
     PlaceablePreview->AttachToComponent(CurrentHoveredGrid, FAttachmentTransformRules::SnapToTargetIncludingScale);	
 
-    FVector LocalLocation = CurrentHoveredGrid->GetComponentTransform().InverseTransformPosition(HitResult.ImpactPoint);
+    FVector LocalLocation = CurrentHoveredGrid->GetComponentTransform().InverseTransformPosition(ImpactPoint);
 
     const float GridSize = GetDefault<UCargoSettings>()->GridCellSize;
 
@@ -171,6 +182,12 @@ void ACargoPlayerController::OnLeftClickStart(const FInputActionValue& Value)
 		return;
 	
 	DraggingObject = Placeable;
+	if (Placeable->OwningGridActor->IsPlaceableBlocked(Placeable))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Placeable is blocked"));
+		return;
+	}
+	
 	bIsDragging = true;
 		
 	DraggingObject->Grab();

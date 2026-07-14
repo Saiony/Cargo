@@ -32,7 +32,7 @@ FVector UGridComponent::WorldToLocalGridSpace(const FVector& WorldLocation)
 	return GetComponentTransform().InverseTransformPosition(WorldLocation);
 }
 
-bool UGridComponent::CanAddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const FVector& WorldLocation, float Rotation)
+bool UGridComponent::CanAddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const FVector WorldLocation, float Rotation)
 {
 	if(!Placeable)
 		return false;
@@ -105,6 +105,44 @@ void UGridComponent::RemovePlaceableFromGrid(TObjectPtr<APlaceable> Placeable)
 TMap<FIntVector, APlaceable*> UGridComponent::GetOccupiedSlots() const
 {
 	return PlaceableGrid.GetOccupiedSlots();
+}
+
+FVector UGridComponent::GetNextFreeZPositionWorld(const FVector& WorldLocation)
+{
+	const FVector LocalLocation = WorldToLocalGridSpace(WorldLocation);
+	const FVector RoundedLocation = PlaceableGrid.GetRoundedLocation(LocalLocation);
+
+	FIntVector GridIndex = PlaceableGrid.LocalToGrid(RoundedLocation);
+
+	while (PlaceableGrid.IsWithinBounds(GridIndex) && PlaceableGrid.GetValue(GridIndex.X, GridIndex.Y, GridIndex.Z))
+	{
+		GridIndex.Z++;
+	}
+
+	const float CellSize = PlaceableGrid.GetCellSize();
+	const FVector NextLocalLocation = FVector(GridIndex.X * CellSize, GridIndex.Y * CellSize, GridIndex.Z * CellSize);
+
+	return GetComponentTransform().TransformPosition(NextLocalLocation);
+}
+
+bool UGridComponent::IsPlaceableBlocked(TObjectPtr<APlaceable> Placeable)
+{
+	const auto LocalLocation = WorldToLocalGridSpace(Placeable->GetActorLocation());
+	const TArray<FVector> OccupiedPositions = Placeable->GetAllGridPositions(LocalLocation, Placeable->GetLocalYaw(), PlaceableGrid.GetCellSize());
+
+	for (const FVector& Pos : OccupiedPositions)
+	{
+		const auto GridIndex = PlaceableGrid.LocalToGrid(Pos);
+		const FIntVector AbovePos = FIntVector(GridIndex.X, GridIndex.Y, GridIndex.Z + 1);
+
+		if (!PlaceableGrid.IsWithinBounds(AbovePos))
+			continue;
+
+		if (PlaceableGrid.GetValue(AbovePos.X, AbovePos.Y, AbovePos.Z))
+			return true;
+	}
+
+	return false;
 }
 
 #if !UE_BUILD_SHIPPING

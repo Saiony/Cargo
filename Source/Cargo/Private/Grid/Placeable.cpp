@@ -102,7 +102,7 @@ TArray<FVector> APlaceable::GetAllGridPositions(const FVector& BaseLocation, flo
 				RotatedY = OffsetY;
 			}
 
-			Locations.Add(FVector(BaseLocation.X + RotatedX, BaseLocation.Y + RotatedY, 0.0f));
+			Locations.Add(FVector(BaseLocation.X + RotatedX, BaseLocation.Y + RotatedY, BaseLocation.Z));
 		}
 	}
 
