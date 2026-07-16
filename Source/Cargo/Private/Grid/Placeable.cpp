@@ -3,6 +3,7 @@
 
 #include "Public/Grid/Placeable.h"
 #include "Components/StaticMeshComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 APlaceable::APlaceable()
@@ -40,13 +41,17 @@ void APlaceable::Grab()
 		return;
 	
 	OwningGridActor->RemovePlaceableFromGrid(this);
+	
+	UGameplayStatics::PlaySoundAtLocation(	this,GrabSound,GetActorLocation());
 }
 
-void APlaceable::Init(TObjectPtr<UGridComponent>GridActor, int32 GridPosX, int32 GridPosY, int32 GridPosZ)
+void APlaceable::Place(TObjectPtr<UGridComponent>GridActor, int32 GridPosX, int32 GridPosY, int32 GridPosZ)
 {
 	OwningGridActor = GridActor;
 	PivotGridPos = FIntPoint(GridPosX, GridPosY);
 	this->GridLevel = GridLevel;
+
+	UGameplayStatics::PlaySoundAtLocation(	this,PlaceSound,GetActorLocation());
 }
 
 void APlaceable::RotateClockwise()

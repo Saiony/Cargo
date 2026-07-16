@@ -44,6 +44,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Island")
 	TArray<TObjectPtr<AContainer>> SpawnedContainers;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Island")
+	TObjectPtr<USoundBase> InteractionSound;
 
 public:
 	// ICargoInteractable Interface

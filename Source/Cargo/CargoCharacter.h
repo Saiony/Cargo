@@ -42,7 +42,10 @@ protected:
 	UBuoyancyComponent* BuoyancyComp; 
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	TObjectPtr<UGridComponent> GridComp;
+	TObjectPtr<UGridComponent> GridComp;	
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TObjectPtr<UAudioComponent> MovementAudioComp;
 
 	/** Move Input Action */
 	UPROPERTY(EditAnywhere, Category="Input")
@@ -68,6 +71,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
 	FVector2D ShipAngleMinMax = FVector2D(-45.0f, 45.0f);
 	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cargo|Audio")
+	TObjectPtr<USoundBase> MovementSound;
+	
 	float FR = 0;	
 public:
 
@@ -88,6 +94,8 @@ protected:
 	
 	void BalanceShip();
 	
+	void UpdateEngineSoundIntensity();
+
 	UFUNCTION()
 	void OnPlaceableAdded(APlaceable* Placeable);
 	

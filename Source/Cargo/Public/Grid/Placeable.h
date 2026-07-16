@@ -30,8 +30,14 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cargo")
 	TObjectPtr<UMaterialInterface> Material;
 	
-	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Cargo")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cargo")
 	float Weight;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Cargo")
+	TObjectPtr<USoundBase> GrabSound;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Cargo")
+	TObjectPtr<USoundBase> PlaceSound;
 	
 	TObjectPtr<UGridComponent> OwningGridActor;
 		
@@ -40,6 +46,7 @@ public:
 protected:
 	UPROPERTY(VisibleAnywhere, Category = "Placement")
 	float LocalYaw = 0.f;
+	
 	
 	FIntPoint PivotGridPos;
 	
@@ -55,7 +62,7 @@ public:
 	
 	void Grab();
 	
-	void Init(TObjectPtr<UGridComponent> GridActor, int32 GridPosX, int32 GridPosY, int32 GridPosZ);
+	void Place(TObjectPtr<UGridComponent> GridActor, int32 GridPosX, int32 GridPosY, int32 GridPosZ);
 	
 	//Rotates the root mesh internally
 	void RotateClockwise();

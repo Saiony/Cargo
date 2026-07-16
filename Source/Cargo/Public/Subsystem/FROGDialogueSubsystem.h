@@ -30,6 +30,7 @@ class CARGO_API UFROGDialogueSubsystem : public UGameInstanceSubsystem
 
 public:
 	UFROGDialogueSubsystem();
+	
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
 	UFUNCTION(BlueprintCallable, Category="Arcade")

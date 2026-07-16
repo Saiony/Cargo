@@ -12,7 +12,8 @@ ACargoGameMode::ACargoGameMode()
 
 void ACargoGameMode::AddQuest(UQuestData* QuestData, AActor* QuestInstigator)
 {
-	if (!QuestData) return;
+	if (!QuestData) 
+		return;
 	
 	if (!ActiveQuests.Contains(QuestData->QuestTag))
 	{
@@ -56,9 +57,9 @@ TObjectPtr<UQuestStatus> ACargoGameMode::GetQuestStatusByOrigin(FGameplayTag Ori
 			return Status;
 		}
 	}
+	
 	return nullptr;
 }
-
 
 void ACargoGameMode::RegisterCargoDelivery(FGameplayTag QuestTag, FGameplayTag CargoType)
 {

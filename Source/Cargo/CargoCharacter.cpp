@@ -8,6 +8,7 @@
 #include "InputActionValue.h"
 #include "Cargo.h"
 #include "BuoyancyComponent.h"
+#include "Components/AudioComponent.h"
 #include "GameFramework/FloatingPawnMovement.h"
 #include "Grid/Placeable.h"
 
@@ -30,38 +31,13 @@ ACargoCharacter::ACargoCharacter()
 	
 	GridComp = CreateDefaultSubobject<UGridComponent>(TEXT("GridComp"));
 	GridComp->SetupAttachment(MeshComponent);
+	
+	MovementAudioComp = CreateDefaultSubobject<UAudioComponent>(TEXT("MovementAudioComp"));	
 		
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationPitch = false;
-	bUseControllerRotationRoll = false;	
-	
-
-	// Configure character movement
-	// GetCharacterMovement()->bOrientRotationToMovement = true;
-	// GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
-
-	// Note: For faster iteration times these variables, and many more, can be tweaked in the Character Blueprint
-	// instead of recompiling to adjust them
-	// GetCharacterMovement()->JumpZVelocity = 500.f;
-	// GetCharacterMovement()->AirControl = 0.35f;
-	// GetCharacterMovement()->MaxWalkSpeed = 500.f;
-	// GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
-	// GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
-	// GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
-
-	// Create a camera boom (pulls in towards the player if there is a collision)
-	// GameplayCameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("GameplayCameraBoom"));
-	// GameplayCameraBoom->SetupAttachment(RootComponent);
-	// GameplayCameraBoom->TargetArmLength = 400.0f;
-	// GameplayCameraBoom->bUsePawnControlRotation = true;
-
-	// Create a follow camera
-	// GameplayCamera = CreateDefaultSubobject<UGameplayCameraComponent>(TEXT("GameplayCamera"));
-	// GameplayCamera->SetupAttachment(RootComponent);
-	
-	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
-	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+	bUseControllerRotationRoll = false;		
 }
 
 void ACargoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -112,7 +88,6 @@ void ACargoCharacter::DoMove(float Right, float Forward)
 	const FVector RightDirection   = GetActorRightVector();
 
 	AddMovementInput(ForwardDirection, Forward);
-	//AddMovementInput(RightDirection, Right);
 
 	// Rotation
 	if (Right != 0.f)
@@ -122,8 +97,6 @@ void ACargoCharacter::DoMove(float Right, float Forward)
 		FRotator Delta(0.f, Right * RotationSpeed * DeltaTime, 0.f);
 		AddActorLocalRotation(Delta);
 	}
-	if (GetController() == nullptr)
-		return;
 }
 
 void ACargoCharacter::DoLook(float Yaw, float Pitch)
@@ -151,9 +124,12 @@ void ACargoCharacter::OnPlaceableRemoved(APlaceable* Placeable)
 {	
 	BalanceShip();
 }
+
 void ACargoCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	
+	UpdateEngineSoundIntensity();
 }
 
 void ACargoCharacter::BeginPlay()
@@ -179,4 +155,12 @@ void ACargoCharacter::BalanceShip()
 	
 	const float FinalAngle = FMath::GetMappedRangeValueClamped(FRMinMax,ShipAngleMinMax, FR);	
 	RotateShip(FinalAngle);
+}
+
+void ACargoCharacter::UpdateEngineSoundIntensity()
+{
+	const float SpeedValue = FloatingMovement->Velocity.Size2D();
+	const float NormalizedSpeed = FMath::Clamp(SpeedValue / FloatingMovement->GetMaxSpeed(), 0.f, 1.f);
+
+	MovementAudioComp->SetFloatParameter(FName("Speed"), NormalizedSpeed);
 }

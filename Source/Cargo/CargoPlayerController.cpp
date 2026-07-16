@@ -15,6 +15,7 @@
 #include "Grid/Container.h"
 #include "Interaction/CargoInteractable.h"
 #include "Runtime/Experimental/Voronoi/Private/voro++/src/container.hh"
+#include "Subsystem/AudioSubsystem.h"
 #include "Subsystem/CargoUIManagerSubsystem.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 
@@ -321,12 +322,18 @@ void ACargoPlayerController::UpdateInteractionFocus()
 	if (NewTarget.GetObject() != CurrentInteractable.GetObject())
 	{
 		if (CurrentInteractable != nullptr)
+		{
+			UAudioSubsystem::Get(this)->SetBGMVolume(1.0f);	
 			CurrentInteractable->Unfocus();
+		}
 		
 		CurrentInteractable = NewTarget.GetObject();
 		
 		if (CurrentInteractable != nullptr)
+		{
+			UAudioSubsystem::Get(this)->SetBGMVolume(0.3f);
 			CurrentInteractable->Focus();
+		}
 		
 		OnInteractableChanged.Broadcast(NewTarget);
 	}

@@ -39,6 +39,9 @@ void ACargoIsland::BeginPlay()
 void ACargoIsland::Interact_Implementation(AActor* Interactor)
 {	
 	UFROGDialogueSubsystem* DialogueSubsystem = GetGameInstance()->GetSubsystem<UFROGDialogueSubsystem>();
+	UGameplayStatics::PlaySoundAtLocation(this, InteractionSound, GetActorLocation());
+
+	
 	
 	//if we have an active quest to deliver things here, play the quest dialogue instead
 	if (auto ActiveQuest = ACargoGameMode::Get(this)->GetQuestStatusByDestination(LocationTag))

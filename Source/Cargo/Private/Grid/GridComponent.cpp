@@ -78,7 +78,7 @@ void UGridComponent::AddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const 
 		UE_LOG(LogTemp, Log, TEXT("Placeable added to grid [%d, %d] at world pos [%f, %f]"), GridIndex.X, GridIndex.Y, Pos.X, Pos.Y);
 	}
 
-	Placeable->Init(this, LocalLocation.X, LocalLocation.Y, LocalLocation.Z);
+	Placeable->Place(this, LocalLocation.X, LocalLocation.Y, LocalLocation.Z);
 	OnPlaceableAddedToGrid.Broadcast(Placeable);
 	OnPlaceableAdded(Placeable);
 }
