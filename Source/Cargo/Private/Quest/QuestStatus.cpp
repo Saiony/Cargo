@@ -3,7 +3,7 @@
 
 #include "Quest/QuestStatus.h"
 
-void UQuestStatus::Initialize(UQuestData* QuestData, FGameplayTag StartIsland)
+void UQuestStatus::Initialize(UQuestData* QuestData)
 {
 	if (!QuestData)
 	{
@@ -15,12 +15,13 @@ void UQuestStatus::Initialize(UQuestData* QuestData, FGameplayTag StartIsland)
 	QuestTag = QuestData->QuestTag;
 	Title = QuestData->Title;
 	DestinationTag = QuestData->DestinationTag;
-	StartDeliveryDialogueTag = QuestData->StartDeliveryDialogueTag;
-	EndDeliveryDialogueTag = QuestData->EndDeliveryDialogueTag;
-	InProgressDialogueTag = QuestData->InProgressDialogueTag;
+	StartDeliveryDialogue = QuestData->StartDeliveryDialogue;
+	EndDeliveryDialogue = QuestData->EndDeliveryDialogue;
+	InProgressDialogue = QuestData->InProgressDialogue;
 	AlternativeEndDeliveryDialogue = QuestData->AlternativeEndDeliveryDialogue;
 	
-	StartIslandTag = StartIsland;
+	NextQuest = QuestData->NextQuest;
+	StartIslandTag = QuestData->StartLocationTag;
 	
 	for (const auto Req : QuestData->CargoRequirements)
 	{

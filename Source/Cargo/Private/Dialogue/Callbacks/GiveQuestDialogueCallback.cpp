@@ -7,7 +7,7 @@ void UGiveQuestDialogueCallback::ExecuteCallback(UDialogueData* DialogueDefiniti
 {
 	Super::ExecuteCallback(DialogueDefinition, GameMode, Instigator);
 	
-	GameMode->AddQuest(QuestData, Instigator);	
+	GameMode->ActivateQuest(QuestData, Instigator);	
 	
 	UE_LOG(LogTemp, Log, TEXT("Giving quest %s to player"), *QuestData->GetName());
 }

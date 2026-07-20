@@ -24,14 +24,23 @@ class ACargoGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 	
+	UPROPERTY(EditDefaultsOnly, Category="Cargo")
+	TObjectPtr<UQuestData> FirstQuest;
+	
 	UPROPERTY()
 	TMap<FGameplayTag, TObjectPtr<UQuestStatus>> ActiveQuests;
+	
+	UPROPERTY()
+	TArray<TObjectPtr<UQuestData>> AvailableQuests;
 	
 	int QuestFinishedDelegate;
 
 	void CheckIfQuestEnded(TObjectPtr<UQuestStatus> QuestStatus);
-	
+	void AddAvailableQuest(TObjectPtr<UQuestData> Quest);
+
 	FGameplayTagContainer ChoicesContainer = FGameplayTagContainer();
+	
+	virtual void BeginPlay() override;
 public:	
 	ACargoGameMode();
 	
@@ -48,7 +57,7 @@ public:
 		return Cast<ACargoGameMode>(UGameplayStatics::GetGameMode(WorldContextObject));
 	};
 	
-	void AddQuest(UQuestData* QuestData, AActor* QuestInstigator = nullptr);
+	void ActivateQuest(UQuestData* QuestData, AActor* QuestInstigator = nullptr);
 
 	TObjectPtr<UQuestStatus> GetQuestStatus(FGameplayTag QuestTag);
 	TObjectPtr<UQuestStatus> GetQuestStatusByDestination(FGameplayTag Destination);
@@ -60,4 +69,7 @@ public:
 	void AddChoice(FGameplayTag ChoiceTag);
 	bool HasChoice(FGameplayTag ChoiceName);	
 	float GetGridCellSize() const { return 100.0f; }
+	
+	TObjectPtr<UQuestData> GetAvailableQuestByStartLocation(FGameplayTag StartLocation);
+	
 };

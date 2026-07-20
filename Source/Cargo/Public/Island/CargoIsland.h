@@ -31,7 +31,7 @@ protected:
 	FGameplayTag LocationTag;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Island", meta = (Categories = "Dialogue"))
-	FGameplayTag InteractionDialogueTag;
+	TSoftObjectPtr<UDialogueData> DefaultInteractionDialogue;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Island")
 	TObjectPtr<UStaticMeshComponent> IslandMeshComp;

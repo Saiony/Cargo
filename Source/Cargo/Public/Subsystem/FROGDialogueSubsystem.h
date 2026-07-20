@@ -31,7 +31,9 @@ class CARGO_API UFROGDialogueSubsystem : public UGameInstanceSubsystem
 public:
 	UFROGDialogueSubsystem();
 	
-	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;	
+	
+	void PlayDialogue(UDialogueData* DialogueData, AActor* Instigator);
 
 	UFUNCTION(BlueprintCallable, Category="Arcade")
 	void PlayDialogue(FGameplayTag DialogueID, AActor* Instigator = nullptr);

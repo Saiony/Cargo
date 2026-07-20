@@ -37,20 +37,29 @@ public:
 	FText Title;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo", meta = (Categories = "Location"))
+	FGameplayTag StartLocationTag;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo", meta = (Categories = "Location"))
 	FGameplayTag DestinationTag;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
 	TArray<FCargoRequirement> CargoRequirements;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo", meta = (Categories = "Dialogue"))
-	FGameplayTag StartDeliveryDialogueTag;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	TSoftObjectPtr<UDialogueData> StartDialogue;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo", meta = (Categories = "Dialogue"))
-	FGameplayTag EndDeliveryDialogueTag;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	TSoftObjectPtr<UDialogueData> StartDeliveryDialogue;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo", meta = (Categories = "Dialogue"))
-	FGameplayTag InProgressDialogueTag;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	TSoftObjectPtr<UDialogueData> EndDeliveryDialogue;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	TSoftObjectPtr<UDialogueData> InProgressDialogue;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
 	FDialogueWithCondition AlternativeEndDeliveryDialogue;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	TSoftObjectPtr<UQuestData> NextQuest; 
 };

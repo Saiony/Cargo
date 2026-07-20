@@ -110,6 +110,60 @@ void UFROGDialogueSubsystem::OnDialoguesLoaded()
 	PlayNextQueuedDialogue();
 }
 
+void UFROGDialogueSubsystem::PlayDialogue(UDialogueData* DialogueData, AActor* Instigator)
+{
+	if (!DialogueData)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ARCDialogueSubsystem::PlayDialogue - DialogueData is null!"));
+		return;
+	}
+	
+	if (bIsPlayingDialogue)
+	{
+		PendingDialogueQueue.Add({DialogueData->DialogueTag, Instigator});
+		return;
+	}
+
+	CurrentInstigator = Instigator;
+	
+	if (DialogueWidgetClass.IsNull())
+	{
+		UE_LOG(LogTemp, Error, TEXT("ARCDialogueSubsystem::PlayDialogue - DialogueWidgetClass is null! Path: '%s'"), *DialogueWidgetClass.ToString());
+		return;
+	}
+	
+	UPrimaryGameLayout* Layout = UPrimaryGameLayout::GetPrimaryGameLayoutForPrimaryPlayer(this);
+	if (!Layout)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ARCDialogueSubsystem::PlayDialogue - PrimaryGameLayout is null, cannot push dialogue widget for '%s'"), *DialogueData->DialogueTag.ToString());
+		return;
+	}
+
+	bIsPlayingDialogue = true;
+	UE_LOG(LogTemp, Warning, TEXT("ARCDialogueSubsystem::PlayDialogue - Pushing widget for dialogue: %s"), *DialogueData->DialogueTag.ToString());
+	Layout->PushWidgetToLayerStackAsync<UDIalogueWidget>(TAG_UI_Layer_Game, true, DialogueWidgetClass, [this, DialogueData](EAsyncWidgetLayerState State, UDIalogueWidget* Widget)
+	{
+		if (State == EAsyncWidgetLayerState::AfterPush)
+		{
+			if (!Widget)
+			{
+				UE_LOG(LogTemp, Error, TEXT("ARCDialogueSubsystem::PlayDialogue - Widget is null after push for dialogue: %s"), *DialogueData->DialogueTag.ToString());
+				bIsPlayingDialogue = false;
+				return;
+			}
+			DialogueWidget = Widget;
+			DialogueWidget->SetInstigator(CurrentInstigator.Get());
+			DialogueWidget->InitializeDialogue(DialogueData);
+			DialogueWidget->OnDialogueFinishedDelegate.AddUObject(this, &ThisClass::OnDialogueFinished);
+		} 
+		else if (State == EAsyncWidgetLayerState::Canceled)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("ARCDialogueSubsystem::PlayDialogue - Widget push canceled for dialogue: %s"), *DialogueData->DialogueTag.ToString());
+			bIsPlayingDialogue = false;
+		}
+	});
+}
+
 void UFROGDialogueSubsystem::PlayDialogue(const FGameplayTag DialogueID, AActor* Instigator)
 {
 	UE_LOG(LogTemp, Log, TEXT("ARCDialogueSubsystem::PlayDialogue called for '%s'"), *DialogueID.ToString());
@@ -128,50 +182,7 @@ void UFROGDialogueSubsystem::PlayDialogue(const FGameplayTag DialogueID, AActor*
 		return;
 	}
 
-	if (bIsPlayingDialogue)
-	{
-		PendingDialogueQueue.Add({DialogueID, Instigator});
-		return;
-	}
-
-	CurrentInstigator = Instigator;
-	
-	if (DialogueWidgetClass.IsNull())
-	{
-		UE_LOG(LogTemp, Error, TEXT("ARCDialogueSubsystem::PlayDialogue - DialogueWidgetClass is null! Path: '%s'"), *DialogueWidgetClass.ToString());
-		return;
-	}
-	
-	UPrimaryGameLayout* Layout = UPrimaryGameLayout::GetPrimaryGameLayoutForPrimaryPlayer(this);
-	if (!Layout)
-	{
-		UE_LOG(LogTemp, Error, TEXT("ARCDialogueSubsystem::PlayDialogue - PrimaryGameLayout is null, cannot push dialogue widget for '%s'"), *DialogueID.ToString());
-		return;
-	}
-
-	bIsPlayingDialogue = true;
-	UE_LOG(LogTemp, Warning, TEXT("ARCDialogueSubsystem::PlayDialogue - Pushing widget for dialogue: %s"), *DialogueID.ToString());
-	Layout->PushWidgetToLayerStackAsync<UDIalogueWidget>(TAG_UI_Layer_Game, true, DialogueWidgetClass, [this, DialogueID, DialogueData](EAsyncWidgetLayerState State, UDIalogueWidget* Widget)
-	{
-		if (State == EAsyncWidgetLayerState::AfterPush)
-		{
-			if (!Widget)
-			{
-				UE_LOG(LogTemp, Error, TEXT("ARCDialogueSubsystem::PlayDialogue - Widget is null after push for dialogue: %s"), *DialogueID.ToString());
-				bIsPlayingDialogue = false;
-				return;
-			}
-			DialogueWidget = Widget;
-			DialogueWidget->SetInstigator(CurrentInstigator.Get());
-			DialogueWidget->InitializeDialogue(DialogueData);
-			DialogueWidget->OnDialogueFinishedDelegate.AddUObject(this, &ThisClass::OnDialogueFinished);
-		} 
-		else if (State == EAsyncWidgetLayerState::Canceled)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("ARCDialogueSubsystem::PlayDialogue - Widget push canceled for dialogue: %s"), *DialogueID.ToString());
-			bIsPlayingDialogue = false;
-		}
-	});
+	PlayDialogue(DialogueData, Instigator);
 }
 
 void UFROGDialogueSubsystem::NotifyDialogueStarted(UDialogueData* DialogueData, AActor* Instigator)

@@ -4,7 +4,6 @@
 #include "Island/CargoIsland.h"
 
 #include "Components/WidgetComponent.h"
-#include "DeveloperSettings/CargoSettings.h"
 #include "Quest/QuestStatus.h"
 #include "Subsystem/FROGDialogueSubsystem.h"
 
@@ -39,15 +38,13 @@ void ACargoIsland::BeginPlay()
 void ACargoIsland::Interact_Implementation(AActor* Interactor)
 {	
 	UFROGDialogueSubsystem* DialogueSubsystem = GetGameInstance()->GetSubsystem<UFROGDialogueSubsystem>();
-	UGameplayStatics::PlaySoundAtLocation(this, InteractionSound, GetActorLocation());
-
-	
+	UGameplayStatics::PlaySoundAtLocation(this, InteractionSound, GetActorLocation());	
 	
 	//if we have an active quest to deliver things here, play the quest dialogue instead
 	if (auto ActiveQuest = ACargoGameMode::Get(this)->GetQuestStatusByDestination(LocationTag))
 	{
 		UE_LOG(LogTemp, Log, TEXT("Play start delivery quest dialogue"));		
-		DialogueSubsystem->PlayDialogue(ActiveQuest->StartDeliveryDialogueTag, this);	
+		DialogueSubsystem->PlayDialogue(ActiveQuest->StartDeliveryDialogue.LoadSynchronous()->DialogueTag, this);	
 		PortComponent->StartQuestDelivery(ActiveQuest->QuestTag);
 		
 		return;
@@ -57,11 +54,19 @@ void ACargoIsland::Interact_Implementation(AActor* Interactor)
 	if (auto ActiveQuest = ACargoGameMode::Get(this)->GetQuestStatusByOrigin(LocationTag))
 	{
 		UE_LOG(LogTemp, Log, TEXT("Play in progress quest dialogue"));		
-		DialogueSubsystem->PlayDialogue(ActiveQuest->InProgressDialogueTag, this);	
+		DialogueSubsystem->PlayDialogue(ActiveQuest->InProgressDialogue.LoadSynchronous()->DialogueTag, this);	
 		return;
 	}
 	
-	DialogueSubsystem->PlayDialogue(InteractionDialogueTag, this);
+	//if we have an available quest for this island, play start dialogue and activate it
+	if (auto AvailableQuest = ACargoGameMode::Get(this)->GetAvailableQuestByStartLocation(LocationTag))
+	{
+		UE_LOG(LogTemp, Log, TEXT("Play start quest dialogue"));		
+		DialogueSubsystem->PlayDialogue(AvailableQuest->StartDialogue.LoadSynchronous()->DialogueTag, this);	
+		return;
+	}
+	
+	DialogueSubsystem->PlayDialogue(DefaultInteractionDialogue.LoadSynchronous(), this);
 }
 
 void ACargoIsland::Focus()
@@ -111,9 +116,9 @@ void ACargoIsland::OnQuestCompleted(TObjectPtr<UQuestStatus> QuestStatus)
 	}
 	
 	if (ShouldPlayAlternative)
-		DialogueSubsystem->PlayDialogue(QuestStatus->AlternativeEndDeliveryDialogue.AlternativeDialogue.Get()->DialogueTag, this);
+		DialogueSubsystem->PlayDialogue(QuestStatus->AlternativeEndDeliveryDialogue.AlternativeDialogue.LoadSynchronous(), this);
 	else
-		DialogueSubsystem->PlayDialogue(QuestStatus->EndDeliveryDialogueTag, this);
+		DialogueSubsystem->PlayDialogue(QuestStatus->EndDeliveryDialogue.LoadSynchronous(), this);
 	
 	PortComponent->Clear();
 }

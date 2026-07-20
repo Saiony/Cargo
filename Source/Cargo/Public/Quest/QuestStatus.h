@@ -44,7 +44,7 @@ class CARGO_API UQuestStatus : public UObject
 	GENERATED_BODY()
 
 public:
-	void Initialize(UQuestData* QuestData, FGameplayTag StartIsland);
+	void Initialize(UQuestData* QuestData);
 
 	UPROPERTY(BlueprintReadOnly, Category = "Quest")
 	TMap<FGameplayTag, FCargoStatus> DeliveredQuantities = TMap<FGameplayTag, FCargoStatus>();
@@ -62,16 +62,19 @@ public:
 	FGameplayTag DestinationTag;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Quest")
-	FGameplayTag StartDeliveryDialogueTag;
+	TSoftObjectPtr<UDialogueData> StartDeliveryDialogue;
 	
 	UPROPERTY(BlueprintReadOnly, Category = "Quest")
-	FGameplayTag EndDeliveryDialogueTag;	
+	TSoftObjectPtr<UDialogueData> EndDeliveryDialogue;	
 	
 	UPROPERTY(BlueprintReadOnly, Category = "Quest")
-	FGameplayTag InProgressDialogueTag;	
+	TSoftObjectPtr<UDialogueData> InProgressDialogue;	
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo")
 	FDialogueWithCondition AlternativeEndDeliveryDialogue;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo")
+	TSoftObjectPtr<UQuestData> NextQuest; //TODO: turn this into FGameplayTag?
 
 	UPROPERTY(BlueprintReadOnly, Category = "Quest")
 	TObjectPtr<UQuestData> OriginalQuestData;
