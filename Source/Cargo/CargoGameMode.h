@@ -25,7 +25,7 @@ class ACargoGameMode : public AGameModeBase
 	GENERATED_BODY()
 	
 	UPROPERTY(EditDefaultsOnly, Category="Cargo")
-	TObjectPtr<UQuestData> FirstQuest;
+	TArray<TObjectPtr<UQuestData>> AvailableQuestsOnStart;
 	
 	UPROPERTY()
 	TMap<FGameplayTag, TObjectPtr<UQuestStatus>> ActiveQuests;
@@ -33,10 +33,7 @@ class ACargoGameMode : public AGameModeBase
 	UPROPERTY()
 	TArray<TObjectPtr<UQuestData>> AvailableQuests;
 	
-	int QuestFinishedDelegate;
-
-	void CheckIfQuestEnded(TObjectPtr<UQuestStatus> QuestStatus);
-	void AddAvailableQuest(TObjectPtr<UQuestData> Quest);
+	int QuestFinishedDelegate;	
 
 	FGameplayTagContainer ChoicesContainer = FGameplayTagContainer();
 	
@@ -72,4 +69,7 @@ public:
 	
 	TObjectPtr<UQuestData> GetAvailableQuestByStartLocation(FGameplayTag StartLocation);
 	
+	void CheckIfQuestEnded(TObjectPtr<UQuestStatus> QuestStatus);	
+	
+	void AddAvailableQuest(TObjectPtr<UQuestData> Quest);
 };

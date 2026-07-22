@@ -12,6 +12,7 @@
 #include "GameFramework/FloatingPawnMovement.h"
 #include "Grid/Placeable.h"
 
+static TAutoConsoleVariable<bool> CVarBoostMovement(TEXT("Cargo.Haste"), false, TEXT("Increases boat speed"),ECVF_Default);
 
 ACargoCharacter::ACargoCharacter()
 {
@@ -26,6 +27,8 @@ ACargoCharacter::ACargoCharacter()
 	FloatingMovement->MaxSpeed = 600.f;
 	FloatingMovement->Acceleration = 400.f;
 	FloatingMovement->Deceleration = 800.f;
+	
+	HasteCVarDelegateHandle = CVarBoostMovement.AsVariable()->OnChangedDelegate().AddUObject(this, &ThisClass::OnHasteCVarChanged);
 
 	BuoyancyComp = CreateDefaultSubobject<UBuoyancyComponent>("BuoyancyComp");
 	
@@ -163,4 +166,13 @@ void ACargoCharacter::UpdateEngineSoundIntensity()
 	const float NormalizedSpeed = FMath::Clamp(SpeedValue / FloatingMovement->GetMaxSpeed(), 0.f, 1.f);
 
 	MovementAudioComp->SetFloatParameter(FName("Speed"), NormalizedSpeed);
+}
+
+
+void ACargoCharacter::OnHasteCVarChanged(IConsoleVariable* ConsoleVariable)
+{
+	const bool Haste = CVarBoostMovement.GetValueOnGameThread();
+
+	FloatingMovement->MaxSpeed = Haste ? FloatingMovement->MaxSpeed * 2 : FloatingMovement->MaxSpeed / 2;
+	FloatingMovement->Acceleration = Haste ? FloatingMovement->Acceleration * 2 : FloatingMovement->Acceleration / 2;
 }

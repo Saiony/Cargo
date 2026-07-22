@@ -47,6 +47,11 @@ void ACargoIsland::Interact_Implementation(AActor* Interactor)
 		DialogueSubsystem->PlayDialogue(ActiveQuest->StartDeliveryDialogue.LoadSynchronous()->DialogueTag, this);	
 		PortComponent->StartQuestDelivery(ActiveQuest->QuestTag);
 		
+		if (ActiveQuest->DeliveredQuantities.Num() == 0)
+		{
+			ACargoGameMode::Get(this)->CheckIfQuestEnded(ActiveQuest);
+		}
+		
 		return;
 	}
 	
@@ -95,6 +100,10 @@ void ACargoIsland::OnQuestAccepted(TObjectPtr<UQuestData> QuestData, AActor* Que
 	UE_LOG(LogTemp, Log, TEXT("Island %s: Quest accepted! Spawning containers at PortComponent..."), *LocationTag.ToString());
 	
 	PortComponent->IsOpen = true;
+	
+	if (QuestData->IsDeliveryOnly)
+		return;
+	
 	PortComponent->SpawnCargo(QuestData->CargoRequirements);
 }
 
@@ -105,12 +114,12 @@ void ACargoIsland::OnQuestCompleted(TObjectPtr<UQuestStatus> QuestStatus)
 	
 	UFROGDialogueSubsystem* DialogueSubsystem = GetGameInstance()->GetSubsystem<UFROGDialogueSubsystem>();
 
-	bool ShouldPlayAlternative = true;
+	bool ShouldPlayAlternative = false;
 	for (FGameplayTag RequiredChoiceTag : QuestStatus->AlternativeEndDeliveryDialogue.RequiredChoiceTags)
 	{	
-		if (!ACargoGameMode::Get(this)->HasChoice(RequiredChoiceTag))
+		if (ACargoGameMode::Get(this)->HasChoice(RequiredChoiceTag))
 		{
-			ShouldPlayAlternative = false;	
+			ShouldPlayAlternative = true;	
 			break;
 		}
 	}

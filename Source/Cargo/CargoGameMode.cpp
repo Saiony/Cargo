@@ -8,8 +8,11 @@
 void ACargoGameMode::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	AddAvailableQuest(FirstQuest);
+
+	for (TObjectPtr<UQuestData> AvailableQuest : AvailableQuestsOnStart)
+	{
+		AddAvailableQuest(AvailableQuest);
+	}
 }
 
 ACargoGameMode::ACargoGameMode()

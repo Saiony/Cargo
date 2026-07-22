@@ -73,7 +73,7 @@ class CARGO_API UDialogueData : public UPrimaryDataAsset
 	
 public:
 	/** Gameplay tag that uniquely identifies this dialogue. Used by the subsystem to build the runtime registry. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Arcade")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Arcade", meta = (Categories = "Dialogue"))
 	FGameplayTag DialogueTag;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Arcade")
@@ -81,10 +81,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Arcade")
 	TArray<FARCDialogueLine> DialogueLines;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo")
-	FGameplayTag EndDialogueTag;
-	
+		
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo")
 	TArray<FCargoDialogueChoice> Choices;
 

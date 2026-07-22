@@ -74,9 +74,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cargo|Audio")
 	TObjectPtr<USoundBase> MovementSound;
 	
+	FDelegateHandle HasteCVarDelegateHandle;
+	
 	float FR = 0;	
+	
+	void OnHasteCVarChanged(IConsoleVariable* ConsoleVariable);
 public:
-
 	/** Constructor */
 	ACargoCharacter();	
 

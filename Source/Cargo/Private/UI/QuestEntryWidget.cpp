@@ -7,7 +7,8 @@
 
 void UQuestEntryWidget::Init(FGameplayTag QuestTag, UQuestData* QuestData)
 {
-	if (!QuestData) return;
+	if (!QuestData) 
+		return;
 
 	MyQuestTag = QuestTag;
 

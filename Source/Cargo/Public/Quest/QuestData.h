@@ -43,6 +43,9 @@ public:
 	FGameplayTag DestinationTag;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	bool IsDeliveryOnly;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
 	TArray<FCargoRequirement> CargoRequirements;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
