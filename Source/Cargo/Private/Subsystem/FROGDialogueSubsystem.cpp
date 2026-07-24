@@ -110,90 +110,91 @@ void UFROGDialogueSubsystem::OnDialoguesLoaded()
 	PlayNextQueuedDialogue();
 }
 
-// void UFROGDialogueSubsystem::OnReceivedStartDialogueMessage(FGameplayTag /* Channel */, const FARCGameplayEvent_DialogueStartPayload& Payload)
-// {
-// 	UE_LOG(LogTemp, Log, TEXT("ARCDialogueSubsystem: Received dialogue request for '%s' (bDialoguesReady=%d, bIsPlaying=%d)"),
-// 		*Payload.DialogueID.ToString(), bDialoguesReady, bIsPlayingDialogue);
-//
-// 	// If dialogues haven't loaded yet, queue this request
-// 	if (!bDialoguesReady)
-// 	{
-// 		UE_LOG(LogTemp, Warning, TEXT("ARCDialogueSubsystem: Dialogues not loaded yet, queueing %s"), *Payload.DialogueID.ToString());
-// 		PendingDialogueQueue.Add(Payload.DialogueID);
-// 		return;
-// 	}
-//
-// 	if (DialogueRegistry.Contains(Payload.DialogueID))
-// 	{
-// 		// If a dialogue is already playing, queue this one for later
-// 		if (bIsPlayingDialogue)
-// 		{
-// 			UE_LOG(LogTemp, Warning, TEXT("ARCDialogueSubsystem: Dialogue already playing, queueing %s"), *Payload.DialogueID.ToString());
-// 			PendingDialogueQueue.Add(Payload.DialogueID);
-// 			return;
-// 		}
-//
-// 		PlayDialogue(Payload.DialogueID);
-// 	}
-// 	else
-// 	{
-// 		UE_LOG(LogTemp, Warning, TEXT("ARCDialogueSubsystem: Dialogue tag '%s' not found in registry"), *Payload.DialogueID.ToString());
-// 	}
-// }
+void UFROGDialogueSubsystem::PlayDialogue(UDialogueData* DialogueData, AActor* Instigator)
+{
+	if (!DialogueData)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ARCDialogueSubsystem::PlayDialogue - DialogueData is null!"));
+		return;
+	}
+	
+	if (bIsPlayingDialogue)
+	{
+		PendingDialogueQueue.Add({DialogueData->DialogueTag, Instigator});
+		return;
+	}
 
-void UFROGDialogueSubsystem::PlayDialogue(const FGameplayTag DialogueID)
+	CurrentInstigator = Instigator;
+	
+	if (DialogueWidgetClass.IsNull())
+	{
+		UE_LOG(LogTemp, Error, TEXT("ARCDialogueSubsystem::PlayDialogue - DialogueWidgetClass is null! Path: '%s'"), *DialogueWidgetClass.ToString());
+		return;
+	}
+	
+	UPrimaryGameLayout* Layout = UPrimaryGameLayout::GetPrimaryGameLayoutForPrimaryPlayer(this);
+	if (!Layout)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ARCDialogueSubsystem::PlayDialogue - PrimaryGameLayout is null, cannot push dialogue widget for '%s'"), *DialogueData->DialogueTag.ToString());
+		return;
+	}
+
+	bIsPlayingDialogue = true;
+	UE_LOG(LogTemp, Warning, TEXT("ARCDialogueSubsystem::PlayDialogue - Pushing widget for dialogue: %s"), *DialogueData->DialogueTag.ToString());
+	Layout->PushWidgetToLayerStackAsync<UDIalogueWidget>(TAG_UI_Layer_Game, true, DialogueWidgetClass, [this, DialogueData](EAsyncWidgetLayerState State, UDIalogueWidget* Widget)
+	{
+		if (State == EAsyncWidgetLayerState::AfterPush)
+		{
+			if (!Widget)
+			{
+				UE_LOG(LogTemp, Error, TEXT("ARCDialogueSubsystem::PlayDialogue - Widget is null after push for dialogue: %s"), *DialogueData->DialogueTag.ToString());
+				bIsPlayingDialogue = false;
+				return;
+			}
+			DialogueWidget = Widget;
+			DialogueWidget->SetInstigator(CurrentInstigator.Get());
+			DialogueWidget->InitializeDialogue(DialogueData);
+			DialogueWidget->OnDialogueFinishedDelegate.AddUObject(this, &ThisClass::OnDialogueFinished);
+		} 
+		else if (State == EAsyncWidgetLayerState::Canceled)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("ARCDialogueSubsystem::PlayDialogue - Widget push canceled for dialogue: %s"), *DialogueData->DialogueTag.ToString());
+			bIsPlayingDialogue = false;
+		}
+	});
+}
+
+void UFROGDialogueSubsystem::PlayDialogue(const FGameplayTag DialogueID, AActor* Instigator)
 {
 	UE_LOG(LogTemp, Log, TEXT("ARCDialogueSubsystem::PlayDialogue called for '%s'"), *DialogueID.ToString());
 
-	if (const TObjectPtr<UDialogueData>* FoundPtr = DialogueRegistry.Find(DialogueID))
+	const auto FoundPtr = DialogueRegistry.Find(DialogueID);
+	if (!FoundPtr)
 	{
-		UDialogueData* DialogueData = *FoundPtr;
-		if (!DialogueData)
-		{
-			UE_LOG(LogTemp, Error, TEXT("ARCDialogueSubsystem::PlayDialogue - DialogueData is null for '%s'"), *DialogueID.ToString());
-			return;
-		}
-		if (DialogueWidgetClass.IsNull())
-		{
-			UE_LOG(LogTemp, Error, TEXT("ARCDialogueSubsystem::PlayDialogue - DialogueWidgetClass is null! Path: '%s'"), *DialogueWidgetClass.ToString());
-			return;
-		}
+		UE_LOG(LogTemp, Error, TEXT("ARCDialogueSubsystem::PlayDialogue - Dialogue '%s' not found in registry"), *DialogueID.ToString());
+		return;
+	}
+	
+	UDialogueData* DialogueData = *FoundPtr;
+	if (!DialogueData)
 	{
-			UPrimaryGameLayout* Layout = UPrimaryGameLayout::GetPrimaryGameLayoutForPrimaryPlayer(this);
-			if (!Layout)
-			{
-				UE_LOG(LogTemp, Error, TEXT("ARCDialogueSubsystem::PlayDialogue - PrimaryGameLayout is null, cannot push dialogue widget for '%s'"), *DialogueID.ToString());
-				return;
-			}
+		UE_LOG(LogTemp, Error, TEXT("ARCDialogueSubsystem::PlayDialogue - DialogueData is null for '%s'"), *DialogueID.ToString());
+		return;
+	}
 
-			bIsPlayingDialogue = true;
-			HandlePreCallbacks(DialogueData);
-			UE_LOG(LogTemp, Warning, TEXT("ARCDialogueSubsystem::PlayDialogue - Pushing widget for dialogue: %s"), *DialogueID.ToString());
-			Layout->PushWidgetToLayerStackAsync<UDIalogueWidget>(TAG_UI_Layer_Game, true, DialogueWidgetClass, [this, DialogueID, DialogueData](EAsyncWidgetLayerState State, UDIalogueWidget* Widget)
-			{
-				if (State == EAsyncWidgetLayerState::AfterPush)
-				{
-					if (!Widget)
-					{
-						UE_LOG(LogTemp, Error, TEXT("ARCDialogueSubsystem::PlayDialogue - Widget is null after push for dialogue: %s"), *DialogueID.ToString());
-						bIsPlayingDialogue = false;
-						return;
-					}
-					DialogueWidget = Widget;
-					
-					DialogueWidget->InitializeDialogue(DialogueData);
-					DialogueWidget->OnDeactivated().AddLambda([this, DialogueData]()
-					{
-						OnDialogueFinished(DialogueData);
-					});
-				} 
-				else if (State == EAsyncWidgetLayerState::Canceled)
-				{
-					UE_LOG(LogTemp, Warning, TEXT("ARCDialogueSubsystem::PlayDialogue - Widget push canceled for dialogue: %s"), *DialogueID.ToString());
-					bIsPlayingDialogue = false;
-				}
-			});
-		}
+	PlayDialogue(DialogueData, Instigator);
+}
+
+void UFROGDialogueSubsystem::NotifyDialogueStarted(UDialogueData* DialogueData, AActor* Instigator)
+{
+	if (Instigator)
+	{
+		CurrentInstigator = Instigator;
+	}
+
+	if (DialogueData)
+	{
+		HandlePreCallbacks(DialogueData);
 	}
 }
 
@@ -203,6 +204,7 @@ void UFROGDialogueSubsystem::OnDialogueFinished(UDialogueData* DialogueData)
 	bIsPlayingDialogue = false;
 	
 	HandlePostCallbacks(DialogueData);
+	CurrentInstigator = nullptr;
 	PlayNextQueuedDialogue();
 }
 
@@ -210,16 +212,16 @@ void UFROGDialogueSubsystem::PlayNextQueuedDialogue()
 {
 	while (PendingDialogueQueue.Num() > 0 && !bIsPlayingDialogue)
 	{
-		const FGameplayTag NextDialogueID = PendingDialogueQueue[0];
+		const FPendingDialogue NextDialogue = PendingDialogueQueue[0];
 		PendingDialogueQueue.RemoveAt(0);
 
-		if (DialogueRegistry.Contains(NextDialogueID))
+		if (DialogueRegistry.Contains(NextDialogue.DialogueID))
 		{
-			PlayDialogue(NextDialogueID);
+			PlayDialogue(NextDialogue.DialogueID, NextDialogue.Instigator.Get());
 			return;
 		}
 		// Tag not found in registry — skip and try the next one
-		UE_LOG(LogTemp, Warning, TEXT("ARCDialogueSubsystem: Queued dialogue '%s' not found in registry, skipping"), *NextDialogueID.ToString());
+		UE_LOG(LogTemp, Warning, TEXT("ARCDialogueSubsystem: Queued dialogue '%s' not found in registry, skipping"), *NextDialogue.DialogueID.ToString());
 	}
 }
 
@@ -231,7 +233,7 @@ void UFROGDialogueSubsystem::HandlePreCallbacks(UDialogueData* Definition)
 		{
 			if (Callback)
 			{
-				Callback->ExecuteCallback(Definition, ACargoGameMode::Get(this));
+				Callback->ExecuteCallback(Definition, ACargoGameMode::Get(this), CurrentInstigator.Get());
 			}
 		}
 	}	
@@ -245,7 +247,7 @@ void UFROGDialogueSubsystem::HandlePostCallbacks(UDialogueData* Definition)
 		{
 			if (Callback)
 			{
-				Callback->ExecuteCallback(Definition, ACargoGameMode::Get(this));
+				Callback->ExecuteCallback(Definition, ACargoGameMode::Get(this), CurrentInstigator.Get());
 			}
 		}
 	}

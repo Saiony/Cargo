@@ -8,17 +8,23 @@
 template <typename T>
 class UFROGGrid 
 {
+	TMap<FIntVector, T> OccupiedSlots;
+	int32 CellSize;
+	FIntVector GridOrigin;	
+	FIntVector GridSize;
+	
 public:
-	UFROGGrid(const int32 CellSize, const FIntPoint Origin) :
-		OccupiedSlots(TMap<FIntPoint, T>()),
+	UFROGGrid(const int32 CellSize, const FIntVector Origin, const FIntVector GridSize) :
+		OccupiedSlots(TMap<FIntVector, T>()),
 		CellSize(CellSize),
-		GridOrigin(Origin)
+		GridOrigin(Origin),
+		GridSize(GridSize)
 	{
 	}
 
-	const T* GetValue(const int32 X, const int32 Y) const
+	const T* GetValue(const int32 X, const int32 Y, const int32 Z) const
 	{
-		FIntPoint Cell(X, Y);
+		FIntVector Cell(X, Y, Z);
 		return OccupiedSlots.Find(Cell);
 	}
 
@@ -32,15 +38,15 @@ public:
 		return Values;
 	}
 
-	void Add(const int32 X, const int32 Y, const T Value)
+	void Add(const int32 X, const int32 Y, const int32 Z, const T Value)
 	{
-		FIntPoint Cell(X, Y);
+		FIntVector Cell(X, Y, Z);
 		OccupiedSlots.Add(Cell, Value);
 	}
 
-	void Remove(const int32 X, const int32 Y)
+	void Remove(const int32 X, const int32 Y, const int32 Z)
 	{
-		FIntPoint Cell(X, Y);
+		FIntVector Cell(X, Y, Z);
 		
 		OccupiedSlots.Remove(Cell);
 	}
@@ -55,7 +61,7 @@ public:
 		return CellSize;
 	}
 
-	TMap<FIntPoint, T> GetOccupiedSlots() const
+	TMap<FIntVector, T> GetOccupiedSlots() const
 	{
 		return OccupiedSlots;
 	}
@@ -66,40 +72,55 @@ public:
 		(
 			GridOrigin.X + FMath::RoundToInt((WorldLocation.X - GridOrigin.X) / CellSize) * CellSize,
 			GridOrigin.Y + FMath::RoundToInt((WorldLocation.Y - GridOrigin.Y) / CellSize) * CellSize,
-			WorldLocation.Z
+			GridOrigin.Z + FMath::RoundToInt((WorldLocation.Z - GridOrigin.Z) / CellSize) * CellSize
 		);
 	}
 	
-	FIntPoint WorldToGrid(const FVector& PositionXY) const
+	FIntVector GetMin() const
 	{
-		return WorldToGrid(PositionXY.X, PositionXY.Y);
+		return FIntVector(-GridSize.X / 2, -GridSize.Y / 2, 0);
 	}
 
-	FIntPoint WorldToGrid(const float WorldX, const float WorldY) const
+	FIntVector GetMax() const
 	{
-		return FIntPoint
-		(
-			FMath::FloorToInt((WorldX - GridOrigin.X) / CellSize),
-			FMath::FloorToInt((WorldY - GridOrigin.Y) / CellSize)
-		);
-	}
-
-	FVector GridToWorld(const FIntPoint& GridIndex) const
-	{
-		return FVector(
-			GridOrigin.X + GridIndex.X * CellSize,
-			GridOrigin.Y + GridIndex.Y * CellSize,
-			0.0f
-		);
+		return FIntVector(GridSize.X / 2, GridSize.Y / 2, GridSize.Z);
 	}
 
 	friend bool operator!=(const UFROGGrid& lhs, const UFROGGrid& rhs)
 	{
 		return !(lhs == rhs);
 	}
+	
+	FIntVector LocalToGrid(const FVector& LocalPosition) const
+	{
+		return LocalToGrid(LocalPosition.X, LocalPosition.Y, LocalPosition.Z);
+	}
 
-private:
-	TMap<FIntPoint, T> OccupiedSlots;
-	int32 CellSize;
-	FIntPoint GridOrigin;
+	FIntVector LocalToGrid(const float LocalX, const float LocalY, const float LocalZ) const
+	{
+		return FIntVector
+		(
+		   FMath::FloorToInt((LocalX - GridOrigin.X) / CellSize),
+		   FMath::FloorToInt((LocalY - GridOrigin.Y) / CellSize),
+		   FMath::FloorToInt((LocalZ - GridOrigin.Z) / CellSize)
+		);
+	}
+
+	FVector GridToLocal(const FIntVector& GridIndex) const
+	{
+		return FVector(
+		   GridOrigin.X + GridIndex.X * CellSize,
+		   GridOrigin.Y + GridIndex.Y * CellSize,
+		   0.0f
+		);
+	}
+	
+	bool IsWithinBounds(const FIntVector& GridIndex) const
+	{
+		const FIntVector Min = GetMin();
+		const FIntVector Max = GetMax();
+
+		return GridIndex.X >= Min.X && GridIndex.X <= Max.X &&
+			   GridIndex.Y >= Min.Y && GridIndex.Y <= Max.Y;
+	}
 };

@@ -3,9 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Character.h"
-#include "GameFramework/GameplayCameraComponent.h"
-#include "Grid/FROGGrid.h"
+#include "CargoPlayerController.h"
+#include "Grid/GridComponent.h"
 #include "Logging/LogMacros.h"
 #include "CargoCharacter.generated.h"
 
@@ -20,27 +19,15 @@ struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
-UINTERFACE(MinimalAPI, Blueprintable)
-class UGridActorInterface : public UInterface { GENERATED_BODY() };
-
-class IGridActorInterface
-{
-	GENERATED_BODY()
-public:
-	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Notify")
-	void OnPlaceableGrabbed(APlaceable* Placeable);
-};
-
 /**
- *  A simple player-controllable third person character
+ *  A simple player-controllable third-person character
  *  Implements a controllable orbiting camera
  */
 UCLASS(abstract)
-class ACargoCharacter : public APawn, public IGridActorInterface
+class ACargoCharacter : public APawn
 {
 	GENERATED_BODY()	
 	
-	// bool bEditMode = false;
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UStaticMeshComponent* RootMeshComponent; 
@@ -49,13 +36,16 @@ protected:
 	UStaticMeshComponent* MeshComponent; 
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	UStaticMeshComponent* DeckMeshComponent; 
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UFloatingPawnMovement* FloatingMovement;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UBuoyancyComponent* BuoyancyComp; 
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TObjectPtr<UGridComponent> GridComp;	
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TObjectPtr<UAudioComponent> MovementAudioComp;
 
 	/** Move Input Action */
 	UPROPERTY(EditAnywhere, Category="Input")
@@ -75,9 +65,21 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo")
 	float WeightInbalanceMultiplier = 1;
 	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	FVector2D FRMinMax = FVector2D(-10.0f, 10.0f);
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	FVector2D ShipAngleMinMax = FVector2D(-45.0f, 45.0f);
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cargo|Audio")
+	TObjectPtr<USoundBase> MovementSound;
+	
+	FDelegateHandle HasteCVarDelegateHandle;
+	
 	float FR = 0;	
+	
+	void OnHasteCVarChanged(IConsoleVariable* ConsoleVariable);
 public:
-
 	/** Constructor */
 	ACargoCharacter();	
 
@@ -90,15 +92,18 @@ protected:
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);	
-
-	float GetGridCellSize() const { return 100.0f; }
-	
-	//Positions relative to the ship
-	UFROGGrid<APlaceable*> PlaceableGrid = UFROGGrid<APlaceable*>(GetGridCellSize(), FIntPoint(0, 0));
 	
 	void MoveForward(const FInputActionValue& InputActionValue);
 	
 	void BalanceShip();
+	
+	void UpdateEngineSoundIntensity();
+
+	UFUNCTION()
+	void OnPlaceableAdded(APlaceable* Placeable);
+	
+	UFUNCTION()
+	void OnPlaceableRemoved(APlaceable* Placeable);
 
 public:
 	/** Handles move inputs from either controls or UI interfaces */
@@ -109,12 +114,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoLook(float Yaw, float Pitch);
 	
-	void AddPlaceableToGrid(APlaceable* Placeable, FVector WorldPos);
-	
-	virtual void OnPlaceableGrabbed_Implementation(APlaceable* Placeable) override;
+	void AttachPlaceable(APlaceable* Placeable, FVector WorldPos);
 	
 	UFUNCTION(BlueprintImplementableEvent, Category="Cargo")
-	void RotateShip(float FinalAngle);
+	void RotateShip(float FinalAngle);	
+	
+	virtual void BeginPlay() override;
 	
 	virtual void Tick(float DeltaSeconds) override;
 };

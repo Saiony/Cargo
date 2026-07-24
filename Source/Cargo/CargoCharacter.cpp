@@ -7,11 +7,12 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "Cargo.h"
-#include "../../../../../Program Files/Epic Games/UE_5.7/Engine/Plugins/Experimental/Water/Source/Runtime/Public/BuoyancyComponent.h"
-#include "Components/CapsuleComponent.h"
-#include "Components/SphereComponent.h"
+#include "BuoyancyComponent.h"
+#include "Components/AudioComponent.h"
 #include "GameFramework/FloatingPawnMovement.h"
 #include "Grid/Placeable.h"
+
+static TAutoConsoleVariable<bool> CVarBoostMovement(TEXT("Cargo.Haste"), false, TEXT("Increases boat speed"),ECVF_Default);
 
 ACargoCharacter::ACargoCharacter()
 {
@@ -21,48 +22,25 @@ ACargoCharacter::ACargoCharacter()
 	
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
 	MeshComponent->SetupAttachment(RootComponent);
-	
-	DeckMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DeckComp"));
-	DeckMeshComponent->SetupAttachment(MeshComponent);
 
 	FloatingMovement = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("FloatingMovement"));
 	FloatingMovement->MaxSpeed = 600.f;
 	FloatingMovement->Acceleration = 400.f;
 	FloatingMovement->Deceleration = 800.f;
+	
+	HasteCVarDelegateHandle = CVarBoostMovement.AsVariable()->OnChangedDelegate().AddUObject(this, &ThisClass::OnHasteCVarChanged);
 
 	BuoyancyComp = CreateDefaultSubobject<UBuoyancyComponent>("BuoyancyComp");
+	
+	GridComp = CreateDefaultSubobject<UGridComponent>(TEXT("GridComp"));
+	GridComp->SetupAttachment(MeshComponent);
+	
+	MovementAudioComp = CreateDefaultSubobject<UAudioComponent>(TEXT("MovementAudioComp"));	
 		
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationPitch = false;
-	bUseControllerRotationRoll = false;	
-	
-
-	// Configure character movement
-	// GetCharacterMovement()->bOrientRotationToMovement = true;
-	// GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
-
-	// Note: For faster iteration times these variables, and many more, can be tweaked in the Character Blueprint
-	// instead of recompiling to adjust them
-	// GetCharacterMovement()->JumpZVelocity = 500.f;
-	// GetCharacterMovement()->AirControl = 0.35f;
-	// GetCharacterMovement()->MaxWalkSpeed = 500.f;
-	// GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
-	// GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
-	// GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
-
-	// Create a camera boom (pulls in towards the player if there is a collision)
-	// GameplayCameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("GameplayCameraBoom"));
-	// GameplayCameraBoom->SetupAttachment(RootComponent);
-	// GameplayCameraBoom->TargetArmLength = 400.0f;
-	// GameplayCameraBoom->bUsePawnControlRotation = true;
-
-	// Create a follow camera
-	// GameplayCamera = CreateDefaultSubobject<UGameplayCameraComponent>(TEXT("GameplayCamera"));
-	// GameplayCamera->SetupAttachment(RootComponent);
-	
-	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
-	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+	bUseControllerRotationRoll = false;		
 }
 
 void ACargoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -113,7 +91,6 @@ void ACargoCharacter::DoMove(float Right, float Forward)
 	const FVector RightDirection   = GetActorRightVector();
 
 	AddMovementInput(ForwardDirection, Forward);
-	//AddMovementInput(RightDirection, Right);
 
 	// Rotation
 	if (Right != 0.f)
@@ -123,8 +100,6 @@ void ACargoCharacter::DoMove(float Right, float Forward)
 		FRotator Delta(0.f, Right * RotationSpeed * DeltaTime, 0.f);
 		AddActorLocalRotation(Delta);
 	}
-	if (GetController() == nullptr)
-		return;
 }
 
 void ACargoCharacter::DoLook(float Yaw, float Pitch)
@@ -137,47 +112,41 @@ void ACargoCharacter::DoLook(float Yaw, float Pitch)
 	}
 }
 
-void ACargoCharacter::AddPlaceableToGrid(APlaceable* Placeable, FVector WorldPos)
+void ACargoCharacter::AttachPlaceable(APlaceable* Placeable, FVector WorldPos)
+{    
+	FAttachmentTransformRules AttachmentRules(EAttachmentRule::KeepWorld, EAttachmentRule::KeepWorld, EAttachmentRule::KeepWorld, true);
+	Placeable->AttachToActor(this, AttachmentRules);
+}
+
+void ACargoCharacter::OnPlaceableAdded(APlaceable* Placeable)
 {
-	const FVector LocalPosition = GetActorTransform().InverseTransformPosition(WorldPos);	
-	PlaceableGrid.Add(LocalPosition.X, LocalPosition.Y, Placeable);	
-	
-	// WorldPos += FVector(0.0f, 0.0f, 100.0f);
-	
-	//Placeable->MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	
-	Placeable->SetActorLocation(WorldPos, false);
-	
-	FAttachmentTransformRules AttachmentRules(EAttachmentRule::KeepWorld, EAttachmentRule::KeepRelative, EAttachmentRule::KeepWorld, true);
-	Placeable->AttachToComponent(DeckMeshComponent, AttachmentRules);
-	
-	Placeable->Init(this, LocalPosition.X, LocalPosition.Y);
-	
-	UE_LOG(LogTemp, Log, TEXT("LocalPos: %s"), *LocalPosition.ToString());
-	
 	BalanceShip();
 }
 
-void ACargoCharacter::OnPlaceableGrabbed_Implementation(APlaceable* Placeable)
+void ACargoCharacter::OnPlaceableRemoved(APlaceable* Placeable)
 {	
-	Placeable->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
-	
-	PlaceableGrid.Remove(Placeable->GridPos.X, Placeable->GridPos.Y);	
-	
-	Placeable->SetActorRotation(FRotator(0.0f, 0.0f, 0.0f));
-	
 	BalanceShip();
 }
 
 void ACargoCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	
+	UpdateEngineSoundIntensity();
+}
+
+void ACargoCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+	
+	GridComp->OnPlaceableAddedToGrid.AddDynamic(this, &ThisClass::OnPlaceableAdded);
+	GridComp->OnPlaceableRemovedFromGrid.AddDynamic(this, &ThisClass::OnPlaceableRemoved);
 }
 
 void ACargoCharacter::BalanceShip()
 {
 	FR = 0;
-	for (auto PlaceableKV : PlaceableGrid.GetOccupiedSlots())
+	for (const auto PlaceableKV : GridComp->GetOccupiedSlots())
 	{
 		const auto PlaceableWeight = PlaceableKV.Value->Weight;
 		const auto Momentum = PlaceableWeight * PlaceableKV.Key.Y;
@@ -187,10 +156,23 @@ void ACargoCharacter::BalanceShip()
 	
 	UE_LOG(LogTemp, Log, TEXT("FR: %f"), FR);
 	
-	float FinalAngle = FMath::GetMappedRangeValueClamped(
-	FVector2D(-1000.f, 1000.f),
-	FVector2D(-30.f, 30.f),
-	FR);
-	
+	const float FinalAngle = FMath::GetMappedRangeValueClamped(FRMinMax,ShipAngleMinMax, FR);	
 	RotateShip(FinalAngle);
+}
+
+void ACargoCharacter::UpdateEngineSoundIntensity()
+{
+	const float SpeedValue = FloatingMovement->Velocity.Size2D();
+	const float NormalizedSpeed = FMath::Clamp(SpeedValue / FloatingMovement->GetMaxSpeed(), 0.f, 1.f);
+
+	MovementAudioComp->SetFloatParameter(FName("Speed"), NormalizedSpeed);
+}
+
+
+void ACargoCharacter::OnHasteCVarChanged(IConsoleVariable* ConsoleVariable)
+{
+	const bool Haste = CVarBoostMovement.GetValueOnGameThread();
+
+	FloatingMovement->MaxSpeed = Haste ? FloatingMovement->MaxSpeed * 2 : FloatingMovement->MaxSpeed / 2;
+	FloatingMovement->Acceleration = Haste ? FloatingMovement->Acceleration * 2 : FloatingMovement->Acceleration / 2;
 }

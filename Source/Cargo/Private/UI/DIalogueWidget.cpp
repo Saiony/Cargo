@@ -3,11 +3,14 @@
 
 #include "UI/DIalogueWidget.h"
 
+#include "CargoGameMode.h"
+#include "Subsystem/FROGDialogueSubsystem.h"
 #include "CommonTextBlock.h"
 #include "CommonUIExtensions.h"
 #include "PrimaryGameLayout.h"
 #include "Animation/WidgetAnimation.h"
 #include "Components/Image.h"
+#include "Components/VerticalBoxSlot.h"
 #include "Input/CommonUIInputTypes.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -18,7 +21,7 @@ void UDIalogueWidget::NativeOnActivated()
 	bIsTyping = false;
 	CurrentCharCount = 0.0f;
 	FullLineText = FText::GetEmpty();
-	DialogueDefinition = nullptr;
+	CurrentDialogueData = nullptr;
 	
 	bIsBackHandler = false;
 	if(!SkipDialogueInputHandle.IsValid())
@@ -66,16 +69,16 @@ void UDIalogueWidget::SetupAndPlayDialogue()
 {
 	UE_LOG(LogTemp, Warning, TEXT("SetupAndPlayDialogue called on instance %p"), this);
 
-	if (!DialogueDefinition)
+	if (!CurrentDialogueData)
 	{
-		UE_LOG(LogTemp, Error, TEXT("SetupAndPlayDialogue: DialogueDefinition is null — closing widget."));
-		RequestClose();
+		UE_LOG(LogTemp, Error, TEXT("SetupAndPlayDialogue: CurrentDialogueData is null — closing widget."));
+		Hide();
 		return;
 	}
 
 	CurrentLineIndex = -1;
-	UE_LOG(LogTemp, Warning, TEXT("About to call ShowNextLine, CurrentLineIndex: %d, DialogueDefinition: %p"), 
-		CurrentLineIndex, DialogueDefinition.Get());
+	UE_LOG(LogTemp, Warning, TEXT("About to call ShowNextLine, CurrentLineIndex: %d, CurrentDialogueData: %p"), 
+		CurrentLineIndex, CurrentDialogueData.Get());
 	ShowNextLine();
 	UE_LOG(LogTemp, Warning, TEXT("ShowNextLine returned"));
 }
@@ -84,26 +87,42 @@ void UDIalogueWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
-	if(!bIsTyping || !TextDialogue || !DialogueDefinition)
+	if(!bIsTyping || !TextDialogue || !CurrentDialogueData)
 	{
 		return;
 	}
 
 	CurrentCharCount += (TypewriterSpeed * InDeltaTime);
 	const int32 CharsToShow = FMath::FloorToInt(CurrentCharCount);
-	if(CharsToShow >= FullLineText.ToString().Len())
+	const FString FullStr = FullLineText.ToString();
+
+	if(CharsToShow >= FullStr.Len())
 	{
 		TextDialogue->SetText(FullLineText);
 		bIsTyping = false;
+		return;
 	}
-	else
+
+	// só atualiza texto/som se algum caractere novo foi revelado neste frame
+	if (CharsToShow > LastCharsShown)
 	{
-		const FString PartialText = FullLineText.ToString().Left(CharsToShow);
-		TextDialogue->SetText(FText::FromString(PartialText));
-		if (DialogueAudio)
+		TextDialogue->SetText(FText::FromString(FullStr.Left(CharsToShow)));
+
+		// percorre só os caracteres novos revelados desde o último frame
+		for (int32 i = LastCharsShown; i < CharsToShow; ++i)
 		{
-			UGameplayStatics::PlaySound2D(this, DialogueAudio, 1.0f, FMath::FRandRange(0.9f, 1.1f), 0, DialogueConcurrency);
+			const TCHAR Ch = FullStr[i];
+
+			// pula espaços e toca o som só a cada CharsPerSound caracteres
+			const bool bShouldPlaySound = !FChar::IsWhitespace(Ch) && (i % FMath::Max(1, CharsPerSound) == 0);
+
+			if (bShouldPlaySound && DialogueAudio)
+			{
+				UGameplayStatics::PlaySound2D(this, DialogueAudio, 1.0f, FMath::FRandRange(0.9f, 1.1f), 0, DialogueConcurrency);
+			}
 		}
+
+		LastCharsShown = CharsToShow;
 	}
 }
 
@@ -111,30 +130,31 @@ void UDIalogueWidget::ShowNextLine()
 {
 	UE_LOG(LogTemp, Warning, TEXT("ShowNextLine called on instance %p"), this);
 	
- 	if(!DialogueDefinition)
+ 	if(!CurrentDialogueData)
 	{
-		UE_LOG(LogTemp, Error, TEXT("ShowNextLine: DialogueDefinition is null!"));
+		UE_LOG(LogTemp, Error, TEXT("ShowNextLine: CurrentDialogueData is null!"));
 		return;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("ShowNextLine: DialogueDefinition is valid: %s"), *DialogueDefinition->GetName());
+	UE_LOG(LogTemp, Warning, TEXT("ShowNextLine: CurrentDialogueData is valid: %s"), *CurrentDialogueData->GetName());
 	CurrentLineIndex++;
 	UE_LOG(LogTemp, Warning, TEXT("ShowNextLine: CurrentLineIndex incremented to %d"), CurrentLineIndex);
 
-	if(!DialogueDefinition->DialogueLines.IsValidIndex(CurrentLineIndex))
+	if(!CurrentDialogueData->DialogueLines.IsValidIndex(CurrentLineIndex))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("ShowNextLine: No more lines (CurrentLineIndex: %d, Array Num: %d), calling RequestClose"), 
-			CurrentLineIndex, DialogueDefinition->DialogueLines.Num());
-		RequestClose();
+		UE_LOG(LogTemp, Warning, TEXT("ShowNextLine: No more lines (CurrentLineIndex: %d, Array Num: %d), calling Hide"), 
+			CurrentLineIndex, CurrentDialogueData->DialogueLines.Num());
+		OnDialogueFinished();
 		return;
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("ShowNextLine: Getting line at index %d"), CurrentLineIndex);
-	const FARCDialogueLine& Line = DialogueDefinition->DialogueLines[CurrentLineIndex];
+	const FARCDialogueLine& Line = CurrentDialogueData->DialogueLines[CurrentLineIndex];
 
 	FullLineText = Line.Text;
 	TextDialogue->SetText(FText::GetEmpty());
 	CurrentCharCount = 0.0f;
+	LastCharsShown = 0;
 	bIsTyping = true;
 
 	UE_LOG(LogTemp, Warning, TEXT("ShowNextLine: Line text set, calling UpdateVisualsForLine"));
@@ -157,8 +177,8 @@ void UDIalogueWidget::UpdateVisualsForLine(const FARCDialogueLine& Line)
 		}
 		else
 		{
-			bShouldUpdatePortraits = ImageLeftPortrait->GetBrush() != DialogueDefinition->DefaultPortrait;
-			ImageLeftPortrait->SetBrush(DialogueDefinition->DefaultPortrait);
+			bShouldUpdatePortraits = ImageLeftPortrait->GetBrush() != CurrentDialogueData->DefaultPortrait;
+			ImageLeftPortrait->SetBrush(CurrentDialogueData->DefaultPortrait);
 		}
 	}
 	else if(Line.PortraitSide == Right && ImageRightPortrait)
@@ -173,8 +193,8 @@ void UDIalogueWidget::UpdateVisualsForLine(const FARCDialogueLine& Line)
 		}
 		else
 		{
-			bShouldUpdatePortraits = ImageRightPortrait->GetBrush() != DialogueDefinition->DefaultPortrait;
-			ImageRightPortrait->SetBrush(DialogueDefinition->DefaultPortrait);
+			bShouldUpdatePortraits = ImageRightPortrait->GetBrush() != CurrentDialogueData->DefaultPortrait;
+			ImageRightPortrait->SetBrush(CurrentDialogueData->DefaultPortrait);
 		}
 	}
 
@@ -182,10 +202,71 @@ void UDIalogueWidget::UpdateVisualsForLine(const FARCDialogueLine& Line)
 		PlayAnimation(LineTransitionAnimation);
 }
 
+void UDIalogueWidget::OnDialogueFinished()
+{
+	OnDialogueFinishedDelegate.Broadcast(CurrentDialogueData);
+	
+	if (CurrentDialogueData->Choices.IsEmpty())
+	{		
+		Hide();
+		return;
+	}
+	
+	DisplayChoices();
+}
+
+void UDIalogueWidget::DisplayChoices()
+{
+	for (auto i = 0; i < CurrentDialogueData->Choices.Num(); i++)
+	{
+		const auto OptionButton = CreateWidget<UDialogueOptionButton>(this, DialogueOptionButtonClass);
+		OptionButton->Init(CurrentDialogueData->Choices[i]);
+		OptionButton->OnClicked().AddUObject(this, &ThisClass::OnChoiceSelected, i);
+		
+		const auto ChildrenSlot = OptionsVerticalBox->AddChildToVerticalBox(OptionButton);
+		ChildrenSlot->SetPadding(FMargin(0.f, 0.f, 0.f, ChildrenPadding)); 
+	}
+}
+
+void UDIalogueWidget::OnChoiceSelected(int buttonIndex)
+{
+	OptionsVerticalBox->ClearChildren();
+	
+	auto SelectedChoice = CurrentDialogueData->Choices[buttonIndex];
+	
+	if (!SelectedChoice.DialogueData.IsNull())
+	{
+		UE_LOG(LogTemp, Log, TEXT("New Dialogue started"));
+		InitializeDialogue(SelectedChoice.DialogueData.Get());
+		
+		ACargoGameMode::Get(this)->AddChoice(SelectedChoice.ChoiceTag);
+		return;
+	}
+	
+	Hide();
+}
+
 void UDIalogueWidget::InitializeDialogue(UDialogueData* InDialogueDefinition)
 {
-	DialogueDefinition = InDialogueDefinition;
-	UE_LOG(LogTemp, Warning, TEXT("InitializeDialogue called with definition: %s"), InDialogueDefinition ? *InDialogueDefinition->GetName() : TEXT("nullptr"));
+	if (InDialogueDefinition == nullptr)
+	{		
+		UE_LOG(LogTemp, Error, TEXT("Probably we need to call .LoadSynchronous if there's a dialoguedata there"));
+		return;
+	}
+	
+	CurrentDialogueData = InDialogueDefinition;
+	UE_LOG(LogTemp, Log, TEXT("InitializeDialogue called with definition: %s"), InDialogueDefinition ? *InDialogueDefinition->GetName() : TEXT("nullptr"));
+
+	if (const UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GI = World->GetGameInstance())
+		{
+			if (UFROGDialogueSubsystem* DialogueSubsystem = GI->GetSubsystem<UFROGDialogueSubsystem>())
+			{
+				DialogueSubsystem->NotifyDialogueStarted(InDialogueDefinition, CurrentInstigator.Get());
+			}
+		}
+	}
 	
 	if(ShowAnimation)
 	{
@@ -225,7 +306,7 @@ void UDIalogueWidget::OnInputActionContinue()
 	ShowNextLine();
 }
 
-void UDIalogueWidget::RequestClose()
+void UDIalogueWidget::Hide()
 {
 	if(HideAnimation)
 	{

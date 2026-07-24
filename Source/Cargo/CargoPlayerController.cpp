@@ -6,12 +6,16 @@
 #include "Public/Grid/Placeable.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "InputActionValue.h"
 #include "Engine/LocalPlayer.h"
 #include "InputMappingContext.h"
 #include "Blueprint/UserWidget.h"
-#include "Cargo.h"
 #include "CommonLocalPlayer.h"
+#include "ConsoleVariables.h"
+#include "Engine/OverlapResult.h"
+#include "Grid/Container.h"
+#include "Interaction/CargoInteractable.h"
+#include "Runtime/Experimental/Voronoi/Private/voro++/src/container.hh"
+#include "Subsystem/AudioSubsystem.h"
 #include "Subsystem/CargoUIManagerSubsystem.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 
@@ -26,18 +30,13 @@ void ACargoPlayerController::BeginPlay()
 	{
 		// spawn the mobile controls widget
 		MobileControlsWidget = CreateWidget<UUserWidget>(this, MobileControlsWidgetClass);
-
-		if (MobileControlsWidget)
-		{
-			// add the controls to the player screen
-			MobileControlsWidget->AddToPlayerScreen(0);
-
-		} else {
-
-			UE_LOG(LogCargo, Error, TEXT("Could not spawn mobile controls widget."));
-		}
-
 	}
+	
+	GetWorldTimerManager().SetTimer(InteractionTimerHandle,this,&ACargoPlayerController::UpdateInteractionFocus,
+								InteractionCheckInterval,true);
+
+	const auto PlaceablePreviewClass = GetDefault<UCargoSettings>()->PlaceablePreviewClass.LoadSynchronous();
+	PlaceablePreview = GetWorld()->SpawnActor<APlaceablePreview>(PlaceablePreviewClass, FVector::ZeroVector, FRotator::ZeroRotator);
 }
 
 void ACargoPlayerController::SetupInputComponent()
@@ -72,6 +71,7 @@ void ACargoPlayerController::SetupInputComponent()
 			EnhancedInputComponent->BindAction(RightClickAction, ETriggerEvent::Started, this, &ACargoPlayerController::OnRightClick);
 			EnhancedInputComponent->BindAction(CancelAction, ETriggerEvent::Started, this, &ACargoPlayerController::OnCancel);
 			EnhancedInputComponent->BindAction(SwitchCameraAction, ETriggerEvent::Completed, this, &ACargoPlayerController::SwitchEditMode);
+			EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Completed, this, &ACargoPlayerController::Interact);
 		}
 	}
 }
@@ -84,24 +84,87 @@ bool ACargoPlayerController::ShouldUseTouchControls() const
 
 void ACargoPlayerController::PlayerTick(float DeltaTime)
 {
-	Super::PlayerTick(DeltaTime);
+    Super::PlayerTick(DeltaTime);
 
-	if (!bEditMode)
-		return;
+    if (!bEditMode)
+        return;
+
+    if (!bIsDragging || !DraggingObject)
+        return;
+
+	//gets mouse pos in world
+    FVector MouseWorldLocation;
+	FVector MouseWorldDirection;
 	
-	if (bIsDragging && DraggingObject)
-	{
-		FVector MouseWorldLocation, MouseWorldDirection;
-		if (DeprojectMousePositionToWorld(MouseWorldLocation, MouseWorldDirection))
-		{
-			// Projetar para o plano Z do DraggingZHeight
-			// P = L + D*t -> Pz = Lz + Dz*t -> t = (Pz - Lz) / Dz
-			float t = (DraggingZHeight - MouseWorldLocation.Z) / MouseWorldDirection.Z;
-			FVector TargetLocation = MouseWorldLocation + MouseWorldDirection * t;
-			
-			DraggingObject->SetActorLocation(TargetLocation);
-		}
-	}
+    if (!DeprojectMousePositionToWorld(MouseWorldLocation, MouseWorldDirection))
+        return;
+
+    const float T = (DraggingZHeight - MouseWorldLocation.Z) / MouseWorldDirection.Z;
+    const FVector TargetLocation = MouseWorldLocation + MouseWorldDirection * T;
+    DraggingObject->SetActorLocation(TargetLocation);
+
+	//gets hit component
+    FHitResult HitResult;
+    FCollisionQueryParams Params;
+    Params.AddIgnoredActor(DraggingObject);
+
+    const FVector TraceStart = DraggingObject->GetActorLocation();
+    const FVector TraceEnd = TraceStart - FVector(0.f, 0.f, 10000.f);
+
+    const auto HitComponent = GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, DropSurfaceChannel, Params)
+						        ? HitResult.GetComponent()
+						        : nullptr;
+
+    if (!HitComponent)
+    {     
+        PlaceablePreview->SetActorHiddenInGame(true);
+        return;
+    }
+
+    UGridComponent* GridComponent = Cast<UGridComponent>(HitComponent);
+	FVector ImpactPoint = HitResult.ImpactPoint;	
+
+	CurrentHoveredGrid = GridComponent;
+
+    if (!GridComponent)
+    {    	
+    	if (auto Container = Cast<AContainer>(HitComponent->GetOwner()))
+    	{
+    		UE_LOG(LogTemp, Log, TEXT("HitComponent is a container. OriginalPos:"));    		
+    		CurrentHoveredGrid = Container->OwningGridActor;
+    		ImpactPoint = CurrentHoveredGrid->GetNextFreeZPositionWorld(ImpactPoint);
+    	}
+    	else
+    	{
+	        PlaceablePreview->SetActorHiddenInGame(true);
+	        return;
+    	}
+    }  
+
+    if (CurrentHoveredGrid->CanAddPlaceableToGrid(DraggingObject, ImpactPoint, DraggingObject->GetLocalYaw()))
+    {
+        PlaceablePreview->SetValid();
+    }
+    else
+    {
+        PlaceablePreview->SetInvalid();
+    }
+    
+    PlaceablePreview->SetActorHiddenInGame(false);
+
+    PlaceablePreview->AttachToComponent(CurrentHoveredGrid, FAttachmentTransformRules::SnapToTargetIncludingScale);	
+
+    FVector LocalLocation = CurrentHoveredGrid->GetComponentTransform().InverseTransformPosition(ImpactPoint);
+
+    const float GridSize = GetDefault<UCargoSettings>()->GridCellSize;
+
+    LocalLocation.X = FMath::GridSnap(LocalLocation.X, GridSize);
+    LocalLocation.Y = FMath::GridSnap(LocalLocation.Y, GridSize);
+    LocalLocation.Z = FMath::GridSnap(LocalLocation.Z, GridSize);
+
+    PlaceablePreview->SetActorRelativeLocation(LocalLocation);
+	PlaceablePreview->SetActorRelativeRotation(FRotator(0.f, 0.f, 0.f));
+	PlaceablePreview->MimicPlaceableYaw(DraggingObject);
 }
 
 void ACargoPlayerController::OnLeftClickStart(const FInputActionValue& Value)
@@ -111,49 +174,54 @@ void ACargoPlayerController::OnLeftClickStart(const FInputActionValue& Value)
 	if (!bEditMode)
 		return;
 	
-	if (GetHitResultUnderCursor(DropSurfaceChannel, false, HitResult))
+	if (!GetHitResultUnderCursor(DropSurfaceChannel, false, HitResult))
+		return;
+	
+	APlaceable* Placeable = Cast<APlaceable>(HitResult.GetActor());
+	
+	if (!Placeable)
+		return;
+	
+	DraggingObject = Placeable;
+	if (Placeable->OwningGridActor->IsPlaceableBlocked(Placeable))
 	{
-		if (APlaceable* Placeable = Cast<APlaceable>(HitResult.GetActor()))
-		{
-			DraggingObject = Placeable;
-			bIsDragging = true;
-			
-			DraggingObject->Grab();
-			
-			//DraggingObject->DisableComponentsSimulatePhysics();
-		}
+		UE_LOG(LogTemp, Warning, TEXT("Placeable is blocked"));
+		return;
 	}
+	
+	bIsDragging = true;
+		
+	DraggingObject->Grab();
+	DraggingObject->AlignToRotation(GetPawn()->GetActorRotation());
+		
+	PlaceablePreview->Initialize(DraggingObject);			
 }
 
 void ACargoPlayerController::OnLeftClickEnd(const FInputActionValue& InputActionValue)
 {
 	if (!bEditMode)
 		return;
-	
-	if (bIsDragging && DraggingObject)
-	{
-		FHitResult HitResult;		
-		FCollisionQueryParams Params;
-		Params.AddIgnoredActor(DraggingObject);
-		
-		FVector TraceStart = DraggingObject->GetActorLocation();
-		FVector TraceEnd   = FVector(TraceStart.X, TraceStart.Y, TraceStart.Z - 10000.f);
 
-		if (GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, DropSurfaceChannel, Params))
-		{
-			if (auto CharacterHit = Cast<ACargoCharacter>(HitResult.GetActor()))
-			{
-				CharacterHit->AddPlaceableToGrid(DraggingObject, HitResult.ImpactPoint);
-			}
-			else
-			{
-				DraggingObject->SetActorLocation(HitResult.ImpactPoint);
-			}
-		}		
-		
-		bIsDragging = false;
-		DraggingObject = nullptr;
+	if (!bIsDragging || !DraggingObject || !CurrentHoveredGrid)
+		return;	
+	
+	if (!CurrentHoveredGrid->CanAddPlaceableToGrid(DraggingObject, PlaceablePreview->GetActorLocation(), DraggingObject->GetLocalYaw()))
+	{		
+		return;
 	}
+
+	DraggingObject->AttachToComponent(CurrentHoveredGrid, FAttachmentTransformRules::SnapToTargetIncludingScale);
+	
+	// inherit location but zeroes the local rotation
+	const FVector RelativeLocation = PlaceablePreview->GetRootComponent()->GetRelativeLocation();
+	DraggingObject->SetActorRelativeLocation(RelativeLocation);
+	DraggingObject->SetActorRelativeRotation(FRotator(0.f, 0.f, 0.f));
+
+	CurrentHoveredGrid->AddPlaceableToGrid(DraggingObject, PlaceablePreview->GetActorLocation(), DraggingObject->GetLocalYaw());
+	
+	PlaceablePreview->SetActorHiddenInGame(true);
+	bIsDragging = false;
+	DraggingObject = nullptr;	
 }
 
 void ACargoPlayerController::OnRightClick(const FInputActionValue& Value)
@@ -161,8 +229,14 @@ void ACargoPlayerController::OnRightClick(const FInputActionValue& Value)
 	if (!bEditMode)
 		return;
 	
+	if (!bIsDragging)
+		return;
+	
 	if (DraggingObject)
 		DraggingObject->RotateClockwise();
+	
+	if (PlaceablePreview)
+		PlaceablePreview->MimicPlaceableYaw(DraggingObject);
 }
 
 void ACargoPlayerController::OnCancel(const FInputActionValue& Value)
@@ -184,15 +258,124 @@ void ACargoPlayerController::SwitchEditMode(const FInputActionValue& Value)
 	{
 		SetInputMode(FInputModeGameOnly());
 	}
-	//
-	// if (APawn* ControlledPawn = GetPawn())
-	// {
-	// 	SetViewTargetWithBlend(ControlledPawn, 0.5f);
-	// }
+}
+
+void ACargoPlayerController::Interact(const FInputActionValue& InputActionValue)
+{
+	auto ControlledPawn = GetPawn();
+
+	const FVector Origin = ControlledPawn->GetActorLocation();
+
+	TArray<FOverlapResult> OverlapResults;
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(ControlledPawn);
+
+	const bool bHasOverlaps = GetWorld()->OverlapMultiByChannel(OverlapResults, Origin, FQuat::Identity,
+													ECC_WorldDynamic, FCollisionShape::MakeSphere(InteractRange),
+																QueryParams );
+	
+#if WITH_EDITOR || !UE_BUILD_SHIPPING
+	if (CVarCargoShowDebugs.GetValueOnGameThread())
+	{
+		DrawDebugSphere(GetWorld(), Origin, InteractRange, 16, FColor::Green,
+						false, 1.5f, 0, 1.0f);
+	}
+#endif
+
+	if (!bHasOverlaps)
+		return;
+
+	AActor* BestTarget = nullptr;
+	float BestDistSq = TNumericLimits<float>::Max();
+
+	//finds the one closer to the player
+	for (const FOverlapResult& Overlap : OverlapResults)
+	{
+		AActor* Actor = Overlap.GetActor();
+		if (!Actor || !Actor->GetClass()->ImplementsInterface(UCargoInteractable::StaticClass()))
+			continue;
+
+		const float DistSq = FVector::DistSquared(Origin, Actor->GetActorLocation());
+		if (DistSq < BestDistSq)
+		{
+			BestDistSq = DistSq;
+			BestTarget = Actor;
+		}
+	}
+
+	if (BestTarget)
+		ICargoInteractable::Execute_Interact(BestTarget, ControlledPawn);
+	else
+		UE_LOG(LogTemp, Log, TEXT("Nothing to interact with"));
 }
 
 void ACargoPlayerController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 	GetGameInstance()->GetSubsystem<UCargoUIManagerSubsystem>()->NotifyPlayerAdded(Cast<UCommonLocalPlayer>(GetWorld()->GetFirstLocalPlayerFromController()));
+}
+
+void ACargoPlayerController::UpdateInteractionFocus()
+{
+	TScriptInterface<ICargoInteractable> NewTarget = FindBestInteractable();
+
+	if (NewTarget.GetObject() != CurrentInteractable.GetObject())
+	{
+		if (CurrentInteractable != nullptr)
+		{
+			UAudioSubsystem::Get(this)->SetBGMVolume(1.0f);	
+			CurrentInteractable->Unfocus();
+		}
+		
+		CurrentInteractable = NewTarget.GetObject();
+		
+		if (CurrentInteractable != nullptr)
+		{
+			UAudioSubsystem::Get(this)->SetBGMVolume(0.3f);
+			CurrentInteractable->Focus();
+		}
+		
+		OnInteractableChanged.Broadcast(NewTarget);
+	}
+}
+
+TScriptInterface<ICargoInteractable> ACargoPlayerController::FindBestInteractable() const
+{
+	APawn* ControlledPawn = GetPawn();
+	if (!ControlledPawn)
+		return nullptr;
+
+	const FVector Origin = ControlledPawn->GetActorLocation();
+
+	TArray<FOverlapResult> OverlapResults;
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(ControlledPawn);
+
+	const bool bHasOverlaps = GetWorld()->OverlapMultiByChannel(
+		OverlapResults, Origin, FQuat::Identity,
+		ECC_WorldDynamic, FCollisionShape::MakeSphere(InteractRange),
+		QueryParams
+	);
+
+	if (!bHasOverlaps)
+		return nullptr;
+
+	AActor* BestTarget = nullptr;
+	float BestDistSq = TNumericLimits<float>::Max();
+
+	for (const FOverlapResult& Overlap : OverlapResults)
+	{
+		AActor* Actor = Overlap.GetActor();
+		if (!Actor || !Actor->GetClass()->ImplementsInterface(UCargoInteractable::StaticClass()))
+			continue;
+
+		const float DistSq = FVector::DistSquared(Origin, Actor->GetActorLocation());
+		if (DistSq < BestDistSq)
+		{
+			BestDistSq = DistSq;
+			BestTarget = Actor;
+		}
+	}
+
+	return BestTarget;
 }

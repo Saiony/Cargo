@@ -3,10 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "DialogueOptionButton.h"
 #include "FrogsmithActivatableWidget.h"
+#include "Components/VerticalBox.h"
 #include "Dialogue/DialogueData.h"
 
 #include "DIalogueWidget.generated.h"
+
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnDialoguefinished, UDialogueData*);
 
 class UCommonTextBlock;
 class UImage;
@@ -19,11 +23,15 @@ class CARGO_API UDIalogueWidget : public UFrogsmithActivatableWidget
 	GENERATED_BODY()
 	
 public:
+	FOnDialoguefinished OnDialogueFinishedDelegate;
+	
 	virtual void NativeOnActivated() override;
 	virtual void NativeOnDeactivated() override;
 	
 	UFUNCTION(BlueprintCallable, Category="Arcade")
 	void InitializeDialogue(UDialogueData* InDialogueDefinition);
+
+	void SetInstigator(AActor* InInstigator) { CurrentInstigator = InInstigator; }
 
 	virtual void OnAnimationFinished_Implementation(const UWidgetAnimation* Animation) override;
 	void SetupAndPlayDialogue();
@@ -37,7 +45,10 @@ protected:
 private:
 	void ShowNextLine();
 	void UpdateVisualsForLine(const FARCDialogueLine& Line);
-	void RequestClose();
+	void OnDialogueFinished();
+	void DisplayChoices();
+	void OnChoiceSelected(int buttonIndex);
+	void Hide();
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Arcade", meta=(AllowPrivateAccess))
@@ -61,6 +72,9 @@ protected:
 
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UCommonTextBlock> TextDialogue;
+	
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UVerticalBox> OptionsVerticalBox;
 
 	UPROPERTY(Transient, meta=(BindWidgetAnimOptional))
 	TObjectPtr<UWidgetAnimation> ShowAnimation;
@@ -71,12 +85,26 @@ protected:
 	UPROPERTY(Transient, meta=(BindWidgetAnimOptional))
 	TObjectPtr<UWidgetAnimation> LineTransitionAnimation;
 	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	float ChildrenPadding = 15.0f;	
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cargo")
+	int32 CharsPerSound = 2;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	TSubclassOf<UDialogueOptionButton> DialogueOptionButtonClass;
+	
 private:
 	UPROPERTY()
-	TObjectPtr<UDialogueData> DialogueDefinition;
+	TObjectPtr<UDialogueData> CurrentDialogueData;
+
+	UPROPERTY()
+	TWeakObjectPtr<AActor> CurrentInstigator;
 	
 	int32 CurrentLineIndex = -1;
 	FText FullLineText;
 	float CurrentCharCount;
 	bool bIsTyping;
+	
+	int32 LastCharsShown = 0;
 };

@@ -8,6 +8,18 @@
 #include "UI/DIalogueWidget.h"
 #include "FROGDialogueSubsystem.generated.h"
 
+USTRUCT(BlueprintType)
+struct FPendingDialogue
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FGameplayTag DialogueID;
+
+	UPROPERTY()
+	TWeakObjectPtr<AActor> Instigator;
+};
+
 /**
  * 
  */
@@ -18,10 +30,15 @@ class CARGO_API UFROGDialogueSubsystem : public UGameInstanceSubsystem
 
 public:
 	UFROGDialogueSubsystem();
-	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;	
+	
+	void PlayDialogue(UDialogueData* DialogueData, AActor* Instigator);
 
 	UFUNCTION(BlueprintCallable, Category="Arcade")
-	void PlayDialogue(FGameplayTag DialogueID);
+	void PlayDialogue(FGameplayTag DialogueID, AActor* Instigator = nullptr);
+
+	void NotifyDialogueStarted(UDialogueData* DialogueData, AActor* Instigator = nullptr);
 	
 protected:
 	//void OnReceivedStartDialogueMessage(FGameplayTag GameplayTag, const FARCGameplayEvent_DialogueStartPayload& Payload);
@@ -60,6 +77,10 @@ private:
 	/** True while a dialogue widget is on screen. Prevents overlapping pushes. */
 	bool bIsPlayingDialogue = false;
 
-	/** Queued dialogue IDs waiting to be played after the current one finishes. */
-	TArray<FGameplayTag> PendingDialogueQueue;
+	UPROPERTY(Transient)
+	TWeakObjectPtr<AActor> CurrentInstigator;
+
+	/** Queued dialogue waiting to be played after the current one finishes. */
+	UPROPERTY()
+	TArray<FPendingDialogue> PendingDialogueQueue;
 };

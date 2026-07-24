@@ -4,12 +4,17 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "Grid/GridComponent.h"
+#include "Grid/PlaceablePreview.h"
+#include "Interaction/CargoInteractable.h"
 #include "CargoPlayerController.generated.h"
 
 class UInputMappingContext;
 class UInputAction;
 class UUserWidget;
 struct FInputActionValue;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInteractableChanged, TScriptInterface<ICargoInteractable>, NewInteractable);
 
 /**
  *  Basic PlayerController class for a third person game
@@ -53,6 +58,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* SwitchCameraAction;
+	
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* InteractAction;
 
 	UPROPERTY(EditAnywhere, Category="Input|Dragging")
 	float DraggingZHeight = 100.0f;
@@ -63,8 +71,25 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category="Input|Dragging")
 	bool bIsDragging = false;
 	
+	UPROPERTY(EditDefaultsOnly, Category="Cargo")
+	float InteractRange = 1000;
+	
 	UPROPERTY(EditAnywhere, Category="Cargo")
 	TEnumAsByte<ECollisionChannel> DropSurfaceChannel;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Cargo")
+	float InteractionCheckInterval = 0.1f;
+	
+	FTimerHandle InteractionTimerHandle;
+	
+	UPROPERTY()
+	TScriptInterface<ICargoInteractable> CurrentInteractable = nullptr;
+	
+	UPROPERTY()
+	TObjectPtr<UGridComponent> CurrentHoveredGrid = nullptr;
+	
+	UPROPERTY()
+	TObjectPtr<APlaceablePreview> PlaceablePreview;
 
 	/** Gameplay initialization */
 	virtual void BeginPlay() override;
@@ -83,10 +108,18 @@ protected:
 	void OnCancel(const FInputActionValue& Value);
 	void SwitchEditMode(const FInputActionValue& Value);
 	
-	void OnPossess(APawn* InPawn) override;
+	void Interact(const FInputActionValue& InputActionValue);
 	
+	void OnPossess(APawn* InPawn) override;	
 	
+	void UpdateInteractionFocus();
+
+	TScriptInterface<ICargoInteractable> FindBestInteractable() const;
+
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Input")
 	bool bEditMode = false;
+	
+	UPROPERTY(BlueprintAssignable)
+	FOnInteractableChanged OnInteractableChanged;
 };
