@@ -72,6 +72,8 @@ void ACargoPlayerController::SetupInputComponent()
 			EnhancedInputComponent->BindAction(CancelAction, ETriggerEvent::Started, this, &ACargoPlayerController::OnCancel);
 			EnhancedInputComponent->BindAction(SwitchCameraAction, ETriggerEvent::Completed, this, &ACargoPlayerController::SwitchEditMode);
 			EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Completed, this, &ACargoPlayerController::Interact);
+			EnhancedInputComponent->BindAction(ScrollUp, ETriggerEvent::Completed, this, &ThisClass::OnScrollUp);
+			EnhancedInputComponent->BindAction(ScrollDown, ETriggerEvent::Completed, this, &ThisClass::OnScrollDown);
 		}
 	}
 }
@@ -307,6 +309,14 @@ void ACargoPlayerController::Interact(const FInputActionValue& InputActionValue)
 		ICargoInteractable::Execute_Interact(BestTarget, ControlledPawn);
 	else
 		UE_LOG(LogTemp, Log, TEXT("Nothing to interact with"));
+}
+
+void ACargoPlayerController::OnScrollUp(const FInputActionValue& InputActionValue)
+{
+}
+
+void ACargoPlayerController::OnScrollDown(const FInputActionValue& InputActionValue)
+{
 }
 
 void ACargoPlayerController::OnPossess(APawn* InPawn)

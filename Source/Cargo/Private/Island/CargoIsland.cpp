@@ -106,7 +106,7 @@ void ACargoIsland::OnQuestAccepted(TObjectPtr<UQuestData> QuestData, AActor* Que
 	
 	PortComponent->SpawnCargo(QuestData->CargoRequirements);
 }
-
+a
 void ACargoIsland::OnQuestCompleted(TObjectPtr<UQuestStatus> QuestStatus)
 {
 	if (QuestStatus->DestinationTag != LocationTag)

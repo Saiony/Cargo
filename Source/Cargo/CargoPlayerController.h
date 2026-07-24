@@ -61,6 +61,12 @@ protected:
 	
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* InteractAction;
+	
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* ScrollUp;
+	
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* ScrollDown;	
 
 	UPROPERTY(EditAnywhere, Category="Input|Dragging")
 	float DraggingZHeight = 100.0f;
@@ -109,6 +115,8 @@ protected:
 	void SwitchEditMode(const FInputActionValue& Value);
 	
 	void Interact(const FInputActionValue& InputActionValue);
+	void OnScrollUp(const FInputActionValue& InputActionValue);
+	void OnScrollDown(const FInputActionValue& InputActionValue);
 	
 	void OnPossess(APawn* InPawn) override;	
 	

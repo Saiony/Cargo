@@ -8,6 +8,7 @@
 #include "Logging/LogMacros.h"
 #include "CargoCharacter.generated.h"
 
+class UGameplayCameraComponent;
 class UBuoyancyComponent;
 class USphereComponent;
 class UFloatingPawnMovement;
@@ -45,7 +46,7 @@ protected:
 	TObjectPtr<UGridComponent> GridComp;	
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	TObjectPtr<UAudioComponent> MovementAudioComp;
+	TObjectPtr<UAudioComponent> MovementAudioComp;	
 
 	/** Move Input Action */
 	UPROPERTY(EditAnywhere, Category="Input")
