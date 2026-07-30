@@ -79,6 +79,10 @@ protected:
 	
 	float FR = 0;	
 	
+	float OriginalMaxSpeed = -1;
+	
+	float OriginalAcceleration = -1;
+	
 	void OnHasteCVarChanged(IConsoleVariable* ConsoleVariable);
 public:
 	/** Constructor */
@@ -100,6 +104,7 @@ protected:
 	
 	void UpdateEngineSoundIntensity();
 
+	void UpdateSpeed();
 	UFUNCTION()
 	void OnPlaceableAdded(APlaceable* Placeable);
 	

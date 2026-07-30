@@ -10,6 +10,8 @@
 #include "BuoyancyComponent.h"
 #include "Components/AudioComponent.h"
 #include "GameFramework/FloatingPawnMovement.h"
+#include "GameFramework/PlayerState.h"
+#include "GameplayFramework/CargoPlayerState.h"
 #include "Grid/Placeable.h"
 
 static TAutoConsoleVariable<bool> CVarBoostMovement(TEXT("Cargo.Haste"), false, TEXT("Increases boat speed"),ECVF_Default);
@@ -120,12 +122,16 @@ void ACargoCharacter::AttachPlaceable(APlaceable* Placeable, FVector WorldPos)
 
 void ACargoCharacter::OnPlaceableAdded(APlaceable* Placeable)
 {
+	GetPlayerState<ACargoPlayerState>()->AddWeight(Placeable->Weight);
 	BalanceShip();
+	UpdateSpeed();
 }
 
 void ACargoCharacter::OnPlaceableRemoved(APlaceable* Placeable)
 {	
+	GetPlayerState<ACargoPlayerState>()->RemoveWeight(Placeable->Weight);
 	BalanceShip();
+	UpdateSpeed();
 }
 
 void ACargoCharacter::Tick(float DeltaSeconds)
@@ -140,7 +146,10 @@ void ACargoCharacter::BeginPlay()
 	Super::BeginPlay();
 	
 	GridComp->OnPlaceableAddedToGrid.AddDynamic(this, &ThisClass::OnPlaceableAdded);
-	GridComp->OnPlaceableRemovedFromGrid.AddDynamic(this, &ThisClass::OnPlaceableRemoved);
+	GridComp->OnPlaceableRemovedFromGrid.AddDynamic(this, &ThisClass::OnPlaceableRemoved);	
+	
+	OriginalMaxSpeed = FloatingMovement->MaxSpeed;
+	OriginalAcceleration = FloatingMovement->Acceleration;
 }
 
 void ACargoCharacter::BalanceShip()
@@ -158,6 +167,7 @@ void ACargoCharacter::BalanceShip()
 	
 	const float FinalAngle = FMath::GetMappedRangeValueClamped(FRMinMax,ShipAngleMinMax, FR);	
 	RotateShip(FinalAngle);
+	GetPlayerState<ACargoPlayerState>()->SetShipBalance(FinalAngle);
 }
 
 void ACargoCharacter::UpdateEngineSoundIntensity()
@@ -168,6 +178,11 @@ void ACargoCharacter::UpdateEngineSoundIntensity()
 	MovementAudioComp->SetFloatParameter(FName("Speed"), NormalizedSpeed);
 }
 
+void ACargoCharacter::UpdateSpeed()
+{
+	FloatingMovement->MaxSpeed = OriginalMaxSpeed * GetPlayerState<ACargoPlayerState>()->GetShipSpeedMultiplier();
+	FloatingMovement->Acceleration = OriginalAcceleration * GetPlayerState<ACargoPlayerState>()->GetShipSpeedMultiplier();
+}
 
 void ACargoCharacter::OnHasteCVarChanged(IConsoleVariable* ConsoleVariable)
 {
