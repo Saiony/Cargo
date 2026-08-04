@@ -22,7 +22,7 @@ class CARGO_API UContainerInfoWidget : public UCommonUserWidget
 	TObjectPtr<UTextBlock> WeightText;
 	
 public:
-	void Show(const FString& Cargo, float Weight, const FVector& WorldPos);
+	void Show(FString Cargo, float Weight);
 	
 	void Hide();	
 };

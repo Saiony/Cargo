@@ -87,6 +87,8 @@ bool ACargoPlayerController::ShouldUseTouchControls() const
 void ACargoPlayerController::PlayerTick(float DeltaTime)
 {
     Super::PlayerTick(DeltaTime);
+	
+	UpdateContainerHoverDetection(DeltaTime);
 
     if (!bEditMode)
         return;
@@ -167,6 +169,39 @@ void ACargoPlayerController::PlayerTick(float DeltaTime)
     PlaceablePreview->SetActorRelativeLocation(LocalLocation);
 	PlaceablePreview->SetActorRelativeRotation(FRotator(0.f, 0.f, 0.f));
 	PlaceablePreview->MimicPlaceableYaw(DraggingObject);
+}
+
+void ACargoPlayerController::UpdateContainerHoverDetection(float DeltaTime)
+{
+	FHitResult HitResult;
+	
+	if (!GetHitResultUnderCursor(DropSurfaceChannel, false, HitResult))
+		return;
+	
+	const auto Container = Cast<AContainer>(HitResult.GetActor());
+	
+	if (!Container)
+	{		
+		OnContainerHoverConfirmed.Broadcast(nullptr);
+		return;
+	}
+	
+	if (CurrentHoveredContainer != Container)
+	{
+		CurrentHoveredContainer = Container;
+		ContainerHoverElapsedTime = 0.f;			
+		OnContainerHoverConfirmed.Broadcast(nullptr);
+		return;
+	}
+	
+	CurrentHoveredContainer = Container;
+	ContainerHoverElapsedTime += DeltaTime;
+	
+	if (ContainerHoverElapsedTime < ContainerHoverThreshold)
+		return;
+	
+	ContainerHoverElapsedTime = 0.f;	
+	OnContainerHoverConfirmed.Broadcast(Cast<AContainer>(Container));
 }
 
 void ACargoPlayerController::OnLeftClickStart(const FInputActionValue& Value)

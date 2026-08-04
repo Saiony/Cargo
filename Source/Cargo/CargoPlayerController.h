@@ -9,12 +9,14 @@
 #include "Interaction/CargoInteractable.h"
 #include "CargoPlayerController.generated.h"
 
+class AContainer;
 class UInputMappingContext;
 class UInputAction;
 class UUserWidget;
 struct FInputActionValue;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInteractableChanged, TScriptInterface<ICargoInteractable>, NewInteractable);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnContainerHoverConfirmed, AContainer*, HoveredContainer);
 
 /**
  *  Basic PlayerController class for a third person game
@@ -123,6 +125,16 @@ protected:
 	void UpdateInteractionFocus();
 
 	TScriptInterface<ICargoInteractable> FindBestInteractable() const;
+	
+	void UpdateContainerHoverDetection(float DeltaTime);
+
+	UPROPERTY(EditDefaultsOnly, Category = "ContainerInfo")
+	float ContainerHoverThreshold = 1.0f;
+	
+	float ContainerHoverElapsedTime = 0.0f;
+	
+	UPROPERTY()
+	TWeakObjectPtr<AContainer> CurrentHoveredContainer;
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Input")
@@ -130,4 +142,6 @@ public:
 	
 	UPROPERTY(BlueprintAssignable)
 	FOnInteractableChanged OnInteractableChanged;
+	
+	FOnContainerHoverConfirmed OnContainerHoverConfirmed;
 };

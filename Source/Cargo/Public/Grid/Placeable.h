@@ -33,6 +33,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cargo")
 	float Weight;
 	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cargo")
+	FString Name;
+	
 	UPROPERTY(EditDefaultsOnly, Category="Cargo")
 	TObjectPtr<USoundBase> GrabSound;
 	

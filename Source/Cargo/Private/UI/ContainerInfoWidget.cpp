@@ -3,8 +3,10 @@
 
 #include "UI/ContainerInfoWidget.h"
 
-void UContainerInfoWidget::Show(FText Cargo, FText Weight, FVector WorldPos)
-{
+void UContainerInfoWidget::Show(FString Cargo, float Weight)
+{	
+	CargoText->SetText(FText::FromString(Cargo));
+	WeightText->SetText(FText::AsNumber(Weight));
 }
 
 void UContainerInfoWidget::Hide()
