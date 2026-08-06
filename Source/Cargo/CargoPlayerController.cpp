@@ -71,6 +71,7 @@ void ACargoPlayerController::SetupInputComponent()
 			EnhancedInputComponent->BindAction(RightClickAction, ETriggerEvent::Started, this, &ACargoPlayerController::OnRightClick);
 			EnhancedInputComponent->BindAction(CancelAction, ETriggerEvent::Started, this, &ACargoPlayerController::OnCancel);
 			EnhancedInputComponent->BindAction(SwitchCameraAction, ETriggerEvent::Completed, this, &ACargoPlayerController::SwitchEditMode);
+			EnhancedInputComponent->BindAction(ToggleMapAction, ETriggerEvent::Completed, this, &ACargoPlayerController::OnToggleMap);			
 			EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Completed, this, &ACargoPlayerController::Interact);
 			EnhancedInputComponent->BindAction(ScrollUp, ETriggerEvent::Completed, this, &ThisClass::OnScrollUp);
 			EnhancedInputComponent->BindAction(ScrollDown, ETriggerEvent::Completed, this, &ThisClass::OnScrollDown);
@@ -295,6 +296,11 @@ void ACargoPlayerController::SwitchEditMode(const FInputActionValue& Value)
 	{
 		SetInputMode(FInputModeGameOnly());
 	}
+}
+
+void ACargoPlayerController::OnToggleMap(const FInputActionInstance& InputActionInstance)
+{
+	GetGameInstance()->GetSubsystem<UCargoUIManagerSubsystem>()->ToggleMap();
 }
 
 void ACargoPlayerController::Interact(const FInputActionValue& InputActionValue)

@@ -6,11 +6,25 @@
 #include "GameUIManagerSubsystem.h"
 #include "CargoUIManagerSubsystem.generated.h"
 
+class UUserWidget;
+
 /**
  * 
  */
-UCLASS()
+UCLASS(Blueprintable)
 class CARGO_API UCargoUIManagerSubsystem : public UGameUIManagerSubsystem
 {
 	GENERATED_BODY()
+
+	UPROPERTY()
+	UUserWidget* MapWidgetInstance;
+	
+public:
+	void ToggleMap();
+	
+	void ShowMap();
+	
+	void HideMap();
+	
+	bool bIsMapVisible = false;
 };

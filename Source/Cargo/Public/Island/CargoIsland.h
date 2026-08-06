@@ -47,6 +47,9 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Island")
 	TObjectPtr<USoundBase> InteractionSound;
+	
+	UPROPERTY(EditAnywhere, Category="Cargo|Island")
+	FText IslandName;
 
 public:
 	// ICargoInteractable Interface
@@ -62,4 +65,6 @@ public:
 
 	UFUNCTION(BlueprintPure, Category="Cargo|Island")
 	FGameplayTag GetLocationTag() const { return LocationTag; }
+	
+	FText GetIslandName() const { return IslandName; }
 };

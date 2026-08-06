@@ -9,7 +9,7 @@
 class UCommonLocalPlayer;
 class UGameUIPolicy;
 
-UCLASS(Abstract, Config = Game)
+UCLASS(Abstract, Blueprintable, Config = Game)
 class FROGSMITHUI_API UGameUIManagerSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()

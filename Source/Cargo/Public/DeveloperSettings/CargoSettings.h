@@ -6,6 +6,7 @@
 #include "DataAssets/ContainerDA.h"
 #include "Engine/DeveloperSettings.h"
 #include "GameplayTagContainer.h"
+#include "UI/MapWidget.h"
 #include "CargoSettings.generated.h"
 
 class APlaceablePreview;
@@ -28,4 +29,7 @@ public:
 	
 	UPROPERTY(EditAnywhere, Config, Category = "Container")
 	TSoftClassPtr<APlaceablePreview> PlaceablePreviewClass;
+	
+	UPROPERTY(EditAnywhere, Config, Category = "UI")
+	TSubclassOf<UMapWidget> MapWidgetClass;
 };

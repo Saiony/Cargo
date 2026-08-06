@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "InputAction.h"
 #include "GameFramework/PlayerController.h"
 #include "Grid/GridComponent.h"
 #include "Grid/PlaceablePreview.h"
@@ -62,6 +63,9 @@ protected:
 	UInputAction* SwitchCameraAction;
 	
 	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* ToggleMapAction;
+	
+	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* InteractAction;
 	
 	UPROPERTY(EditAnywhere, Category="Input")
@@ -98,12 +102,12 @@ protected:
 	
 	UPROPERTY()
 	TObjectPtr<APlaceablePreview> PlaceablePreview;
-
+	
 	/** Gameplay initialization */
 	virtual void BeginPlay() override;
 
 	virtual void PlayerTick(float DeltaTime) override;
-
+	
 	/** Input mapping context setup */
 	virtual void SetupInputComponent() override;
 
@@ -115,6 +119,7 @@ protected:
 	void OnRightClick(const FInputActionValue& Value);
 	void OnCancel(const FInputActionValue& Value);
 	void SwitchEditMode(const FInputActionValue& Value);
+	void OnToggleMap(const FInputActionInstance& InputActionInstance);
 	
 	void Interact(const FInputActionValue& InputActionValue);
 	void OnScrollUp(const FInputActionValue& InputActionValue);
