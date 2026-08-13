@@ -38,14 +38,16 @@ void UMissionBoardWidget::ShowAvailableMissions(FMissions* MissionsData)
 	{
 		UE_LOG(LogTemp, Log, TEXT("MissionBoardWidget: No missions to display"));
 		return;
-	}
+	}	
 	
-	for (const auto Mission : MissionsData->Missions)
+	for (int i = 0; i < MissionsData->Missions.Num(); i++)	
 	{
+		const auto Mission = MissionsData->Missions[i];
+		
 		const auto MissionEntryWidget = CreateWidget<UMissionEntryWidget>(this, MissionEntryClass);
 		MissionEntryWidget->Initialize(Mission, this, false);
 		
-		MissionsContainer->AddChildToVerticalBox(MissionEntryWidget);		
+		const auto GridSlot = MissionsContainer->AddChildToWrapBox(MissionEntryWidget);		
 	}
 }
 
@@ -56,10 +58,10 @@ void UMissionBoardWidget::ShowActiveMissions()
 	
 	for (auto ActiveMission : ActiveMissions)
 	{
-		const auto MissionEntryWidget = CreateWidget<UMissionEntryWidget>(this, ActiveMissionEntryClass);
+		const auto MissionEntryWidget = CreateWidget<UMissionEntryWidget>(this, MissionEntryClass);
 		MissionEntryWidget->Initialize(ActiveMission->GetOriginalMissionData(), this, true);
 		
-		MissionsContainer->AddChildToVerticalBox(MissionEntryWidget);		
+		MissionsContainer->AddChildToWrapBox(MissionEntryWidget);		
 	}
 }
 
@@ -79,7 +81,7 @@ void UMissionBoardWidget::OnMissionEntryClicked(UMissionEntryWidget* MissionEntr
 	SelectedWidget = MissionEntryWidget;
 	SelectedWidget->Highlight();
 	
-	if (MissionEntryWidget->IsActiveQuest)
+	if (MissionEntryWidget->IsActiveMission)
 	{
 		DeliverMissionButton->SetVisibility(ESlateVisibility::Visible);
 		AcceptMissionButton->SetVisibility(ESlateVisibility::Hidden);		
@@ -94,16 +96,17 @@ void UMissionBoardWidget::OnMissionEntryClicked(UMissionEntryWidget* MissionEntr
 void UMissionBoardWidget::OnAcceptMissionButtonClicked()
 {
 	const auto AcceptedMission = SelectedWidget->MissionData;
-
 	ACargoGameMode::Get(this)->MissionsService->AcceptMission(AcceptedMission, InstigatorIsland->GetLocationTag());
+	
 	CloseWidget();
 }
 
 void UMissionBoardWidget::OnDeliverMissionButtonClicked()
 {
-	const auto AcceptedMission = SelectedWidget->MissionData;
-	
+	const auto AcceptedMission = SelectedWidget->MissionData;	
 	InstigatorIsland->GetPort()->StartMissionDelivery(SelectedWidget->MissionData->GetId());
+	
+	CloseWidget();
 }
 
 void UMissionBoardWidget::OnCloseButtonClicked()

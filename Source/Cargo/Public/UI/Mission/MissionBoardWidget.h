@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "FrogsmithActivatableWidget.h"
 #include "MissionEntryWidget.h"
+#include "Components/WrapBox.h"
 #include "Island/CargoIsland.h"
 #include "Mission/MissionsDatabase.h"
 #include "MissionBoardWidget.generated.h"
@@ -18,7 +19,7 @@ class CARGO_API UMissionBoardWidget : public UFrogsmithActivatableWidget, public
 	GENERATED_BODY()
 	
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UVerticalBox> MissionsContainer;
+	TObjectPtr<UWrapBox> MissionsContainer;
 	
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> AcceptMissionButton;
@@ -38,15 +39,12 @@ class CARGO_API UMissionBoardWidget : public UFrogsmithActivatableWidget, public
 	UPROPERTY(EditDefaultsOnly, Category = "Cargo")
 	TSubclassOf<UMissionEntryWidget> MissionEntryClass;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "Cargo")
-	TSubclassOf<UMissionEntryWidget> ActiveMissionEntryClass;	
-	
 	UPROPERTY()
 	TObjectPtr<UMissionEntryWidget> SelectedWidget;
 	
 	UPROPERTY()
 	TObjectPtr<ACargoIsland> InstigatorIsland;
-
+	
 	UFUNCTION()
 	void OnAcceptMissionButtonClicked();
 	

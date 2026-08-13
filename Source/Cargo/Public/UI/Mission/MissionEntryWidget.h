@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "FrogsmithActivatableWidget.h"
 #include "MissionRequirementEntryWidget.h"
+#include "Components/Border.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
@@ -47,6 +48,12 @@ class CARGO_API UMissionEntryWidget : public UFrogsmithActivatableWidget
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> Button;
 	
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UBorder> ExclamationBorder;
+	
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UBorder> ActiveMissionBorder;
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Cargo")
 	FLinearColor DefaultBorderColor;
 	
@@ -59,22 +66,23 @@ class CARGO_API UMissionEntryWidget : public UFrogsmithActivatableWidget
 	UPROPERTY(EditDefaultsOnly, Category = "Cargo")
 	TSubclassOf<UMissionRequirementEntryWidget> MissionRequirementEntryClass;
 	
-	IMissionEntryListener* Listener;
-	
+	IMissionEntryListener* Listener;	
 
 	UFUNCTION()
-	void OnButtonClicked();
+	void OnButtonClicked();	
+	
+	void InitializeForActiveMission() const;
 	
 public:
 	UPROPERTY()
 	TObjectPtr<UMissionData> MissionData;
 	
-	bool IsActiveQuest;
+	bool IsActiveMission;
 	
 	void Highlight();
 	
 	void Fade();
-	
+
 	virtual void NativeOnInitialized() override;
 	
 	void Initialize(TObjectPtr<UMissionData> InMissionData, IMissionEntryListener* InListener, bool InIsActiveQuest);	

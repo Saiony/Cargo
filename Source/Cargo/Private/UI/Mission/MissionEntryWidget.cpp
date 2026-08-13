@@ -11,11 +11,12 @@ void UMissionEntryWidget::NativeOnInitialized()
 	Super::NativeOnInitialized();
 	
 	Button->OnClicked.AddDynamic(this, &ThisClass::OnButtonClicked);
+	DefaultBorderColor = Button->GetBackgroundColor();
 }
 
 void UMissionEntryWidget::Initialize(const TObjectPtr<UMissionData> InMissionData, IMissionEntryListener* InListener, bool InIsActiveQuest)
 {
-	IsActiveQuest = InIsActiveQuest;
+	IsActiveMission = InIsActiveQuest;
 	Listener = InListener;
 	MissionData = InMissionData;
 	
@@ -43,6 +44,8 @@ void UMissionEntryWidget::Initialize(const TObjectPtr<UMissionData> InMissionDat
 		RequirementsContainer->AddChildToVerticalBox(MissionRequirementEntryWidget);
 		MissionRequirementEntries.Add(MissionRequirementEntryWidget);
 	}
+	
+	InitializeForActiveMission();
 }
 
 void UMissionEntryWidget::OnButtonClicked()
@@ -58,4 +61,18 @@ void UMissionEntryWidget::Highlight()
 void UMissionEntryWidget::Fade()
 {
 	Button->SetBackgroundColor(DefaultBorderColor);	
+}
+
+void UMissionEntryWidget::InitializeForActiveMission() const
+{
+	if (IsActiveMission)
+	{
+		ActiveMissionBorder->SetVisibility(ESlateVisibility::Visible);
+		ExclamationBorder->SetVisibility(ESlateVisibility::Visible);
+	}
+	else
+	{
+		ActiveMissionBorder->SetVisibility(ESlateVisibility::Hidden);
+		ExclamationBorder->SetVisibility(ESlateVisibility::Hidden);
+	}
 }
