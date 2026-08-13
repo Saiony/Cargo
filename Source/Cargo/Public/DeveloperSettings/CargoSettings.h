@@ -6,6 +6,7 @@
 #include "DataAssets/ContainerDA.h"
 #include "Engine/DeveloperSettings.h"
 #include "GameplayTagContainer.h"
+#include "Mission/MissionsDatabase.h"
 #include "UI/MapWidget.h"
 #include "CargoSettings.generated.h"
 
@@ -19,6 +20,9 @@ UCLASS(Config = Game, DefaultConfig, meta = (DisplayName = "Cargo Settings"))
 class CARGO_API UCargoSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
+		
+	UPROPERTY(EditAnywhere, Config, Category = "Mission")
+	TSoftObjectPtr<UMissionsDatabase> MissionsDatabase;
 	
 public:
 	UPROPERTY(EditAnywhere, Config, Category = "Data Assets")
@@ -32,4 +36,6 @@ public:
 	
 	UPROPERTY(EditAnywhere, Config, Category = "UI")
 	TSubclassOf<UMapWidget> MapWidgetClass;
+	
+	TObjectPtr<UMissionsDatabase> GetMissionsDatabase() const;
 };

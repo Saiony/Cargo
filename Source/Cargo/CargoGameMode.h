@@ -6,6 +6,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "Quest/QuestData.h"
+#include "Services/MissionsService.h"
 #include "CargoGameMode.generated.h"
 
 class APlaceable;
@@ -33,14 +34,28 @@ class ACargoGameMode : public AGameModeBase
 	UPROPERTY()
 	TArray<TObjectPtr<UQuestData>> AvailableQuests;
 	
+	TInlineComponentArray<TObjectPtr<UFORGServiceBase>> Services;
+	
 	int QuestFinishedDelegate;	
 
-	FGameplayTagContainer ChoicesContainer = FGameplayTagContainer();
+	FGameplayTagContainer ChoicesContainer = FGameplayTagContainer();	
 	
 	virtual void BeginPlay() override;
-public:	
-	ACargoGameMode();
 	
+	void BootService(int32 Index);
+	
+	//Delegates
+	
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnServicesBooted);
+	UPROPERTY(BlueprintAssignable)
+	FOnServicesBooted OnServicesBooted;
+	
+public:		
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TObjectPtr<UMissionsService> MissionsService;
+	
+	ACargoGameMode(const FObjectInitializer& ObjectInitializer);
+
 	FActiveQuestsDelegate ActiveQuestsDelegate;
 	
 	FQuestAcceptedDelegate QuestAcceptedDelegate;

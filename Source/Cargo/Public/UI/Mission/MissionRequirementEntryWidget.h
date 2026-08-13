@@ -4,24 +4,24 @@
 
 #include "CoreMinimal.h"
 #include "FrogsmithActivatableWidget.h"
-#include "Components/Image.h"
 #include "Components/TextBlock.h"
-#include "MapInterestPlaceWidget.generated.h"
+#include "MissionRequirementEntryWidget.generated.h"
 
+struct FCargoRequirement;
 /**
  * 
  */
 UCLASS()
-class CARGO_API UMapInterestPlaceWidget : public UFrogsmithActivatableWidget
+class CARGO_API UMissionRequirementEntryWidget : public UFrogsmithActivatableWidget
 {
 	GENERATED_BODY()
 	
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UImage> PinImage;
+	TObjectPtr<UTextBlock> QuantityText;
 	
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UTextBlock> TitleText;
+	TObjectPtr<UTextBlock> CommodityText;	
 	
 public:
-	void Init(TObjectPtr<UTexture2D> Image, const FText& Title) const;
+	void Initialize(const FCargoRequirement& CargoRequirement);
 };

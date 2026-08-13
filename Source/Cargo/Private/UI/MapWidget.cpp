@@ -69,7 +69,7 @@ void UMapWidget::UpdateInterestPlaces()
         }
 
         auto MapInterestWidget = CreateWidget<UMapInterestPlaceWidget>(GetWorld(), MapInterestPlaceClass);
-        MapInterestWidget->Initialize(IslandIcon, Island->GetIslandName());
+        MapInterestWidget->Init(IslandIcon, Island->GetIslandName());
         MapInterestWidget->SetVisibility(ESlateVisibility::Visible);
 
         UCanvasPanelSlot* PanelSlot = MapCanvas->AddChildToCanvas(MapInterestWidget);

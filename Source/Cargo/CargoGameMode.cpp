@@ -2,6 +2,7 @@
 
 #include "CargoGameMode.h"
 
+#include "Debug/CameraDebugCategories.h"
 #include "Island/CargoIsland.h"
 #include "Quest/QuestStatus.h"
 
@@ -13,10 +14,33 @@ void ACargoGameMode::BeginPlay()
 	{
 		AddAvailableQuest(AvailableQuest);
 	}
+	
+	GetComponents<UFORGServiceBase>(Services);
+	BootService(0);
 }
 
-ACargoGameMode::ACargoGameMode()
+ACargoGameMode::ACargoGameMode(const FObjectInitializer& ObjectInitializer)
 {
+	MissionsService = ObjectInitializer.CreateDefaultSubobject<UMissionsService>(this, TEXT("MissionsService"));
+}
+
+void ACargoGameMode::BootService(const int32 Index)
+{
+	if(Index > 0)
+	{
+		UE_LOG(LogTemp, Log, TEXT("%s booted successfully"), *Services[Index-1]->GetName());
+	}
+
+	if(!Services.IsValidIndex(Index))
+	{
+		UE_LOG(LogTemp, Log, TEXT("All Services booted successfully"));
+
+		OnServicesBooted.Broadcast();
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("Booting %s..."), *Services[Index]->GetName());
+	Services[Index]->Boot(FOnServiceBooted::CreateUObject(this, &ACargoGameMode::BootService, Index + 1));
 }
 
 void ACargoGameMode::ActivateQuest(UQuestData* QuestData, AActor* QuestInstigator)

@@ -1,26 +1,24 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "UI/Quest/QuestEntryWidget.h"
+#include "UI/Mission/Tracker/MissionTrackerEntryWidget.h"
+
+#include "CommonTextBlock.h"
 #include "Components/VerticalBox.h"
+#include "Quest/QuestData.h"
 #include "UI/Quest/CargoRequirementEntryWidget.h"
 
-void UQuestEntryWidget::Init(FGameplayTag QuestTag, UQuestData* QuestData)
+
+void UMissionTrackerEntryWidget::Init(TObjectPtr<UMissionData> MissionData)
 {
-	if (!QuestData) 
-		return;
-
-	MyQuestTag = QuestTag;
-
-	QuestTitleText->SetText(QuestData->Title);
-	DestinationText->SetText(FText::FromName(QuestData->DestinationTag.GetTagName()));
-
+	DestinationText->SetText(FText::FromName(MissionData->DestinationTag.GetTagName()));
+	
 	RequirementsContainer->ClearChildren();
 	RequirementWidgets.Empty();
 
-	for (const FCargoRequirement& Requirement : QuestData->CargoRequirements)
+	for (const auto& Requirement : MissionData->CargoRequirements)
 	{
-		UCargoRequirementEntryWidget* ReqWidget = CreateWidget<UCargoRequirementEntryWidget>(this, RequirementWidgetClass);
+		auto ReqWidget = CreateWidget<UCargoRequirementEntryWidget>(this, RequirementWidgetClass);
 
 		ReqWidget->Init(Requirement.CargoType, Requirement.Quantity);
 		RequirementsContainer->AddChild(ReqWidget);
@@ -28,12 +26,12 @@ void UQuestEntryWidget::Init(FGameplayTag QuestTag, UQuestData* QuestData)
 	}
 }
 
-void UQuestEntryWidget::UpdateRequirement(FGameplayTag CargoType, int32 DeliveredAmount)
+void UMissionTrackerEntryWidget::UpdateRequirement(FGameplayTag CargoType, int32 DeliveredAmount)
 {
 	RequirementWidgets[CargoType]->UpdateDelivered(DeliveredAmount);
 }
 
-void UQuestEntryWidget::Complete()
+void UMissionTrackerEntryWidget::Complete()
 {
 	if (CompletedAnim)
 	{
@@ -45,7 +43,7 @@ void UQuestEntryWidget::Complete()
 	}
 }
 
-void UQuestEntryWidget::OnAnimationFinished_Implementation(const UWidgetAnimation* Animation)
+void UMissionTrackerEntryWidget::OnAnimationFinished_Implementation(const UWidgetAnimation* Animation)
 {
 	Super::OnAnimationFinished_Implementation(Animation);
 	

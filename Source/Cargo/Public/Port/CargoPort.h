@@ -52,10 +52,14 @@ public:
 
 	void StartQuestDelivery(FGameplayTag QuestTag);
 	
+	void StartMissionDelivery(FGuid MissionId);
+
 	void Clear();
 	
 	void SpawnCargo(const TArray<FCargoRequirement>& Requirements);
 
 private:	
 	FGameplayTag CurrentQuestTag;
+	
+	FGuid CurrentMissionId;
 };
