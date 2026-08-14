@@ -72,8 +72,14 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
 	FVector2D ShipAngleMinMax = FVector2D(-45.0f, 45.0f);
 	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	float ReverseGearMultiplier = 0.5f;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cargo|Audio")
 	TObjectPtr<USoundBase> MovementSound;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cargo")
+	float MouseSensitivity = 0.8f;
 	
 	FDelegateHandle HasteCVarDelegateHandle;
 	

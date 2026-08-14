@@ -64,8 +64,7 @@ void ACargoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 }
 
 void ACargoCharacter::Move(const FInputActionValue& Value)
-{
-	// input is a Vector2D
+{	
 	FVector2D MovementVector = Value.Get<FVector2D>();
 	
 	auto SideTilt = WeightInbalanceMultiplier * FR / 10000;
@@ -84,14 +83,18 @@ void ACargoCharacter::Look(const FInputActionValue& Value)
 }
 
 void ACargoCharacter::DoMove(float Right, float Forward)
-{
-	if (GetController() == nullptr)
+{	
+	if (GetController<ACargoPlayerController>()->bEditMode)
 		return;
 	
 	// Movement relative to actor
 	const FVector ForwardDirection = GetActorForwardVector();
 	const FVector RightDirection   = GetActorRightVector();
 
+	const bool IsMovingBack = Forward < 0.0f;
+	Right *= IsMovingBack ? -1 : 1; 
+	FloatingMovement->Acceleration = IsMovingBack ? OriginalAcceleration * ReverseGearMultiplier : OriginalAcceleration;
+	
 	AddMovementInput(ForwardDirection, Forward);
 
 	// Rotation
@@ -109,8 +112,8 @@ void ACargoCharacter::DoLook(float Yaw, float Pitch)
 	if (GetController() != nullptr)
 	{
 		// add yaw and pitch input to controller
-		AddControllerYawInput(Yaw);
-		AddControllerPitchInput(Pitch);
+		AddControllerYawInput(Yaw * MouseSensitivity);
+		AddControllerPitchInput(Pitch * MouseSensitivity);
 	}
 }
 
