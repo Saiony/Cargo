@@ -305,7 +305,10 @@ void ACargoPlayerController::OnToggleMap(const FInputActionInstance& InputAction
 
 void ACargoPlayerController::Interact(const FInputActionValue& InputActionValue)
 {
-	auto ControlledPawn = GetPawn();
+	if (bEditMode)
+		return;
+	
+	const auto ControlledPawn = GetPawn();
 
 	const FVector Origin = ControlledPawn->GetActorLocation();
 
