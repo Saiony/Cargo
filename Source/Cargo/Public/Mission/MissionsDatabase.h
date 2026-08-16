@@ -24,7 +24,7 @@ class CARGO_API UMissionsDatabase : public UDataAsset
 {
 	GENERATED_BODY()
 	
-	UPROPERTY(EditDefaultsOnly, Category = "Location")
+	UPROPERTY(EditDefaultsOnly, meta = (Categories = "Location"))
 	TMap<FGameplayTag, FMissions> Database;
 	
 public:

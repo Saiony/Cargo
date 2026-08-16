@@ -93,7 +93,7 @@ void ACargoIsland::OnQuestCompleted(TObjectPtr<UQuestStatus> QuestStatus)
 	bool ShouldPlayAlternative = false;
 	for (FGameplayTag RequiredChoiceTag : QuestStatus->AlternativeEndDeliveryDialogue.RequiredChoiceTags)
 	{	
-		if (ACargoGameMode::Get(this)->HasChoice(RequiredChoiceTag))
+		if (ACargoGameMode::Get(this)->HasTag(RequiredChoiceTag))
 		{
 			ShouldPlayAlternative = true;	
 			break;

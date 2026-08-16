@@ -12,6 +12,7 @@ void UMissionStatus::Initialize(TObjectPtr<UMissionData> MissionData, FGameplayT
 	OriginalMissionData = MissionData;
 	StartIslandTag = InStartIslandTag;
 	DestinationTag = MissionData->DestinationTag;	
+	Reward = MissionData->Reward;
 	
 	for (const auto Req : MissionData->CargoRequirements)
 	{

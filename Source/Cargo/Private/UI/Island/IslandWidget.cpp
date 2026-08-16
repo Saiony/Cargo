@@ -23,7 +23,9 @@ void UIslandWidget::NativeOnInitialized()
 
 void UIslandWidget::Initialize(TObjectPtr<ACargoIsland> IslandRef)
 {	
-	Island = IslandRef;
+	Island = IslandRef;	
+	
+	MissionBoardButton->SetVisibility(!ACargoGameMode::Get(this)->HasTag(TAG_InGameEvent_MissionBoardUnlocked) ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 }
 
 void UIslandWidget::OnDialogueButtonClicked()

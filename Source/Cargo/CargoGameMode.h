@@ -6,6 +6,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "Quest/QuestData.h"
+#include "Services/EconomyService.h"
 #include "Services/MissionsService.h"
 #include "CargoGameMode.generated.h"
 
@@ -37,8 +38,8 @@ class ACargoGameMode : public AGameModeBase
 	TInlineComponentArray<TObjectPtr<UFORGServiceBase>> Services;
 	
 	int QuestFinishedDelegate;	
-
-	FGameplayTagContainer ChoicesContainer = FGameplayTagContainer();	
+	
+	FGameplayTagContainer TagsContainer = FGameplayTagContainer();	
 	
 	virtual void BeginPlay() override;
 	
@@ -54,6 +55,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UMissionsService> MissionsService;
 	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TObjectPtr<UEconomyService> EconomyService;
+	
 	ACargoGameMode(const FObjectInitializer& ObjectInitializer);
 
 	FActiveQuestsDelegate ActiveQuestsDelegate;
@@ -63,6 +67,7 @@ public:
 	FOnQuestProgressUpdatedDelegate OnQuestProgressUpdatedDelegate;
 	
 	FQuestCompletedDelegate QuestCompletedDelegate;	
+	
 	
 	static ACargoGameMode* Get(const UObject* WorldContextObject)
 	{
@@ -78,8 +83,8 @@ public:
 	void RegisterCargoDelivery(FGameplayTag QuestTag, FGameplayTag CargoType);
 	void RemoveCargoDelivery(FGameplayTag QuestTag, FGameplayTag CargoType);
 	
-	void AddChoice(FGameplayTag ChoiceTag);
-	bool HasChoice(FGameplayTag ChoiceName);	
+	void AddTag(FGameplayTag ChoiceTag);
+	bool HasTag(FGameplayTag ChoiceName);	
 	float GetGridCellSize() const { return 100.0f; }
 	
 	TObjectPtr<UQuestData> GetAvailableQuestByStartLocation(FGameplayTag StartLocation);

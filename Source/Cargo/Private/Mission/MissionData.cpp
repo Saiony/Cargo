@@ -7,3 +7,10 @@ UMissionData::UMissionData()
 {
 	Id = FGuid::NewGuid();
 }
+
+void UMissionData::PostDuplicate(EDuplicateMode::Type DuplicateMode)
+{
+	Super::PostDuplicate(DuplicateMode);
+	
+	Id = FGuid::NewGuid();
+}

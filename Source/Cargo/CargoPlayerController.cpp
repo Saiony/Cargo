@@ -37,6 +37,7 @@ void ACargoPlayerController::BeginPlay()
 
 	const auto PlaceablePreviewClass = GetDefault<UCargoSettings>()->PlaceablePreviewClass.LoadSynchronous();
 	PlaceablePreview = GetWorld()->SpawnActor<APlaceablePreview>(PlaceablePreviewClass, FVector::ZeroVector, FRotator::ZeroRotator);
+	PlaceablePreview->SetActorHiddenInGame(true);
 }
 
 void ACargoPlayerController::SetupInputComponent()

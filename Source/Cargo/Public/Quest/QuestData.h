@@ -8,6 +8,18 @@
 #include "Engine/DataAsset.h"
 #include "QuestData.generated.h"
 
+USTRUCT(BlueprintType)
+struct FReward
+{
+	GENERATED_BODY()
+	
+	UPROPERTY(EditAnywhere)
+	FGameplayTag RewardTag;
+	
+	UPROPERTY(EditAnywhere)
+	int32 Money = 0;
+};
+
 
 USTRUCT(BlueprintType)
 struct FCargoRequirement
@@ -65,4 +77,10 @@ public:
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
 	TSoftObjectPtr<UQuestData> NextQuest; 
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	TSoftObjectPtr<UQuestData> PreviousQuest;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	FReward Reward;
 };

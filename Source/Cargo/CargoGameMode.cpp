@@ -22,6 +22,7 @@ void ACargoGameMode::BeginPlay()
 ACargoGameMode::ACargoGameMode(const FObjectInitializer& ObjectInitializer)
 {
 	MissionsService = ObjectInitializer.CreateDefaultSubobject<UMissionsService>(this, TEXT("MissionsService"));
+	EconomyService = ObjectInitializer.CreateDefaultSubobject<UEconomyService>(this, TEXT("EconomyService"));
 }
 
 void ACargoGameMode::BootService(const int32 Index)
@@ -146,14 +147,14 @@ void ACargoGameMode::RemoveCargoDelivery(FGameplayTag QuestTag, FGameplayTag Car
 	OnQuestProgressUpdatedDelegate.Broadcast(QuestStatus, CargoType, CargoStatus.DeliveredQuantity);
 }
 
-void ACargoGameMode::AddChoice(FGameplayTag ChoiceTag)
+void ACargoGameMode::AddTag(FGameplayTag ChoiceTag)
 {
-	ChoicesContainer.AddTag(ChoiceTag);
+	TagsContainer.AddTag(ChoiceTag);
 }
 
-bool ACargoGameMode::HasChoice(FGameplayTag ChoiceName)
+bool ACargoGameMode::HasTag(FGameplayTag ChoiceName)
 {
-	return ChoicesContainer.HasTag(ChoiceName);
+	return TagsContainer.HasTag(ChoiceName);
 }
 
 TObjectPtr<UQuestData> ACargoGameMode::GetAvailableQuestByStartLocation(FGameplayTag StartLocation)
@@ -175,7 +176,14 @@ void ACargoGameMode::CheckIfQuestEnded(TObjectPtr<UQuestStatus> QuestStatus)
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("Quest %s ended"), *QuestStatus->OriginalQuestData->Title.ToString());
+	
+	//give reward
+	if (QuestStatus->Reward.RewardTag.IsValid())
+		AddTag(QuestStatus->Reward.RewardTag);
+	
+	EconomyService->AddMoney(QuestStatus->Reward.Money);
 
+	//handle quest lifecycle/events
 	ActiveQuests.Remove(QuestStatus->OriginalQuestData->QuestTag);
 	AddAvailableQuest(QuestStatus->NextQuest.LoadSynchronous());
 	QuestCompletedDelegate.Broadcast(QuestStatus);

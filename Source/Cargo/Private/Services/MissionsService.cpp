@@ -3,6 +3,8 @@
 
 #include "Services/MissionsService.h"
 
+#include "CargoGameMode.h"
+
 
 UMissionsService::UMissionsService()
 {
@@ -70,6 +72,8 @@ TArray<TObjectPtr<UMissionStatus>> UMissionsService::GetActiveMissionsForDestina
 
 void UMissionsService::CompleteMission(const TObjectPtr<UMissionStatus> Mission)
 {
+	ACargoGameMode::Get(this)->EconomyService->AddMoney(Mission->Reward.Money);
+	
 	MissionCompletedDelegate.Broadcast(Mission);
 	ActiveMissions.Remove(Mission->GetId());
 }

@@ -189,8 +189,13 @@ void ACargoCharacter::UpdateSpeed()
 
 void ACargoCharacter::OnHasteCVarChanged(IConsoleVariable* ConsoleVariable)
 {
+	if (IsTemplate() || !GetWorld() || !GetWorld()->IsGameWorld())
+	{
+		return;
+	}
+
 	const bool Haste = CVarBoostMovement.GetValueOnGameThread();
 
-	FloatingMovement->MaxSpeed = Haste ? FloatingMovement->MaxSpeed * 2 : FloatingMovement->MaxSpeed / 2;
-	FloatingMovement->Acceleration = Haste ? FloatingMovement->Acceleration * 2 : FloatingMovement->Acceleration / 2;
+	FloatingMovement->MaxSpeed = Haste ? OriginalMaxSpeed * 2.f : OriginalMaxSpeed;
+	FloatingMovement->Acceleration = Haste ? OriginalAcceleration * 2.f : OriginalAcceleration;
 }

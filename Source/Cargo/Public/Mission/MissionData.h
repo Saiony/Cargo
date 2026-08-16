@@ -22,7 +22,7 @@ class CARGO_API UMissionData : public UPrimaryDataAsset
 	FGuid Id;
 	
 public:		
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, meta = (Categories = "Location"))
 	FGameplayTag DestinationTag;
 	
 	UPROPERTY(EditDefaultsOnly)
@@ -31,7 +31,12 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	TArray<FGameplayTag> UnlockRequirements;
 	
+	UPROPERTY(EditDefaultsOnly)
+	FReward Reward;
+	
 	UMissionData();
 	
 	FGuid GetId() const { return Id; }
+	
+	virtual void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
 };

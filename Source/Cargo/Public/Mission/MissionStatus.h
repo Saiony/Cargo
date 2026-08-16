@@ -54,5 +54,7 @@ public:
 	
 	bool IsComplete() const;
 	
+	FReward Reward;
+	
 	TMap<FGameplayTag, FCargoStatus> GetDeliveredQuantities() const { return DeliveredQuantities; }
 };
