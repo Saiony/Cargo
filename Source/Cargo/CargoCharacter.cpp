@@ -4,13 +4,12 @@
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/Controller.h"
 #include "EnhancedInputComponent.h"
-#include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "Cargo.h"
 #include "BuoyancyComponent.h"
+#include "DUETween.h"
 #include "Components/AudioComponent.h"
 #include "GameFramework/FloatingPawnMovement.h"
-#include "GameFramework/PlayerState.h"
 #include "GameplayFramework/CargoPlayerState.h"
 #include "Grid/Placeable.h"
 
@@ -137,11 +136,18 @@ void ACargoCharacter::OnPlaceableRemoved(APlaceable* Placeable)
 	UpdateSpeed();
 }
 
+
 void ACargoCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 	
 	UpdateEngineSoundIntensity();
+	
+	if (!KnockbackVelocity.IsNearlyZero())
+	{
+		AddActorWorldOffset(KnockbackVelocity * DeltaSeconds, true);
+		KnockbackVelocity = FMath::VInterpTo(KnockbackVelocity, FVector::ZeroVector, DeltaSeconds, KnockbackSpeed);
+	}
 }
 
 void ACargoCharacter::BeginPlay()
@@ -153,6 +159,12 @@ void ACargoCharacter::BeginPlay()
 	
 	OriginalMaxSpeed = FloatingMovement->MaxSpeed;
 	OriginalAcceleration = FloatingMovement->Acceleration;
+	
+	if (UPrimitiveComponent* CollisionComp = Cast<UPrimitiveComponent>(GetRootComponent()))
+	{
+		CollisionComp->SetNotifyRigidBodyCollision(true);
+		CollisionComp->OnComponentHit.AddDynamic(this, &ACargoCharacter::OnCargoHit);
+	}
 }
 
 void ACargoCharacter::BalanceShip()
@@ -198,4 +210,45 @@ void ACargoCharacter::OnHasteCVarChanged(IConsoleVariable* ConsoleVariable)
 
 	FloatingMovement->MaxSpeed = Haste ? OriginalMaxSpeed * 2.f : OriginalMaxSpeed;
 	FloatingMovement->Acceleration = Haste ? OriginalAcceleration * 2.f : OriginalAcceleration;
+}
+
+
+void ACargoCharacter::OnCargoHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{	
+	const float Now = GetWorld()->GetTimeSeconds();
+	if (Now - LastKnockbackTime < KnockbackCooldown)
+		return;
+	
+	LastKnockbackTime = Now;
+	
+	UE_LOG(LogTemp, Log, TEXT("Hit %s"), *OtherActor->GetName());
+		
+	const float HitVelocity = FloatingMovement->Velocity.Size();
+	KnockbackVelocity = Hit.ImpactNormal.GetSafeNormal() * KnockbackStrength * 100.f;
+	
+	if (HitVelocity > OriginalMaxSpeed * 0.8f)
+		PopRandomContainer();
+}
+
+void ACargoCharacter::PopRandomContainer()
+{
+	const auto HighestOccupiedZ = GridComp->GetHighestOccupiedZ();
+	const auto PositionsTop = GridComp->GetPositionsFromLevel(HighestOccupiedZ);
+	
+	if (PositionsTop.Num() == 0)
+	{
+		UE_LOG(LogTemp, Log, TEXT("No positions to pop"));
+		return;
+	}
+	
+	UE_LOG(LogTemp, Log, TEXT("Popping random container"));
+	
+	const auto RandomIndex = FMath::RandRange(0, PositionsTop.Num() - 1);
+	const auto RandomPosition = PositionsTop[RandomIndex];	
+	
+	auto Placeable = GridComp->GetPlaceableAt(RandomPosition);		
+	GridComp->RemovePlaceableFromGrid(Placeable);
+	
+	const FVector RandomDirection = FMath::VRandCone(FVector::UpVector,FMath::DegreesToRadians(25.0f));
+	Placeable->LaunchPlaceable(RandomDirection);
 }

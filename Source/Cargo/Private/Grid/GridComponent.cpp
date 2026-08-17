@@ -102,6 +102,13 @@ void UGridComponent::RemovePlaceableFromGrid(TObjectPtr<APlaceable> Placeable)
 	OnPlaceableRemovedFromGrid.Broadcast(Placeable);
 }
 
+APlaceable* UGridComponent::GetPlaceableAt(const FIntVector GridPos)
+{
+	auto Placeable = *PlaceableGrid.GetValue(GridPos.X, GridPos.Y, GridPos.Z);
+	
+	return Placeable;
+}
+
 TMap<FIntVector, APlaceable*> UGridComponent::GetOccupiedSlots() const
 {
 	return PlaceableGrid.GetOccupiedSlots();
@@ -143,6 +150,16 @@ bool UGridComponent::IsPlaceableBlocked(TObjectPtr<APlaceable> Placeable)
 	}
 
 	return false;
+}
+
+int32 UGridComponent::GetHighestOccupiedZ()
+{
+	return PlaceableGrid.GetHighestOccupiedZ();
+}
+
+TArray<FIntVector> UGridComponent::GetPositionsFromLevel(int Z)
+{
+	return PlaceableGrid.GetOccupiedPositionsAtZ(Z);
 }
 
 #if !UE_BUILD_SHIPPING

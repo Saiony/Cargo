@@ -43,14 +43,22 @@ public:
 	void AddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const FVector& WorldLocation, float Rotation);
 	
 	void RemovePlaceableFromGrid(TObjectPtr<APlaceable> Placeable);
+
+	APlaceable* GetPlaceableAt(const FIntVector WorldLocation);
 	
 	TMap<FIntVector, APlaceable*> GetOccupiedSlots() const;
 	
 	FVector GetNextFreeZPositionWorld(const FVector& WorldLocation);
+	
 	bool IsPlaceableBlocked(TObjectPtr<APlaceable> Placeable);
+	int32 GetHighestOccupiedZ();
+	TArray<FIntVector> GetPositionsFromLevel(int Z);
+
+	TObjectPtr<APlaceable> GetPlaceableFromLevel(int Z);
 
 #if !UE_BUILD_SHIPPING
 	void DrawDebugGrid(float Duration = 0.f) const;
+	
 #endif
 
 	FOnPlaceableAddedToGrid OnPlaceableAddedToGrid;

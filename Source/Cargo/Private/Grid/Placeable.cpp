@@ -3,6 +3,7 @@
 
 #include "Public/Grid/Placeable.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/TimelineComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 // Sets default values
@@ -19,14 +20,12 @@ APlaceable::APlaceable()
 	
 	ContainerMeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ContainerMesh"));
 	ContainerMeshComp->SetupAttachment(PivotComp);
-	
 }
 
 // Called when the game starts or when spawned
 void APlaceable::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
 // Called every frame

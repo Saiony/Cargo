@@ -7,6 +7,8 @@
 #include "GameFramework/Actor.h"
 #include "Placeable.generated.h"
 
+class UTimelineComponent;
+
 UCLASS()
 class CARGO_API APlaceable : public AActor
 {
@@ -40,8 +42,8 @@ public:
 	TObjectPtr<USoundBase> GrabSound;
 	
 	UPROPERTY(EditDefaultsOnly, Category="Cargo")
-	TObjectPtr<USoundBase> PlaceSound;
-	
+	TObjectPtr<USoundBase> PlaceSound;	
+		
 	TObjectPtr<UGridComponent> OwningGridActor;
 		
 	FVector2D Size;	
@@ -76,4 +78,7 @@ public:
 	FIntPoint GetGridPos() const { return PivotGridPos; }
 	
 	int32 GetGridLevel() const { return GridLevel; }
+	
+	UFUNCTION(BlueprintImplementableEvent, Category = "Placeable")
+	void LaunchPlaceable(const FVector& Direction);
 };

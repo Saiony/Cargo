@@ -89,6 +89,19 @@ protected:
 	
 	float OriginalAcceleration = -1;
 	
+	float LastKnockbackTime = -1.f;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Cargo")
+	float KnockbackCooldown = 2.0f;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Cargo")
+	float KnockbackStrength = 15.f;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Cargo")
+	float KnockbackSpeed = 3.f;
+	
+	FVector KnockbackVelocity;
+	
 	void OnHasteCVarChanged(IConsoleVariable* ConsoleVariable);
 public:
 	/** Constructor */
@@ -111,11 +124,16 @@ protected:
 	void UpdateEngineSoundIntensity();
 
 	void UpdateSpeed();
+	
 	UFUNCTION()
 	void OnPlaceableAdded(APlaceable* Placeable);
 	
 	UFUNCTION()
 	void OnPlaceableRemoved(APlaceable* Placeable);
+
+	UFUNCTION()
+	void OnCargoHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+	void PopRandomContainer();
 
 public:
 	/** Handles move inputs from either controls or UI interfaces */
@@ -129,8 +147,8 @@ public:
 	void AttachPlaceable(APlaceable* Placeable, FVector WorldPos);
 	
 	UFUNCTION(BlueprintImplementableEvent, Category="Cargo")
-	void RotateShip(float FinalAngle);	
-	
+	void RotateShip(float FinalAngle);
+
 	virtual void BeginPlay() override;
 	
 	virtual void Tick(float DeltaSeconds) override;

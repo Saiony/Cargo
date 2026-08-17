@@ -123,4 +123,38 @@ public:
 		return GridIndex.X >= Min.X && GridIndex.X <= Max.X &&
 			   GridIndex.Y >= Min.Y && GridIndex.Y <= Max.Y;
 	}
+	
+	int32 GetHighestOccupiedZ() const
+	{
+		if (OccupiedSlots.IsEmpty())
+		{
+			return 0;
+		}
+
+		int32 HighestZ = TNumericLimits<int32>::Lowest();
+
+		for (const auto& Elem : OccupiedSlots)
+		{
+			HighestZ = FMath::Max(HighestZ, Elem.Key.Z);
+		}
+
+		return HighestZ;
+	}
+	
+	TArray<FIntVector> GetOccupiedPositionsAtZ(int32 Z) const
+	{
+		TArray<FIntVector> Positions;
+
+		int32 HighestZ = TNumericLimits<int32>::Lowest();
+
+		for (const auto& Elem : OccupiedSlots)
+		{
+			if (Elem.Key.Z != Z)
+				continue;
+			
+			Positions.Add(Elem.Key);
+		}
+
+		return Positions;
+	}
 };
