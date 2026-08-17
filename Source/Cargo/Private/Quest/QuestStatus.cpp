@@ -19,6 +19,7 @@ void UQuestStatus::Initialize(UQuestData* QuestData)
 	EndDeliveryDialogue = QuestData->EndDeliveryDialogue;
 	InProgressDialogue = QuestData->InProgressDialogue;
 	AlternativeEndDeliveryDialogue = QuestData->AlternativeEndDeliveryDialogue;
+	Reward = QuestData->Reward;
 	
 	NextQuest = QuestData->NextQuest;
 	StartIslandTag = QuestData->StartLocationTag;

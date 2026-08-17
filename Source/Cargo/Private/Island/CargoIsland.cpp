@@ -3,9 +3,12 @@
 
 #include "Island/CargoIsland.h"
 
+#include "PrimaryGameLayout.h"
 #include "Components/WidgetComponent.h"
 #include "Quest/QuestStatus.h"
 #include "Subsystem/FROGDialogueSubsystem.h"
+#include "TagDeclaration/UITypes.h"
+#include "UI/Island/IslandWidget.h"
 
 ACargoIsland::ACargoIsland()
 {
@@ -32,46 +35,21 @@ void ACargoIsland::BeginPlay()
 	GM->QuestAcceptedDelegate.AddUObject(this, &ACargoIsland::OnQuestAccepted);
 	GM->QuestCompletedDelegate.AddUObject(this, &ACargoIsland::OnQuestCompleted);
 	
+	const auto MissionsService = GM->MissionsService;
+	MissionsService->MissionAcceptedDelegate.AddUObject(this, &ThisClass::OnMissionAccepted);
+	MissionsService->MissionCompletedDelegate.AddUObject(this, &ThisClass::OnMissionCompleted);
+	
 	Unfocus();
 }
 
 void ACargoIsland::Interact_Implementation(AActor* Interactor)
 {	
-	UFROGDialogueSubsystem* DialogueSubsystem = GetGameInstance()->GetSubsystem<UFROGDialogueSubsystem>();
-	UGameplayStatics::PlaySoundAtLocation(this, InteractionSound, GetActorLocation());	
+	UGameplayStatics::PlaySoundAtLocation(this, InteractionSound, GetActorLocation());
+
+	const auto PrimaryGameLayout = UPrimaryGameLayout::GetPrimaryGameLayoutForPrimaryPlayer(this);
+	const auto IslandWidget = PrimaryGameLayout->PushWidgetToLayerStack<UIslandWidget>(TAG_UI_Layer_Game, IslandWidgetClass.LoadSynchronous());
 	
-	//if we have an active quest to deliver things here, play the quest dialogue instead
-	if (auto ActiveQuest = ACargoGameMode::Get(this)->GetQuestStatusByDestination(LocationTag))
-	{
-		UE_LOG(LogTemp, Log, TEXT("Play start delivery quest dialogue"));		
-		DialogueSubsystem->PlayDialogue(ActiveQuest->StartDeliveryDialogue.LoadSynchronous()->DialogueTag, this);	
-		PortComponent->StartQuestDelivery(ActiveQuest->QuestTag);
-		
-		if (ActiveQuest->DeliveredQuantities.Num() == 0)
-		{
-			ACargoGameMode::Get(this)->CheckIfQuestEnded(ActiveQuest);
-		}
-		
-		return;
-	}
-	
-	//if we have an active quest that started here, play in progress dialogue instead
-	if (auto ActiveQuest = ACargoGameMode::Get(this)->GetQuestStatusByOrigin(LocationTag))
-	{
-		UE_LOG(LogTemp, Log, TEXT("Play in progress quest dialogue"));		
-		DialogueSubsystem->PlayDialogue(ActiveQuest->InProgressDialogue.LoadSynchronous()->DialogueTag, this);	
-		return;
-	}
-	
-	//if we have an available quest for this island, play start dialogue and activate it
-	if (auto AvailableQuest = ACargoGameMode::Get(this)->GetAvailableQuestByStartLocation(LocationTag))
-	{
-		UE_LOG(LogTemp, Log, TEXT("Play start quest dialogue"));		
-		DialogueSubsystem->PlayDialogue(AvailableQuest->StartDialogue.LoadSynchronous()->DialogueTag, this);	
-		return;
-	}
-	
-	DialogueSubsystem->PlayDialogue(DefaultInteractionDialogue.LoadSynchronous(), this);
+	IslandWidget->Initialize(this);
 }
 
 void ACargoIsland::Focus()
@@ -87,9 +65,7 @@ void ACargoIsland::Unfocus()
 void ACargoIsland::OnQuestAccepted(TObjectPtr<UQuestData> QuestData, AActor* QuestInstigator)
 {
 	if (QuestInstigator != this)
-	{
 		return;
-	}
 
 	if (!PortComponent)
 	{
@@ -117,7 +93,7 @@ void ACargoIsland::OnQuestCompleted(TObjectPtr<UQuestStatus> QuestStatus)
 	bool ShouldPlayAlternative = false;
 	for (FGameplayTag RequiredChoiceTag : QuestStatus->AlternativeEndDeliveryDialogue.RequiredChoiceTags)
 	{	
-		if (ACargoGameMode::Get(this)->HasChoice(RequiredChoiceTag))
+		if (ACargoGameMode::Get(this)->HasTag(RequiredChoiceTag))
 		{
 			ShouldPlayAlternative = true;	
 			break;
@@ -128,6 +104,40 @@ void ACargoIsland::OnQuestCompleted(TObjectPtr<UQuestStatus> QuestStatus)
 		DialogueSubsystem->PlayDialogue(QuestStatus->AlternativeEndDeliveryDialogue.AlternativeDialogue.LoadSynchronous(), this);
 	else
 		DialogueSubsystem->PlayDialogue(QuestStatus->EndDeliveryDialogue.LoadSynchronous(), this);
+	
+	PortComponent->Clear();
+}
+
+void ACargoIsland::OnMissionAccepted(TObjectPtr<UMissionStatus> MissionStatus, FGameplayTag InstigatorIslandTag)
+{
+	if (InstigatorIslandTag != LocationTag)
+		return;
+	
+	if (!PortComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Island %s: Mission accepted but PortComponent is missing!"), *LocationTag.ToString());
+		return;
+	}	
+
+	UE_LOG(LogTemp, Log, TEXT("Island %s: Mission accepted! Spawning containers at PortComponent..."), *LocationTag.ToString());
+	
+	PortComponent->IsOpen = true;
+	
+	PortComponent->SpawnCargo(MissionStatus->GetOriginalMissionData()->CargoRequirements);
+}
+
+void ACargoIsland::OnMissionCompleted(TObjectPtr<UMissionStatus> MissionStatus)
+{
+	if (MissionStatus->GetDestinationTag() != LocationTag)
+		return;
+	
+	if (!PortComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Island %s: Mission accepted but PortComponent is missing!"), *LocationTag.ToString());
+		return;
+	}	
+
+	UE_LOG(LogTemp, Log, TEXT("Island %s: Mission completed!"), *LocationTag.ToString());
 	
 	PortComponent->Clear();
 }

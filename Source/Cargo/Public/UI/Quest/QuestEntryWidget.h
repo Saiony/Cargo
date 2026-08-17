@@ -9,7 +9,7 @@
 #include "QuestEntryWidget.generated.h"
 
 class UVerticalBox;
-class UQuestRequirementEntryWidget;
+class UCargoRequirementEntryWidget;
 
 /**
  * 
@@ -28,14 +28,14 @@ class CARGO_API UQuestEntryWidget : public UCommonUserWidget
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UVerticalBox> RequirementsContainer;
 
-	UPROPERTY(EditAnywhere, Category = "Quest")
-	TSubclassOf<UQuestRequirementEntryWidget> RequirementWidgetClass;
+	UPROPERTY(EditAnywhere, Category = "Cargo")
+	TSubclassOf<UCargoRequirementEntryWidget> RequirementWidgetClass;
 
 	UPROPERTY(Transient, meta = (BindWidgetAnimOptional))
 	TObjectPtr<UWidgetAnimation> CompletedAnim;
 
 	UPROPERTY()
-	TMap<FGameplayTag, TObjectPtr<UQuestRequirementEntryWidget>> RequirementWidgets;
+	TMap<FGameplayTag, TObjectPtr<UCargoRequirementEntryWidget>> RequirementWidgets;
 	
 	FGameplayTag MyQuestTag;
 

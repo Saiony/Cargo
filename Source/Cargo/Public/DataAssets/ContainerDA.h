@@ -20,6 +20,9 @@ public:
 	FGameplayTag CargoTag;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cargo")
+	FString Name = "Debug";
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cargo")
 	TObjectPtr<UMaterialInterface> Material;
  
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cargo")

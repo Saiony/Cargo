@@ -239,7 +239,7 @@ void UDIalogueWidget::OnChoiceSelected(int buttonIndex)
 		UE_LOG(LogTemp, Log, TEXT("New Dialogue started"));
 		InitializeDialogue(SelectedChoice.DialogueData.Get());
 		
-		ACargoGameMode::Get(this)->AddChoice(SelectedChoice.ChoiceTag);
+		ACargoGameMode::Get(this)->AddTag(SelectedChoice.ChoiceTag);
 		return;
 	}
 	

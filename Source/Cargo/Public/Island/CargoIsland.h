@@ -12,6 +12,7 @@
 #include "CargoIsland.generated.h"
 
 class UWidgetComponent;
+class UIslandWidget;
 
 UCLASS()
 class CARGO_API ACargoIsland : public AActor, public ICargoInteractable
@@ -47,6 +48,20 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Island")
 	TObjectPtr<USoundBase> InteractionSound;
+	
+	UPROPERTY(EditAnywhere, Category="Cargo|Island")
+	FText IslandName;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Island")
+	TSoftClassPtr<UIslandWidget> IslandWidgetClass;	
+	
+	void OnQuestAccepted(TObjectPtr<UQuestData> QuestData, AActor* QuestInstigator);	
+	
+	void OnQuestCompleted(TObjectPtr<UQuestStatus> QuestStatus);
+	
+	void OnMissionAccepted(TObjectPtr<UMissionStatus> MissionStatus, FGameplayTag InstigatorIslandTag);
+	
+	void OnMissionCompleted(TObjectPtr<UMissionStatus> MissionStatus);
 
 public:
 	// ICargoInteractable Interface
@@ -56,10 +71,13 @@ public:
 	
 	virtual void Unfocus() override;
 
-	void OnQuestAccepted(TObjectPtr<UQuestData> QuestData, AActor* QuestInstigator);	
-	
-	void OnQuestCompleted(TObjectPtr<UQuestStatus> QuestStatus);
 
 	UFUNCTION(BlueprintPure, Category="Cargo|Island")
 	FGameplayTag GetLocationTag() const { return LocationTag; }
+	
+	FText GetIslandName() const { return IslandName; }
+	
+	TObjectPtr<UCargoPortComponent> GetPort() { return PortComponent; }
+	
+	TSoftObjectPtr<UDialogueData> GetDefaultInteractionDialogue() { return DefaultInteractionDialogue; }
 };

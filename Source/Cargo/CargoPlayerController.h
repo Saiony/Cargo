@@ -3,18 +3,21 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "InputAction.h"
 #include "GameFramework/PlayerController.h"
 #include "Grid/GridComponent.h"
 #include "Grid/PlaceablePreview.h"
 #include "Interaction/CargoInteractable.h"
 #include "CargoPlayerController.generated.h"
 
+class AContainer;
 class UInputMappingContext;
 class UInputAction;
 class UUserWidget;
 struct FInputActionValue;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInteractableChanged, TScriptInterface<ICargoInteractable>, NewInteractable);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnContainerHoverConfirmed, AContainer*, HoveredContainer);
 
 /**
  *  Basic PlayerController class for a third person game
@@ -60,7 +63,16 @@ protected:
 	UInputAction* SwitchCameraAction;
 	
 	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* ToggleMapAction;
+	
+	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* InteractAction;
+	
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* ScrollUp;
+	
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* ScrollDown;	
 
 	UPROPERTY(EditAnywhere, Category="Input|Dragging")
 	float DraggingZHeight = 100.0f;
@@ -90,12 +102,12 @@ protected:
 	
 	UPROPERTY()
 	TObjectPtr<APlaceablePreview> PlaceablePreview;
-
+	
 	/** Gameplay initialization */
 	virtual void BeginPlay() override;
 
 	virtual void PlayerTick(float DeltaTime) override;
-
+	
 	/** Input mapping context setup */
 	virtual void SetupInputComponent() override;
 
@@ -107,14 +119,27 @@ protected:
 	void OnRightClick(const FInputActionValue& Value);
 	void OnCancel(const FInputActionValue& Value);
 	void SwitchEditMode(const FInputActionValue& Value);
+	void OnToggleMap(const FInputActionInstance& InputActionInstance);
 	
 	void Interact(const FInputActionValue& InputActionValue);
+	void OnScrollUp(const FInputActionValue& InputActionValue);
+	void OnScrollDown(const FInputActionValue& InputActionValue);
 	
 	void OnPossess(APawn* InPawn) override;	
 	
 	void UpdateInteractionFocus();
 
 	TScriptInterface<ICargoInteractable> FindBestInteractable() const;
+	
+	void UpdateContainerHoverDetection(float DeltaTime);
+
+	UPROPERTY(EditDefaultsOnly, Category = "ContainerInfo")
+	float ContainerHoverThreshold = 1.0f;
+	
+	float ContainerHoverElapsedTime = 0.0f;
+	
+	UPROPERTY()
+	TWeakObjectPtr<AContainer> CurrentHoveredContainer;
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Input")
@@ -122,4 +147,6 @@ public:
 	
 	UPROPERTY(BlueprintAssignable)
 	FOnInteractableChanged OnInteractableChanged;
+	
+	FOnContainerHoverConfirmed OnContainerHoverConfirmed;
 };

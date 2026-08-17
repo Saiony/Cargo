@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "FrogsmithActivatableWidget.h"
 #include "InputDisplayWidget.h"
+#include "ShipBalanceWidget.h"
+#include "ShipWeightWidget.h"
 #include "CargoMainHUD.generated.h"
 
 /**
@@ -18,6 +20,12 @@ class CARGO_API UCargoMainHUD : public UFrogsmithActivatableWidget
 protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UInputDisplayWidget> InputDisplayWidget;
+	
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UShipWeightWidget> ShipWeightWidget;
+	
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UShipBalanceWidget> ShipBalanceWidget;
 	
 	virtual void NativeConstruct() override;
 	

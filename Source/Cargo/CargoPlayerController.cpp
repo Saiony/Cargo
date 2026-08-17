@@ -37,6 +37,7 @@ void ACargoPlayerController::BeginPlay()
 
 	const auto PlaceablePreviewClass = GetDefault<UCargoSettings>()->PlaceablePreviewClass.LoadSynchronous();
 	PlaceablePreview = GetWorld()->SpawnActor<APlaceablePreview>(PlaceablePreviewClass, FVector::ZeroVector, FRotator::ZeroRotator);
+	PlaceablePreview->SetActorHiddenInGame(true);
 }
 
 void ACargoPlayerController::SetupInputComponent()
@@ -71,7 +72,10 @@ void ACargoPlayerController::SetupInputComponent()
 			EnhancedInputComponent->BindAction(RightClickAction, ETriggerEvent::Started, this, &ACargoPlayerController::OnRightClick);
 			EnhancedInputComponent->BindAction(CancelAction, ETriggerEvent::Started, this, &ACargoPlayerController::OnCancel);
 			EnhancedInputComponent->BindAction(SwitchCameraAction, ETriggerEvent::Completed, this, &ACargoPlayerController::SwitchEditMode);
+			EnhancedInputComponent->BindAction(ToggleMapAction, ETriggerEvent::Completed, this, &ACargoPlayerController::OnToggleMap);			
 			EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Completed, this, &ACargoPlayerController::Interact);
+			EnhancedInputComponent->BindAction(ScrollUp, ETriggerEvent::Completed, this, &ThisClass::OnScrollUp);
+			EnhancedInputComponent->BindAction(ScrollDown, ETriggerEvent::Completed, this, &ThisClass::OnScrollDown);
 		}
 	}
 }
@@ -85,6 +89,8 @@ bool ACargoPlayerController::ShouldUseTouchControls() const
 void ACargoPlayerController::PlayerTick(float DeltaTime)
 {
     Super::PlayerTick(DeltaTime);
+	
+	UpdateContainerHoverDetection(DeltaTime);
 
     if (!bEditMode)
         return;
@@ -165,6 +171,39 @@ void ACargoPlayerController::PlayerTick(float DeltaTime)
     PlaceablePreview->SetActorRelativeLocation(LocalLocation);
 	PlaceablePreview->SetActorRelativeRotation(FRotator(0.f, 0.f, 0.f));
 	PlaceablePreview->MimicPlaceableYaw(DraggingObject);
+}
+
+void ACargoPlayerController::UpdateContainerHoverDetection(float DeltaTime)
+{
+	FHitResult HitResult;
+	
+	if (!GetHitResultUnderCursor(DropSurfaceChannel, false, HitResult))
+		return;
+	
+	const auto Container = Cast<AContainer>(HitResult.GetActor());
+	
+	if (!Container)
+	{		
+		OnContainerHoverConfirmed.Broadcast(nullptr);
+		return;
+	}
+	
+	if (CurrentHoveredContainer != Container)
+	{
+		CurrentHoveredContainer = Container;
+		ContainerHoverElapsedTime = 0.f;			
+		OnContainerHoverConfirmed.Broadcast(nullptr);
+		return;
+	}
+	
+	CurrentHoveredContainer = Container;
+	ContainerHoverElapsedTime += DeltaTime;
+	
+	if (ContainerHoverElapsedTime < ContainerHoverThreshold)
+		return;
+	
+	ContainerHoverElapsedTime = 0.f;	
+	OnContainerHoverConfirmed.Broadcast(Cast<AContainer>(Container));
 }
 
 void ACargoPlayerController::OnLeftClickStart(const FInputActionValue& Value)
@@ -260,9 +299,17 @@ void ACargoPlayerController::SwitchEditMode(const FInputActionValue& Value)
 	}
 }
 
+void ACargoPlayerController::OnToggleMap(const FInputActionInstance& InputActionInstance)
+{
+	GetGameInstance()->GetSubsystem<UCargoUIManagerSubsystem>()->ToggleMap();
+}
+
 void ACargoPlayerController::Interact(const FInputActionValue& InputActionValue)
 {
-	auto ControlledPawn = GetPawn();
+	if (bEditMode)
+		return;
+	
+	const auto ControlledPawn = GetPawn();
 
 	const FVector Origin = ControlledPawn->GetActorLocation();
 
@@ -307,6 +354,14 @@ void ACargoPlayerController::Interact(const FInputActionValue& InputActionValue)
 		ICargoInteractable::Execute_Interact(BestTarget, ControlledPawn);
 	else
 		UE_LOG(LogTemp, Log, TEXT("Nothing to interact with"));
+}
+
+void ACargoPlayerController::OnScrollUp(const FInputActionValue& InputActionValue)
+{
+}
+
+void ACargoPlayerController::OnScrollDown(const FInputActionValue& InputActionValue)
+{
 }
 
 void ACargoPlayerController::OnPossess(APawn* InPawn)

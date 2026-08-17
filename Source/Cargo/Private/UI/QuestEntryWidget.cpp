@@ -3,7 +3,7 @@
 
 #include "UI/Quest/QuestEntryWidget.h"
 #include "Components/VerticalBox.h"
-#include "UI/Quest/QuestRequirementEntryWidget.h"
+#include "UI/Quest/CargoRequirementEntryWidget.h"
 
 void UQuestEntryWidget::Init(FGameplayTag QuestTag, UQuestData* QuestData)
 {
@@ -20,25 +20,17 @@ void UQuestEntryWidget::Init(FGameplayTag QuestTag, UQuestData* QuestData)
 
 	for (const FCargoRequirement& Requirement : QuestData->CargoRequirements)
 	{
-		if (RequirementWidgetClass)
-		{
-			UQuestRequirementEntryWidget* ReqWidget = CreateWidget<UQuestRequirementEntryWidget>(this, RequirementWidgetClass);
-			if (ReqWidget)
-			{
-				ReqWidget->Init(Requirement.CargoType, Requirement.Quantity);
-				RequirementsContainer->AddChild(ReqWidget);
-				RequirementWidgets.Add(Requirement.CargoType, ReqWidget);
-			}
-		}
+		UCargoRequirementEntryWidget* ReqWidget = CreateWidget<UCargoRequirementEntryWidget>(this, RequirementWidgetClass);
+
+		ReqWidget->Init(Requirement.CargoType, Requirement.Quantity);
+		RequirementsContainer->AddChild(ReqWidget);
+		RequirementWidgets.Add(Requirement.CargoType, ReqWidget);
 	}
 }
 
 void UQuestEntryWidget::UpdateRequirement(FGameplayTag CargoType, int32 DeliveredAmount)
 {
-	if (RequirementWidgets.Contains(CargoType))
-	{
-		RequirementWidgets[CargoType]->UpdateDelivered(DeliveredAmount);
-	}
+	RequirementWidgets[CargoType]->UpdateDelivered(DeliveredAmount);
 }
 
 void UQuestEntryWidget::Complete()

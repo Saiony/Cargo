@@ -2,6 +2,7 @@
 
 #include "CargoGameMode.h"
 
+#include "Debug/CameraDebugCategories.h"
 #include "Island/CargoIsland.h"
 #include "Quest/QuestStatus.h"
 
@@ -13,10 +14,34 @@ void ACargoGameMode::BeginPlay()
 	{
 		AddAvailableQuest(AvailableQuest);
 	}
+	
+	GetComponents<UFORGServiceBase>(Services);
+	BootService(0);
 }
 
-ACargoGameMode::ACargoGameMode()
+ACargoGameMode::ACargoGameMode(const FObjectInitializer& ObjectInitializer)
 {
+	MissionsService = ObjectInitializer.CreateDefaultSubobject<UMissionsService>(this, TEXT("MissionsService"));
+	EconomyService = ObjectInitializer.CreateDefaultSubobject<UEconomyService>(this, TEXT("EconomyService"));
+}
+
+void ACargoGameMode::BootService(const int32 Index)
+{
+	if(Index > 0)
+	{
+		UE_LOG(LogTemp, Log, TEXT("%s booted successfully"), *Services[Index-1]->GetName());
+	}
+
+	if(!Services.IsValidIndex(Index))
+	{
+		UE_LOG(LogTemp, Log, TEXT("All Services booted successfully"));
+
+		OnServicesBooted.Broadcast();
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("Booting %s..."), *Services[Index]->GetName());
+	Services[Index]->Boot(FOnServiceBooted::CreateUObject(this, &ACargoGameMode::BootService, Index + 1));
 }
 
 void ACargoGameMode::ActivateQuest(UQuestData* QuestData, AActor* QuestInstigator)
@@ -122,14 +147,14 @@ void ACargoGameMode::RemoveCargoDelivery(FGameplayTag QuestTag, FGameplayTag Car
 	OnQuestProgressUpdatedDelegate.Broadcast(QuestStatus, CargoType, CargoStatus.DeliveredQuantity);
 }
 
-void ACargoGameMode::AddChoice(FGameplayTag ChoiceTag)
+void ACargoGameMode::AddTag(FGameplayTag ChoiceTag)
 {
-	ChoicesContainer.AddTag(ChoiceTag);
+	TagsContainer.AddTag(ChoiceTag);
 }
 
-bool ACargoGameMode::HasChoice(FGameplayTag ChoiceName)
+bool ACargoGameMode::HasTag(FGameplayTag ChoiceName)
 {
-	return ChoicesContainer.HasTag(ChoiceName);
+	return TagsContainer.HasTag(ChoiceName);
 }
 
 TObjectPtr<UQuestData> ACargoGameMode::GetAvailableQuestByStartLocation(FGameplayTag StartLocation)
@@ -151,7 +176,14 @@ void ACargoGameMode::CheckIfQuestEnded(TObjectPtr<UQuestStatus> QuestStatus)
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("Quest %s ended"), *QuestStatus->OriginalQuestData->Title.ToString());
+	
+	//give reward
+	if (QuestStatus->Reward.RewardTag.IsValid())
+		AddTag(QuestStatus->Reward.RewardTag);
+	
+	EconomyService->AddMoney(QuestStatus->Reward.Money);
 
+	//handle quest lifecycle/events
 	ActiveQuests.Remove(QuestStatus->OriginalQuestData->QuestTag);
 	AddAvailableQuest(QuestStatus->NextQuest.LoadSynchronous());
 	QuestCompletedDelegate.Broadcast(QuestStatus);

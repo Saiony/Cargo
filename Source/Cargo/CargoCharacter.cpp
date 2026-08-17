@@ -10,6 +10,8 @@
 #include "BuoyancyComponent.h"
 #include "Components/AudioComponent.h"
 #include "GameFramework/FloatingPawnMovement.h"
+#include "GameFramework/PlayerState.h"
+#include "GameplayFramework/CargoPlayerState.h"
 #include "Grid/Placeable.h"
 
 static TAutoConsoleVariable<bool> CVarBoostMovement(TEXT("Cargo.Haste"), false, TEXT("Increases boat speed"),ECVF_Default);
@@ -62,8 +64,7 @@ void ACargoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 }
 
 void ACargoCharacter::Move(const FInputActionValue& Value)
-{
-	// input is a Vector2D
+{	
 	FVector2D MovementVector = Value.Get<FVector2D>();
 	
 	auto SideTilt = WeightInbalanceMultiplier * FR / 10000;
@@ -82,14 +83,18 @@ void ACargoCharacter::Look(const FInputActionValue& Value)
 }
 
 void ACargoCharacter::DoMove(float Right, float Forward)
-{
-	if (GetController() == nullptr)
+{	
+	if (GetController<ACargoPlayerController>()->bEditMode)
 		return;
 	
 	// Movement relative to actor
 	const FVector ForwardDirection = GetActorForwardVector();
 	const FVector RightDirection   = GetActorRightVector();
 
+	const bool IsMovingBack = Forward < 0.0f;
+	Right *= IsMovingBack ? -1 : 1; 
+	FloatingMovement->Acceleration = IsMovingBack ? OriginalAcceleration * ReverseGearMultiplier : OriginalAcceleration;
+	
 	AddMovementInput(ForwardDirection, Forward);
 
 	// Rotation
@@ -107,8 +112,8 @@ void ACargoCharacter::DoLook(float Yaw, float Pitch)
 	if (GetController() != nullptr)
 	{
 		// add yaw and pitch input to controller
-		AddControllerYawInput(Yaw);
-		AddControllerPitchInput(Pitch);
+		AddControllerYawInput(Yaw * MouseSensitivity);
+		AddControllerPitchInput(Pitch * MouseSensitivity);
 	}
 }
 
@@ -120,12 +125,16 @@ void ACargoCharacter::AttachPlaceable(APlaceable* Placeable, FVector WorldPos)
 
 void ACargoCharacter::OnPlaceableAdded(APlaceable* Placeable)
 {
+	GetPlayerState<ACargoPlayerState>()->AddWeight(Placeable->Weight);
 	BalanceShip();
+	UpdateSpeed();
 }
 
 void ACargoCharacter::OnPlaceableRemoved(APlaceable* Placeable)
 {	
+	GetPlayerState<ACargoPlayerState>()->RemoveWeight(Placeable->Weight);
 	BalanceShip();
+	UpdateSpeed();
 }
 
 void ACargoCharacter::Tick(float DeltaSeconds)
@@ -140,7 +149,10 @@ void ACargoCharacter::BeginPlay()
 	Super::BeginPlay();
 	
 	GridComp->OnPlaceableAddedToGrid.AddDynamic(this, &ThisClass::OnPlaceableAdded);
-	GridComp->OnPlaceableRemovedFromGrid.AddDynamic(this, &ThisClass::OnPlaceableRemoved);
+	GridComp->OnPlaceableRemovedFromGrid.AddDynamic(this, &ThisClass::OnPlaceableRemoved);	
+	
+	OriginalMaxSpeed = FloatingMovement->MaxSpeed;
+	OriginalAcceleration = FloatingMovement->Acceleration;
 }
 
 void ACargoCharacter::BalanceShip()
@@ -158,6 +170,7 @@ void ACargoCharacter::BalanceShip()
 	
 	const float FinalAngle = FMath::GetMappedRangeValueClamped(FRMinMax,ShipAngleMinMax, FR);	
 	RotateShip(FinalAngle);
+	GetPlayerState<ACargoPlayerState>()->SetShipBalance(FinalAngle);
 }
 
 void ACargoCharacter::UpdateEngineSoundIntensity()
@@ -168,11 +181,21 @@ void ACargoCharacter::UpdateEngineSoundIntensity()
 	MovementAudioComp->SetFloatParameter(FName("Speed"), NormalizedSpeed);
 }
 
+void ACargoCharacter::UpdateSpeed()
+{
+	FloatingMovement->MaxSpeed = OriginalMaxSpeed * GetPlayerState<ACargoPlayerState>()->GetShipSpeedMultiplier();
+	FloatingMovement->Acceleration = OriginalAcceleration * GetPlayerState<ACargoPlayerState>()->GetShipSpeedMultiplier();
+}
 
 void ACargoCharacter::OnHasteCVarChanged(IConsoleVariable* ConsoleVariable)
 {
+	if (IsTemplate() || !GetWorld() || !GetWorld()->IsGameWorld())
+	{
+		return;
+	}
+
 	const bool Haste = CVarBoostMovement.GetValueOnGameThread();
 
-	FloatingMovement->MaxSpeed = Haste ? FloatingMovement->MaxSpeed * 2 : FloatingMovement->MaxSpeed / 2;
-	FloatingMovement->Acceleration = Haste ? FloatingMovement->Acceleration * 2 : FloatingMovement->Acceleration / 2;
+	FloatingMovement->MaxSpeed = Haste ? OriginalMaxSpeed * 2.f : OriginalMaxSpeed;
+	FloatingMovement->Acceleration = Haste ? OriginalAcceleration * 2.f : OriginalAcceleration;
 }

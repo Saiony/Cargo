@@ -51,17 +51,17 @@ void UCargoPortComponent::AddPlaceable(APlaceable* Placeable, FVector WorldPos, 
 
 void UCargoPortComponent::HandlePlaceableAddedToGrid(APlaceable* Placeable)
 {
-	if (auto Container = Cast<AContainer>(Placeable))
-	{
-		if (ACargoGameMode* GM = ACargoGameMode::Get(this))
-		{
-			GM->RegisterCargoDelivery(CurrentQuestTag, Container->ContainerDA->CargoTag);
-		}
-	}
-	else
+	const auto Container = Cast<AContainer>(Placeable);
+	if (!Container)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("CargoPortComponent: Placeable is not a container"));
+		return;
 	}
+	
+	if (CurrentQuestTag.IsValid())
+		ACargoGameMode::Get(this)->RegisterCargoDelivery(CurrentQuestTag, Container->ContainerDA->CargoTag);
+	else if (CurrentMissionId.IsValid())
+		ACargoGameMode::Get(this)->MissionsService->RegisterCargoDelivery(CurrentMissionId, Container->ContainerDA->CargoTag);
 }
 
 void UCargoPortComponent::HandlePlaceableRemovedFromGrid(APlaceable* Placeable)
@@ -73,13 +73,18 @@ void UCargoPortComponent::HandlePlaceableRemovedFromGrid(APlaceable* Placeable)
 
 	Placeable->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 
-	if (auto Container = Cast<AContainer>(Placeable))
+	const auto Container = Cast<AContainer>(Placeable);
+	
+	if (!Container)
 	{
-		if (ACargoGameMode* GM = ACargoGameMode::Get(this))
-		{
-			GM->RemoveCargoDelivery(CurrentQuestTag, Container->ContainerDA->CargoTag);
-		}
+		UE_LOG(LogTemp, Warning, TEXT("CargoPortComponent: Placeable is not a container"));
+		return;
 	}
+	
+	if (CurrentQuestTag.IsValid())
+		ACargoGameMode::Get(this)->RemoveCargoDelivery(CurrentQuestTag, Container->ContainerDA->CargoTag);
+	else if (CurrentMissionId.IsValid())
+		ACargoGameMode::Get(this)->MissionsService->RemoveCargoDelivery(CurrentMissionId, Container->ContainerDA->CargoTag);
 }
 
 void UCargoPortComponent::SpawnSingleContainer(FGameplayTag CargoType)
@@ -138,7 +143,17 @@ void UCargoPortComponent::SpawnSingleContainer(FGameplayTag CargoType)
 void UCargoPortComponent::StartQuestDelivery(FGameplayTag QuestTag)
 {
 	IsOpen = true;
+	CurrentMissionId = FGuid();
+	
 	CurrentQuestTag = QuestTag;	
+}
+
+void UCargoPortComponent::StartMissionDelivery(const FGuid MissionId)
+{
+	IsOpen = true;
+	CurrentQuestTag = FGameplayTag::EmptyTag;
+	
+	CurrentMissionId = MissionId;
 }
 
 void UCargoPortComponent::Clear()

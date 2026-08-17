@@ -46,28 +46,28 @@ class CARGO_API UQuestStatus : public UObject
 public:
 	void Initialize(UQuestData* QuestData);
 
-	UPROPERTY(BlueprintReadOnly, Category = "Quest")
+	UPROPERTY(BlueprintReadOnly, Category = "Cargo")
 	TMap<FGameplayTag, FCargoStatus> DeliveredQuantities = TMap<FGameplayTag, FCargoStatus>();
 
-	UPROPERTY(BlueprintReadOnly, Category = "Quest")
+	UPROPERTY(BlueprintReadOnly, Category = "Cargo")
 	FGameplayTag QuestTag;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Quest")
+	UPROPERTY(BlueprintReadOnly, Category = "Cargo")
 	FText Title;
 	
-	UPROPERTY(BlueprintReadOnly, Category = "Quest")
+	UPROPERTY(BlueprintReadOnly, Category = "Cargo")
 	FGameplayTag StartIslandTag;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Quest")
+	UPROPERTY(BlueprintReadOnly, Category = "Cargo")
 	FGameplayTag DestinationTag;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Quest")
+	UPROPERTY(BlueprintReadOnly, Category = "Cargo")
 	TSoftObjectPtr<UDialogueData> StartDeliveryDialogue;
 	
-	UPROPERTY(BlueprintReadOnly, Category = "Quest")
+	UPROPERTY(BlueprintReadOnly, Category = "Cargo")
 	TSoftObjectPtr<UDialogueData> EndDeliveryDialogue;	
 	
-	UPROPERTY(BlueprintReadOnly, Category = "Quest")
+	UPROPERTY(BlueprintReadOnly, Category = "Cargo")
 	TSoftObjectPtr<UDialogueData> InProgressDialogue;	
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo")
@@ -76,6 +76,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo")
 	TSoftObjectPtr<UQuestData> NextQuest; //TODO: turn this into FGameplayTag?
 
-	UPROPERTY(BlueprintReadOnly, Category = "Quest")
+	UPROPERTY(BlueprintReadOnly, Category = "Cargo")
 	TObjectPtr<UQuestData> OriginalQuestData;
+	
+	UPROPERTY(BlueprintReadOnly, Category="Cargo")
+	FReward Reward;
 };

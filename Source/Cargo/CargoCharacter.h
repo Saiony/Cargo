@@ -8,6 +8,7 @@
 #include "Logging/LogMacros.h"
 #include "CargoCharacter.generated.h"
 
+class UGameplayCameraComponent;
 class UBuoyancyComponent;
 class USphereComponent;
 class UFloatingPawnMovement;
@@ -45,7 +46,7 @@ protected:
 	TObjectPtr<UGridComponent> GridComp;	
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	TObjectPtr<UAudioComponent> MovementAudioComp;
+	TObjectPtr<UAudioComponent> MovementAudioComp;	
 
 	/** Move Input Action */
 	UPROPERTY(EditAnywhere, Category="Input")
@@ -71,12 +72,22 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
 	FVector2D ShipAngleMinMax = FVector2D(-45.0f, 45.0f);
 	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	float ReverseGearMultiplier = 0.5f;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Cargo|Audio")
 	TObjectPtr<USoundBase> MovementSound;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cargo")
+	float MouseSensitivity = 0.8f;
 	
 	FDelegateHandle HasteCVarDelegateHandle;
 	
 	float FR = 0;	
+	
+	float OriginalMaxSpeed = -1;
+	
+	float OriginalAcceleration = -1;
 	
 	void OnHasteCVarChanged(IConsoleVariable* ConsoleVariable);
 public:
@@ -99,6 +110,7 @@ protected:
 	
 	void UpdateEngineSoundIntensity();
 
+	void UpdateSpeed();
 	UFUNCTION()
 	void OnPlaceableAdded(APlaceable* Placeable);
 	

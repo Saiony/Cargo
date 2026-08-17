@@ -18,6 +18,7 @@ void AContainer::Init()
 	
 	ContainerMeshComp->SetMaterial(0, ContainerDA->Material);
 	Weight = ContainerDA->Weight;
+	Name = ContainerDA->Name;
 }
 
 void AContainer::Init(TObjectPtr<UContainerDA> InContainerDA)
