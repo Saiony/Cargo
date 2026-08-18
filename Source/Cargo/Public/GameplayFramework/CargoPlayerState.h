@@ -26,7 +26,10 @@ protected:
 	float MaxWeight = 100.f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cargo")
-	float ShipBalance = 0.f;
+	float ShipBalanceWeight = 0.f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cargo")
+	float ShipBalanceRotation = 0.f;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cargo")
 	float ShipSpeedMultiplier = 1;
@@ -55,6 +58,12 @@ public:
 	
 	UFUNCTION(BlueprintPure, Category = "Cargo")
 	float GetShipSpeedMultiplier() const { return ShipSpeedMultiplier; }
+	
+	float GetShipBalanceTotal() const { return ShipBalanceWeight + ShipBalanceRotation; }
+	
+	float GetShipBalanceWeight() const { return ShipBalanceWeight; }
+	
+	float GetShipBalanceRotation() const { return ShipBalanceRotation; }
 
 	// --- Setters ---
 
@@ -68,5 +77,8 @@ public:
 	void SetMaxWeight(float NewMaxWeight);
 	
 	UFUNCTION(Category = "Cargo")
-	void SetShipBalance(float NewBalance);
+	void SetShipBalanceWeight(float NewBalance);
+	
+	UFUNCTION(Category = "Cargo")
+	void SetShipBalanceRotation(float NewBalance);
 };

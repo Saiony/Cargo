@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "CargoPlayerController.h"
+#include "Components/TimelineComponent.h"
 #include "Grid/GridComponent.h"
 #include "Logging/LogMacros.h"
 #include "CargoCharacter.generated.h"
@@ -46,7 +47,19 @@ protected:
 	TObjectPtr<UGridComponent> GridComp;	
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	TObjectPtr<UAudioComponent> MovementAudioComp;	
+	TObjectPtr<UAudioComponent> MovementAudioComp;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TObjectPtr<UTimelineComponent> RotateTimelineComp;
+	
+	UPROPERTY(EditAnywhere, Category="Cargo|Curves")
+	UCurveFloat* Curve_RotateShipWeight;
+	
+	UPROPERTY(EditAnywhere, Category="Cargo|Curves")
+	UCurveFloat* Curve_RotateShipSteering;
+	
+	UPROPERTY(EditAnywhere, Category="Cargo|Curves")
+	UCurveFloat* Curve_RotateShipSteeringBack;
 
 	/** Move Input Action */
 	UPROPERTY(EditAnywhere, Category="Input")
@@ -64,10 +77,19 @@ protected:
 	float RotationSpeed = 120;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo")
-	float WeightInbalanceMultiplier = 1;
+	float WeightImbalanceMultiplier = 250;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
 	FVector2D FRMinMax = FVector2D(-10.0f, 10.0f);
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	FVector2D ShipRotationMovementMinMax = FVector2D(-10.0f, 15.0f);
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	FVector2D ShipRotationMovementMinMax_HighSpeed = FVector2D(-20.0f, 20.0f);
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	float MovementRotationImbalanceMultiplier = 0.5f;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
 	FVector2D ShipAngleMinMax = FVector2D(-45.0f, 45.0f);
@@ -100,9 +122,21 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category="Cargo")
 	float KnockbackSpeed = 3.f;
 	
+	UPROPERTY(EditDefaultsOnly, Category="Cargo")
+	float ShipInclinationMultiplier = 0.5f;
+	
 	FVector KnockbackVelocity;
 	
+	float BoatInitialRoll;
+	float BoatTargetRoll;	
+
 	void OnHasteCVarChanged(IConsoleVariable* ConsoleVariable);
+	
+	FOnTimelineFloat UpdateFunctionFloat;
+ 
+	UFUNCTION()
+	void UpdateTimelineComp(float Output);
+	
 public:
 	/** Constructor */
 	ACargoCharacter();	
@@ -134,6 +168,7 @@ protected:
 	UFUNCTION()
 	void OnCargoHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 	void PopRandomContainer();
+	void RotateShip(float TargetAngle, UCurveFloat* Curve);
 
 public:
 	/** Handles move inputs from either controls or UI interfaces */
@@ -146,8 +181,14 @@ public:
 	
 	void AttachPlaceable(APlaceable* Placeable, FVector WorldPos);
 	
-	UFUNCTION(BlueprintImplementableEvent, Category="Cargo")
-	void RotateShip(float FinalAngle);
+	// UFUNCTION(BlueprintImplementableEvent, Category="Cargo")
+	// void RotateShipContainerAdded(float FinalAngle);
+	//
+	// UFUNCTION(BlueprintImplementableEvent, Category="Cargo")
+	// void RotateShipSteering(float FinalAngle);
+	//
+	// UFUNCTION(BlueprintImplementableEvent, Category="Cargo")
+	// void RotateShipSteeringBack(float FinalAngle);
 
 	virtual void BeginPlay() override;
 	

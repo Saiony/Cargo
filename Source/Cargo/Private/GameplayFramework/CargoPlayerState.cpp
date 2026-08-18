@@ -52,8 +52,14 @@ void ACargoPlayerState::SetMaxWeight(float NewMaxWeight)
 	OnWeightChanged.Broadcast(CurrentWeight, NewMaxWeight);
 }
 
-void ACargoPlayerState::SetShipBalance(float NewBalance)
+void ACargoPlayerState::SetShipBalanceWeight(float NewBalance)
+{	
+	ShipBalanceWeight = NewBalance;
+	OnBalanceChanged.Broadcast(GetShipBalanceTotal());
+}
+
+void ACargoPlayerState::SetShipBalanceRotation(float NewBalance)
 {
-	ShipBalance = NewBalance;
-	OnBalanceChanged.Broadcast(NewBalance);
+	ShipBalanceRotation = NewBalance;
+	OnBalanceChanged.Broadcast(GetShipBalanceTotal());
 }
