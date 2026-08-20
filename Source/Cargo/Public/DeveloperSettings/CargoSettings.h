@@ -10,6 +10,7 @@
 #include "UI/MapWidget.h"
 #include "CargoSettings.generated.h"
 
+class AContainer;
 class APlaceablePreview;
 
 struct FGameplayTag;
@@ -36,6 +37,9 @@ public:
 	
 	UPROPERTY(EditAnywhere, Config, Category = "UI")
 	TSubclassOf<UMapWidget> MapWidgetClass;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo|Island")
+	TSubclassOf<AContainer> ContainerClass;
 	
 	TObjectPtr<UMissionsDatabase> GetMissionsDatabase() const;
 };

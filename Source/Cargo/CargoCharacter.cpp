@@ -66,17 +66,6 @@ void ACargoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	}
 }
 
-void ACargoCharacter::Move(const FInputActionValue& Value)
-{	
-	FVector2D MovementVector = Value.Get<FVector2D>();
-	
-	auto ContainersSideTilt = WeightImbalanceMultiplier * FR / 10000;
-	auto ShipSpeedSideTilt = WeightImbalanceMultiplier * FloatingMovement->Velocity.Size() / 10000;
-
-	// route the input
-	DoMove(MovementVector.X + ContainersSideTilt, MovementVector.Y);
-}
-
 void ACargoCharacter::Look(const FInputActionValue& Value)
 {
 	// input is a Vector2D
@@ -84,6 +73,14 @@ void ACargoCharacter::Look(const FInputActionValue& Value)
 
 	// route the input
 	DoLook(LookAxisVector.X, LookAxisVector.Y);
+}
+
+void ACargoCharacter::Move(const FInputActionValue& Value)
+{	
+	FVector2D MovementVector = Value.Get<FVector2D>();
+
+	// route the input
+	DoMove(MovementVector.X, MovementVector.Y);
 }
 
 bool ShouldResetRotation = false;
@@ -95,18 +92,20 @@ void ACargoCharacter::DoMove(float Right, float Forward)
 	
 	// Movement relative to actor
 	const FVector ForwardDirection = GetActorForwardVector();
-	const FVector RightDirection   = GetActorRightVector();
 
 	const bool IsMovingBack = Forward < 0.0f;
 	Right *= IsMovingBack ? -1 : 1; 
-	FloatingMovement->Acceleration = IsMovingBack ? OriginalAcceleration * ReverseGearMultiplier : OriginalAcceleration;
+	FloatingMovement->Acceleration = IsMovingBack ? OriginalAcceleration * ReverseGearMultiplier : OriginalAcceleration;	
 	
 	AddMovementInput(ForwardDirection, Forward);
 	
-
 	// Rotation
 	if (Right != 0.f)
-	{
+	{			
+		//we only add the side tilt relative to the weight if the player's intentionally rotating the ship
+		auto ContainersSideTilt = WeightImbalanceMultiplier_Movement * FR / 10000;
+		Right += ContainersSideTilt;
+		
 		const float DeltaTime = GetWorld()->GetDeltaSeconds();
 		auto SpeedRotationIncrement = ShipInclinationMultiplier * FloatingMovement->Velocity.Size() / FloatingMovement->MaxSpeed;
 		SpeedRotationIncrement *= Right > 0 ? SpeedRotationIncrement : -SpeedRotationIncrement;
@@ -135,8 +134,7 @@ void ACargoCharacter::DoMove(float Right, float Forward)
 		}
 			
 		GetPlayerState<ACargoPlayerState>()->SetShipBalanceRotation(FinalAngle);
-		RotateShip(GetPlayerState<ACargoPlayerState>()->GetShipBalanceTotal(), Curve_RotateShipSteering);
-		//RotateShipSteering(GetPlayerState<ACargoPlayerState>()->GetShipBalanceTotal());
+		RotateShip(CargoPlayerState->GetShipBalanceTotal(), Curve_RotateShipSteering);
 		
 		ShouldResetRotation = true;
 	}
@@ -147,8 +145,7 @@ void ACargoCharacter::DoMove(float Right, float Forward)
 			ShouldResetRotation = false;
 			GetPlayerState<ACargoPlayerState>()->SetShipBalanceRotation(0);
 			
-			RotateShip(GetPlayerState<ACargoPlayerState>()->GetShipBalanceTotal(), Curve_RotateShipSteeringBack);
-			//RotateShipSteeringBack(GetPlayerState<ACargoPlayerState>()->GetShipBalanceTotal());
+			RotateShip(CargoPlayerState->GetShipBalanceTotal(), Curve_RotateShipSteeringBack);
 		}			
 	}
 }
@@ -169,6 +166,40 @@ void ACargoCharacter::AttachPlaceable(APlaceable* Placeable, FVector WorldPos)
 	Placeable->AttachToActor(this, AttachmentRules);
 }
 
+void ACargoCharacter::OnShipBalanceChanged(float NewBalance)
+{
+	const auto BalanceAbs = fabs(NewBalance);
+	
+	if (BalanceAbs < 14)
+		return;
+	
+	int32 MaxLevelToPop = -1;
+	
+	if (BalanceAbs < 30)
+	{
+		MaxLevelToPop = 3;
+	}
+	else if (BalanceAbs < 35)
+	{
+		MaxLevelToPop = 2;
+	}
+	else if (BalanceAbs < 40)
+	{
+		MaxLevelToPop = 1;
+	}
+	else
+	{
+		MaxLevelToPop = 0;
+	}
+	
+	const int32 HighestOccupiedZ = GridComp->GetHighestOccupiedZ();	
+	
+	for (auto Z = HighestOccupiedZ; Z >= MaxLevelToPop; --Z)
+	{
+		PopContainersFromZ(Z);
+	}
+}
+
 void ACargoCharacter::OnPlaceableAdded(APlaceable* Placeable)
 {
 	GetPlayerState<ACargoPlayerState>()->AddWeight(Placeable->Weight);
@@ -182,7 +213,6 @@ void ACargoCharacter::OnPlaceableRemoved(APlaceable* Placeable)
 	BalanceShip();
 	UpdateSpeed();
 }
-
 
 void ACargoCharacter::Tick(float DeltaSeconds)
 {
@@ -213,6 +243,10 @@ void ACargoCharacter::BeginPlay()
 		CollisionComp->OnComponentHit.AddDynamic(this, &ACargoCharacter::OnCargoHit);
 	}
 	
+	CargoPlayerState = GetPlayerState<ACargoPlayerState>();
+	CargoPlayerState->OnBalanceChanged.AddDynamic(this, &ACargoCharacter::OnShipBalanceChanged);
+	
+	//Timeline component
 	UpdateFunctionFloat.BindDynamic(this, &ACargoCharacter::UpdateTimelineComp);
 	RotateTimelineComp->AddInterpFloat(Curve_RotateShipWeight, UpdateFunctionFloat, NAME_None, TEXT("Rotation"));
 }
@@ -228,11 +262,12 @@ void ACargoCharacter::BalanceShip()
 		FR += Momentum;
 	}
 	
+	FR *= WeightImbalanceMultiplier_Roll;
 	UE_LOG(LogTemp, Log, TEXT("FR: %f"), FR);
 	
 	const float FinalAngle = FMath::GetMappedRangeValueClamped(FRMinMax,ShipAngleMinMax, FR);	
-	RotateShip(FinalAngle, Curve_RotateShipWeight);
 	GetPlayerState<ACargoPlayerState>()->SetShipBalanceWeight(FinalAngle);
+	RotateShip(CargoPlayerState->GetShipBalanceTotal(), Curve_RotateShipWeight);
 }
 
 void ACargoCharacter::UpdateEngineSoundIntensity()
@@ -302,27 +337,43 @@ void ACargoCharacter::PopRandomContainer()
 	Placeable->LaunchPlaceable(RandomDirection);
 }
 
+void ACargoCharacter::PopContainersFromZ(int32 Z)
+{	
+	const auto PositionsTop = GridComp->GetPositionsFromLevel(Z);
+	
+	if (PositionsTop.Num() == 0)
+	{
+		UE_LOG(LogTemp, Log, TEXT("No positions to pop on Z level: %d"), Z);
+		return;
+	}
+	
+	UE_LOG(LogTemp, Log, TEXT("Popping containers from Z: %d"), Z);
+	
+	for (const auto Position : PositionsTop)
+	{
+		auto Placeable = GridComp->GetPlaceableAt(Position);	
+		
+		if (Placeable == nullptr)
+			continue;
+		
+		GridComp->RemovePlaceableFromGrid(Placeable);
+	
+		const FVector RandomDirection = FMath::VRandCone(FVector::UpVector,FMath::DegreesToRadians(25.0f));
+		Placeable->LaunchPlaceable(RandomDirection);
+	}		
+}
+
 void ACargoCharacter::RotateShip(float TargetAngle, UCurveFloat* Curve)
 {
 	BoatInitialRoll = MeshComponent->GetRelativeRotation().Roll;
 	BoatTargetRoll = TargetAngle;
 
-	//RotateTimelineComp->SetPlayRate(1.0f / Duration);
 	RotateTimelineComp->SetFloatCurve(Curve, TEXT("Rotation"));
 	RotateTimelineComp->PlayFromStart();
 }
 
 void ACargoCharacter::UpdateTimelineComp(float Output)
 {
-	UE_LOG(
-		LogTemp,
-		Warning,
-		TEXT("Timeline Output: %f | Initial: %f | Target: %f"),
-		Output,
-		BoatInitialRoll,
-		BoatTargetRoll
-	);
-
 	const float CurrentYaw = FMath::Lerp(BoatInitialRoll,BoatTargetRoll,Output);
 
 	FRotator Rotation = MeshComponent->GetRelativeRotation();

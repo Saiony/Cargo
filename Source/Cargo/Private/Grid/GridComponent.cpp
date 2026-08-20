@@ -104,9 +104,12 @@ void UGridComponent::RemovePlaceableFromGrid(TObjectPtr<APlaceable> Placeable)
 
 APlaceable* UGridComponent::GetPlaceableAt(const FIntVector GridPos)
 {
-	auto Placeable = *PlaceableGrid.GetValue(GridPos.X, GridPos.Y, GridPos.Z);
+	const auto PlaceablePtr = PlaceableGrid.GetValue(GridPos.X, GridPos.Y, GridPos.Z);
 	
-	return Placeable;
+	if (!PlaceablePtr)
+		return nullptr;
+	
+	return *PlaceablePtr;
 }
 
 TMap<FIntVector, APlaceable*> UGridComponent::GetOccupiedSlots() const

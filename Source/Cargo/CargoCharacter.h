@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "CargoPlayerController.h"
 #include "Components/TimelineComponent.h"
+#include "GameplayFramework/CargoPlayerState.h"
 #include "Grid/GridComponent.h"
 #include "Logging/LogMacros.h"
 #include "CargoCharacter.generated.h"
@@ -77,7 +78,10 @@ protected:
 	float RotationSpeed = 120;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo")
-	float WeightImbalanceMultiplier = 250;
+	float WeightImbalanceMultiplier_Movement = 250;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo")
+	float WeightImbalanceMultiplier_Roll = 0.5f;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
 	FVector2D FRMinMax = FVector2D(-10.0f, 10.0f);
@@ -128,7 +132,10 @@ protected:
 	FVector KnockbackVelocity;
 	
 	float BoatInitialRoll;
-	float BoatTargetRoll;	
+	float BoatTargetRoll;
+	
+	UPROPERTY()
+	TObjectPtr<ACargoPlayerState> CargoPlayerState;
 
 	void OnHasteCVarChanged(IConsoleVariable* ConsoleVariable);
 	
@@ -167,8 +174,12 @@ protected:
 
 	UFUNCTION()
 	void OnCargoHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+	
 	void PopRandomContainer();
+	void PopContainersFromZ(int32 Z);
+
 	void RotateShip(float TargetAngle, UCurveFloat* Curve);
+
 
 public:
 	/** Handles move inputs from either controls or UI interfaces */
@@ -190,6 +201,9 @@ public:
 	// UFUNCTION(BlueprintImplementableEvent, Category="Cargo")
 	// void RotateShipSteeringBack(float FinalAngle);
 
+	UFUNCTION()
+	void OnShipBalanceChanged(float NewBalance);
+	
 	virtual void BeginPlay() override;
 	
 	virtual void Tick(float DeltaSeconds) override;

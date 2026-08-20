@@ -149,4 +149,6 @@ public:
 	FOnInteractableChanged OnInteractableChanged;
 	
 	FOnContainerHoverConfirmed OnContainerHoverConfirmed;
+
+	void StartDragging(class APlaceable* InPlaceable);
 };

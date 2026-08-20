@@ -434,3 +434,57 @@ TScriptInterface<ICargoInteractable> ACargoPlayerController::FindBestInteractabl
 
 	return BestTarget;
 }
+
+void ACargoPlayerController::StartDragging(APlaceable* InPlaceable)
+{
+	if (!InPlaceable)
+	{
+		return;
+	}
+
+	if (DraggingObject && DraggingObject != InPlaceable)
+	{
+		DraggingObject->Destroy();
+	}
+
+	DraggingObject = InPlaceable;
+	bIsDragging = true;
+
+	DraggingObject->Grab();
+	if (APawn* ControlledPawn = GetPawn())
+	{
+		DraggingObject->AlignToRotation(ControlledPawn->GetActorRotation());
+	}
+
+	if (!PlaceablePreview)
+	{
+		const auto PreviewClass = GetDefault<UCargoSettings>()->PlaceablePreviewClass.LoadSynchronous();
+		if (PreviewClass)
+		{
+			PlaceablePreview = GetWorld()->SpawnActor<APlaceablePreview>(PreviewClass, FVector::ZeroVector, FRotator::ZeroRotator);
+		}
+	}
+
+	if (PlaceablePreview)
+	{
+		PlaceablePreview->Initialize(DraggingObject);
+	}
+
+	if (!bEditMode)
+	{
+		bEditMode = true;
+		bShowMouseCursor = true;
+		FInputModeGameAndUI InputMode;
+		InputMode.SetHideCursorDuringCapture(false);
+		SetInputMode(InputMode);
+	}
+
+	FVector MouseWorldLocation;
+	FVector MouseWorldDirection;
+	if (DeprojectMousePositionToWorld(MouseWorldLocation, MouseWorldDirection))
+	{
+		const float T = (DraggingZHeight - MouseWorldLocation.Z) / (FMath::IsNearlyZero(MouseWorldDirection.Z) ? 1.0f : MouseWorldDirection.Z);
+		const FVector TargetLocation = MouseWorldLocation + MouseWorldDirection * T;
+		DraggingObject->SetActorLocation(TargetLocation);
+	}
+}

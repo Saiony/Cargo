@@ -56,6 +56,10 @@ public:
 
 	TObjectPtr<APlaceable> GetPlaceableFromLevel(int Z);
 
+	FIntVector GetMin() const { return PlaceableGrid.GetMin(); }
+	FIntVector GetMax() const { return PlaceableGrid.GetMax(); }
+	float GetCellSize() const { return PlaceableGrid.GetCellSize(); }
+
 #if !UE_BUILD_SHIPPING
 	void DrawDebugGrid(float Duration = 0.f) const;
 	
