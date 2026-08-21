@@ -293,8 +293,8 @@ void ACargoCharacter::OnHasteCVarChanged(IConsoleVariable* ConsoleVariable)
 
 	const bool Haste = CVarBoostMovement.GetValueOnGameThread();
 
-	FloatingMovement->MaxSpeed = Haste ? OriginalMaxSpeed * 2.f : OriginalMaxSpeed;
-	FloatingMovement->Acceleration = Haste ? OriginalAcceleration * 4.f : OriginalAcceleration;
+	//FloatingMovement->MaxSpeed = Haste ? OriginalMaxSpeed * 2.f : OriginalMaxSpeed;
+	FloatingMovement->Acceleration = Haste ? OriginalAcceleration * 10 : OriginalAcceleration;
 }
 
 void ACargoCharacter::OnCargoHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
@@ -311,10 +311,10 @@ void ACargoCharacter::OnCargoHit(UPrimitiveComponent* HitComponent, AActor* Othe
 	KnockbackVelocity = Hit.ImpactNormal.GetSafeNormal() * KnockbackStrength * 100.f;
 	
 	if (HitVelocity > OriginalMaxSpeed * 0.8f)
-		PopRandomContainer();
+		PopRandomContainer(Hit.ImpactNormal);
 }
 
-void ACargoCharacter::PopRandomContainer()
+void ACargoCharacter::PopRandomContainer(const FVector& HitDir)
 {
 	const auto HighestOccupiedZ = GridComp->GetHighestOccupiedZ();
 	const auto PositionsTop = GridComp->GetPositionsFromLevel(HighestOccupiedZ);
@@ -333,8 +333,7 @@ void ACargoCharacter::PopRandomContainer()
 	auto Placeable = GridComp->GetPlaceableAt(RandomPosition);		
 	GridComp->RemovePlaceableFromGrid(Placeable);
 	
-	const FVector RandomDirection = FMath::VRandCone(FVector::UpVector,FMath::DegreesToRadians(25.0f));
-	Placeable->LaunchPlaceable(RandomDirection);
+	Placeable->FallIntoSea(HitDir);
 }
 
 void ACargoCharacter::PopContainersFromZ(int32 Z)
@@ -359,7 +358,7 @@ void ACargoCharacter::PopContainersFromZ(int32 Z)
 		GridComp->RemovePlaceableFromGrid(Placeable);
 	
 		const FVector RandomDirection = FMath::VRandCone(FVector::UpVector,FMath::DegreesToRadians(25.0f));
-		Placeable->LaunchPlaceable(RandomDirection);
+		Placeable->FallIntoSea(RandomDirection);
 	}		
 }
 

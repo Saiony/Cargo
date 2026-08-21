@@ -175,7 +175,9 @@ protected:
 	UFUNCTION()
 	void OnCargoHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 	
-	void PopRandomContainer();
+	void PopRandomContainer(const FVector& HitDir);
+	
+	UFUNCTION(Exec)
 	void PopContainersFromZ(int32 Z);
 
 	void RotateShip(float TargetAngle, UCurveFloat* Curve);

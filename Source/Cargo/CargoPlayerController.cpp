@@ -265,13 +265,6 @@ void ACargoPlayerController::OnLeftClickEnd(const FInputActionValue& InputAction
 
 	CurrentHoveredGrid->AddPlaceableToGrid(DraggingObject, PlaceablePreview->GetActorLocation(), DraggingObject->GetLocalYaw());
 	
-	DraggingObject->AttachToComponent(CurrentHoveredGrid, FAttachmentTransformRules::SnapToTargetIncludingScale);
-	
-	// inherit location but zeroes the local rotation
-	const FVector RelativeLocation = PlaceablePreview->GetRootComponent()->GetRelativeLocation();
-	DraggingObject->SetActorRelativeLocation(RelativeLocation);
-	DraggingObject->SetActorRelativeRotation(FRotator(0.f, 0.f, 0.f));
-	
 	PlaceablePreview->SetActorHiddenInGame(true);
 	bIsDragging = false;
 	DraggingObject = nullptr;	

@@ -57,11 +57,14 @@ void APlaceable::Place(TObjectPtr<UGridComponent> GridActor, int32 GridPosX, int
 {
 	BoxComp->SetSimulatePhysics(false);
 	BoxComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	
+	MeshComp->SetSimulatePhysics(false);
+	MeshComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
  
 	BuoyancyComp->SetComponentTickEnabled(false);
     
 	OwningGridActor = GridActor;
-	PivotGridPos = FIntPoint(GridPosX, GridPosY);
+	PivotGridPos = FIntVector(GridPosX, GridPosY, GridPosZ);
 	this->GridLevel = GridLevel;
  
 	UGameplayStatics::PlaySoundAtLocation(this, PlaceSound, GetActorLocation());
@@ -95,14 +98,62 @@ void APlaceable::AlignToRotation(const FRotator& ReferenceRotation)
 
 TArray<FVector> APlaceable::GetAllGridPositions(const FVector& BaseLocation, float Rotation, float CellSize) const
 {   
-    TArray<FVector> Locations;
+	TArray<FVector> Locations;
+
+	for (int i = 0; i < Size.X; i++)
+	{
+		for (int j = 0; j < Size.Y; j++)
+		{
+			const auto OffsetX = i * CellSize;
+			const auto OffsetY = j * CellSize;
+
+			float RotatedX, RotatedY;
+
+			if (FMath::IsNearlyEqual(Rotation, 0.0f))
+			{
+				RotatedX = OffsetX;
+				RotatedY = OffsetY;
+			}
+			else if (FMath::IsNearlyEqual(Rotation, 90.0f))
+			{
+				RotatedX = -OffsetY;
+				RotatedY = OffsetX;
+			}
+			else if (FMath::IsNearlyEqual(Rotation, 180.0f))
+			{
+				RotatedX = -OffsetX;
+				RotatedY = -OffsetY;
+			}
+			else if (FMath::IsNearlyEqual(Rotation, 270.0f))
+			{
+				RotatedX = OffsetY;
+				RotatedY = -OffsetX;
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("Invalid rotation angle: %f"), Rotation);
+             
+				RotatedX = OffsetX;
+				RotatedY = OffsetY;
+			}
+
+			Locations.Add(FVector(BaseLocation.X + RotatedX, BaseLocation.Y + RotatedY, BaseLocation.Z));
+		}
+	}
+
+	return Locations;
+}
+
+TArray<FIntVector> APlaceable::GetAllGridPositionsIndex(const FVector& BaseLocation, float Rotation) const
+{   
+    TArray<FIntVector> Locations;
 
     for (int i = 0; i < Size.X; i++)
     {
        for (int j = 0; j < Size.Y; j++)
        {
-          const auto OffsetX = i * CellSize;
-          const auto OffsetY = j * CellSize;
+          const auto OffsetX = i ;
+          const auto OffsetY = j;
 
           float RotatedX, RotatedY;
 
@@ -134,7 +185,7 @@ TArray<FVector> APlaceable::GetAllGridPositions(const FVector& BaseLocation, flo
              RotatedY = OffsetY;
           }
 
-          Locations.Add(FVector(BaseLocation.X + RotatedX, BaseLocation.Y + RotatedY, BaseLocation.Z));
+          Locations.Add(FIntVector(RotatedX, RotatedY, PivotGridPos.Z));
        }
     }
 
@@ -148,3 +199,23 @@ bool APlaceable::IsPlaceableBlocked(TObjectPtr<APlaceable> Placeable)
     
     return OwningGridActor->IsPlaceableBlocked(Placeable);
 }
+
+void APlaceable::FallIntoSea(const FVector& Direction)
+{
+	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+
+	BoxComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	BoxComp->SetSimulatePhysics(true);
+
+	const FVector UpImpulse = FVector::UpVector * 1000.0f;
+	const FVector SideImpulse = -Direction.GetSafeNormal() * 5000.0f;
+
+	BoxComp->AddImpulse(UpImpulse + SideImpulse, NAME_None, true);
+	BoxComp->AddAngularImpulseInDegrees(
+		FMath::VRand() * 500.0f,
+		NAME_None,
+		true
+	);
+}
+
+

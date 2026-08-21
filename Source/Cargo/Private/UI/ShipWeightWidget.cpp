@@ -23,7 +23,7 @@ void UShipWeightWidget::NativeDestruct()
 
 void UShipWeightWidget::HandleWeightChanged(const float NewCurrentWeight, const float MaxWeight)
 {
-	UE_LOG(LogTemp, Log, TEXT("Balance changed to %f/%f"), NewCurrentWeight, MaxWeight);
+	UE_LOG(LogTemp, Log, TEXT("Weight changed to %f/%f"), NewCurrentWeight, MaxWeight);
 	
 	const auto Percent = NewCurrentWeight / MaxWeight;
 	

@@ -58,7 +58,7 @@ protected:
     UPROPERTY(VisibleAnywhere, Category = "Placement")
     float LocalYaw = 0.f;
 
-    FIntPoint PivotGridPos;
+    FIntVector PivotGridPos;
 
     virtual void BeginPlay() override;
 
@@ -80,13 +80,16 @@ public:
     void AlignToRotation(const FRotator& ReferenceRotation);
 
     TArray<FVector> GetAllGridPositions(const FVector& BaseLocation, float Rotation, float CellSize) const;
+    TArray<FIntVector> GetAllGridPositionsIndex(const FVector& BaseLocation, float Rotation) const;
 
-    FIntPoint GetGridPos() const { return PivotGridPos; }
+    FIntVector GetGridPos() const { return PivotGridPos; }
 
     int32 GetGridLevel() const { return GridLevel; }
 
     UFUNCTION(BlueprintImplementableEvent, Category = "Placeable")
-    void LaunchPlaceable(const FVector& Direction);
+    void LaunchPlaceable(const FVector& Direction);    
+    
+    void FallIntoSea(const FVector& Direction);
 
     bool IsPlaceableBlocked(TObjectPtr<APlaceable> Placeable);
     

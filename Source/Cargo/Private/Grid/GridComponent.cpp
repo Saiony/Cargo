@@ -78,7 +78,15 @@ void UGridComponent::AddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const 
 		UE_LOG(LogTemp, Log, TEXT("Placeable added to grid [%d, %d] at world pos [%f, %f]"), GridIndex.X, GridIndex.Y, Pos.X, Pos.Y);
 	}
 
-	Placeable->Place(this, LocalLocation.X, LocalLocation.Y, LocalLocation.Z);
+	Placeable->Place(this, LocalLocation.X, LocalLocation.Y, LocalLocation.Z);	
+	
+	Placeable->AttachToComponent(this, FAttachmentTransformRules::SnapToTargetIncludingScale);
+	
+	// inherit location but zeroes the local rotation
+	Placeable->SetActorRelativeLocation(LocalLocation);
+	Placeable->SetActorRelativeRotation(FRotator(0.f, 0.f, 0.f));
+	
+	
 	OnPlaceableAddedToGrid.Broadcast(Placeable);
 	OnPlaceableAdded(Placeable);
 }
