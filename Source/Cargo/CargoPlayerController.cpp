@@ -124,6 +124,7 @@ void ACargoPlayerController::PlayerTick(float DeltaTime)
     if (!HitComponent)
     {     
         PlaceablePreview->SetActorHiddenInGame(true);
+    	CurrentHoveredGrid = nullptr;
         return;
     }
 
@@ -222,7 +223,7 @@ void ACargoPlayerController::OnLeftClickStart(const FInputActionValue& Value)
 		return;
 	
 	DraggingObject = Placeable;
-	if (Placeable->OwningGridActor->IsPlaceableBlocked(Placeable))
+	if (Placeable->IsPlaceableBlocked(Placeable))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Placeable is blocked"));
 		return;
@@ -241,22 +242,35 @@ void ACargoPlayerController::OnLeftClickEnd(const FInputActionValue& InputAction
 	if (!bEditMode)
 		return;
 
-	if (!bIsDragging || !DraggingObject || !CurrentHoveredGrid)
+	if (!bIsDragging || !DraggingObject)
 		return;	
+	
+	//if no grid below, just drop with physics
+	if (!CurrentHoveredGrid)
+	{		
+		DraggingObject->Release();
+		
+		//TODO: turn this into a StopDragging method
+		DraggingObject = nullptr;
+		PlaceablePreview->SetActorHiddenInGame(true);
+		bIsDragging = false;	
+		
+		return;
+	}
 	
 	if (!CurrentHoveredGrid->CanAddPlaceableToGrid(DraggingObject, PlaceablePreview->GetActorLocation(), DraggingObject->GetLocalYaw()))
 	{		
 		return;
 	}
 
+	CurrentHoveredGrid->AddPlaceableToGrid(DraggingObject, PlaceablePreview->GetActorLocation(), DraggingObject->GetLocalYaw());
+	
 	DraggingObject->AttachToComponent(CurrentHoveredGrid, FAttachmentTransformRules::SnapToTargetIncludingScale);
 	
 	// inherit location but zeroes the local rotation
 	const FVector RelativeLocation = PlaceablePreview->GetRootComponent()->GetRelativeLocation();
 	DraggingObject->SetActorRelativeLocation(RelativeLocation);
 	DraggingObject->SetActorRelativeRotation(FRotator(0.f, 0.f, 0.f));
-
-	CurrentHoveredGrid->AddPlaceableToGrid(DraggingObject, PlaceablePreview->GetActorLocation(), DraggingObject->GetLocalYaw());
 	
 	PlaceablePreview->SetActorHiddenInGame(true);
 	bIsDragging = false;

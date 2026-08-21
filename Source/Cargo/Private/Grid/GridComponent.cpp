@@ -172,12 +172,13 @@ void UGridComponent::DrawDebugGrid(float Duration) const
 		return;
 
 	const float CellSize = PlaceableGrid.GetCellSize();
+	const int32 Height = 0;
 
 	for (int32 X = PlaceableGrid.GetMin().X; X <= PlaceableGrid.GetMax().X; X++)
 	{
 		for (int32 Y = PlaceableGrid.GetMin().Y; Y <= PlaceableGrid.GetMax().Y; Y++)
 		{
-			for (int32 Z = PlaceableGrid.GetMin().Z; Z <= PlaceableGrid.GetMax().Z; Z++)
+			for (int32 Z = PlaceableGrid.GetMin().Z; Z <= PlaceableGrid.GetMin().Z + Height; Z++)
 			{
 				const bool bOccupied = PlaceableGrid.GetValue(X, Y, Z) != nullptr;
 

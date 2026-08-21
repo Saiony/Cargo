@@ -1,115 +1,150 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "Public/Grid/Placeable.h"
+
 #include "Components/StaticMeshComponent.h"
-#include "Components/TimelineComponent.h"
 #include "Kismet/GameplayStatics.h"
 
-// Sets default values
 APlaceable::APlaceable()
 {
-	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+    PrimaryActorTick.bCanEverTick = true;
 
-	RootComp = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
-	SetRootComponent(RootComp);
-	
-	PivotComp = CreateDefaultSubobject<USceneComponent>(TEXT("Pivot"));
-	PivotComp->SetupAttachment(RootComponent);
-	
-	ContainerMeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ContainerMesh"));
-	ContainerMeshComp->SetupAttachment(PivotComp);
+    BoxComp = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxComp"));
+    SetRootComponent(BoxComp);
+    BoxComp->SetCollisionProfileName(TEXT("PhysicsActor"));
+    BoxComp->SetSimulatePhysics(false);
+
+    PivotComp = CreateDefaultSubobject<USceneComponent>(TEXT("PivotComp"));
+    PivotComp->SetupAttachment(RootComponent);
+
+    MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
+    MeshComp->SetupAttachment(PivotComp);
+    MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    MeshComp->SetSimulatePhysics(false);
+
+    BuoyancyComp = CreateDefaultSubobject<UBuoyancyComponent>(TEXT("BuoyancyComp"));
 }
 
-// Called when the game starts or when spawned
 void APlaceable::BeginPlay()
 {
-	Super::BeginPlay();
+    Super::BeginPlay();
 }
 
-// Called every frame
 void APlaceable::Tick(float DeltaTime)
 {
-	Super::Tick(DeltaTime);
+    Super::Tick(DeltaTime);
 }
 
 void APlaceable::Grab()
-{	
-	if (OwningGridActor == nullptr)
-		return;
-	
-	OwningGridActor->RemovePlaceableFromGrid(this);
-	
-	UGameplayStatics::PlaySoundAtLocation(	this,GrabSound,GetActorLocation());
+{   
+    if (OwningGridActor == nullptr)
+       return;
+    
+    BoxComp->SetSimulatePhysics(false);
+    BoxComp->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+    BoxComp->SetPhysicsLinearVelocity(FVector::ZeroVector);
+    
+    BuoyancyComp->SetComponentTickEnabled(false);
+
+    SetActorRotation(FRotator(0.f, LocalYaw, 0.f));
+    
+    OwningGridActor->RemovePlaceableFromGrid(this);
+    
+    UGameplayStatics::PlaySoundAtLocation(this, GrabSound, GetActorLocation());
 }
 
-void APlaceable::Place(TObjectPtr<UGridComponent>GridActor, int32 GridPosX, int32 GridPosY, int32 GridPosZ)
+void APlaceable::Place(TObjectPtr<UGridComponent> GridActor, int32 GridPosX, int32 GridPosY, int32 GridPosZ)
 {
+	BoxComp->SetSimulatePhysics(false);
+	BoxComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+ 
+	BuoyancyComp->SetComponentTickEnabled(false);
+    
 	OwningGridActor = GridActor;
 	PivotGridPos = FIntPoint(GridPosX, GridPosY);
 	this->GridLevel = GridLevel;
+ 
+	UGameplayStatics::PlaySoundAtLocation(this, PlaceSound, GetActorLocation());
+}
 
-	UGameplayStatics::PlaySoundAtLocation(	this,PlaceSound,GetActorLocation());
+void APlaceable::Release()
+{
+    BoxComp->SetSimulatePhysics(true);	
+	BoxComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+    BuoyancyComp->SetComponentTickEnabled(true);
+    //BuoyancyComp->Activate();
+    
+    OwningGridActor = nullptr;
 }
 
 void APlaceable::RotateClockwise()
-{	
-	const FRotator NewRotation = PivotComp->GetRelativeRotation() + FRotator(0, 90.0f, 0);
-	PivotComp->SetRelativeRotation(NewRotation);
-	LocalYaw = NewRotation.Yaw;
+{
+    LocalYaw = FRotator::NormalizeAxis(LocalYaw + 90.0f);
+
+    FRotator Rotation = PivotComp->GetRelativeRotation();
+    Rotation.Yaw = LocalYaw;
+
+    PivotComp->SetRelativeRotation(Rotation);
 }
 
 void APlaceable::AlignToRotation(const FRotator& ReferenceRotation)
 {
-	SetActorRotation(FRotator(0.f, ReferenceRotation.Yaw, 0.f));
+    SetActorRotation(FRotator(0.f, ReferenceRotation.Yaw, 0.f));
 }
 
 TArray<FVector> APlaceable::GetAllGridPositions(const FVector& BaseLocation, float Rotation, float CellSize) const
-{	
-	TArray<FVector> Locations;
+{   
+    TArray<FVector> Locations;
 
-	for (int i = 0; i < Size.X; i++)
-	{
-		for (int j = 0; j < Size.Y; j++)
-		{
-			const auto OffsetX = i * CellSize;
-			const auto OffsetY = j * CellSize;
+    for (int i = 0; i < Size.X; i++)
+    {
+       for (int j = 0; j < Size.Y; j++)
+       {
+          const auto OffsetX = i * CellSize;
+          const auto OffsetY = j * CellSize;
 
-			float RotatedX, RotatedY;
+          float RotatedX, RotatedY;
 
-			if (FMath::IsNearlyEqual(Rotation, 0.0f)) // 0 degrees
-			{
-				RotatedX = OffsetX;
-				RotatedY = OffsetY;
-			}
-			else if (FMath::IsNearlyEqual(Rotation, 90.0f)) // 90 degrees
-			{
-				RotatedX = -OffsetY;
-				RotatedY = OffsetX;
-			}
-			else if (FMath::IsNearlyEqual(Rotation, 180.0f)) // 180 degrees
-			{
-				RotatedX = -OffsetX;
-				RotatedY = -OffsetY;
-			}
-			else if (FMath::IsNearlyEqual(Rotation, 270.0f)) // 270 degrees
-			{
-				RotatedX = OffsetY;
-				RotatedY = -OffsetX;
-			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("Invalid rotation angle: %f"), Rotation);
-				
-				RotatedX = OffsetX;
-				RotatedY = OffsetY;
-			}
+          if (FMath::IsNearlyEqual(Rotation, 0.0f))
+          {
+             RotatedX = OffsetX;
+             RotatedY = OffsetY;
+          }
+          else if (FMath::IsNearlyEqual(Rotation, 90.0f))
+          {
+             RotatedX = -OffsetY;
+             RotatedY = OffsetX;
+          }
+          else if (FMath::IsNearlyEqual(Rotation, 180.0f))
+          {
+             RotatedX = -OffsetX;
+             RotatedY = -OffsetY;
+          }
+          else if (FMath::IsNearlyEqual(Rotation, 270.0f))
+          {
+             RotatedX = OffsetY;
+             RotatedY = -OffsetX;
+          }
+          else
+          {
+             UE_LOG(LogTemp, Error, TEXT("Invalid rotation angle: %f"), Rotation);
+             
+             RotatedX = OffsetX;
+             RotatedY = OffsetY;
+          }
 
-			Locations.Add(FVector(BaseLocation.X + RotatedX, BaseLocation.Y + RotatedY, BaseLocation.Z));
-		}
-	}
+          Locations.Add(FVector(BaseLocation.X + RotatedX, BaseLocation.Y + RotatedY, BaseLocation.Z));
+       }
+    }
 
-	return Locations;
+    return Locations;
 }
 
+bool APlaceable::IsPlaceableBlocked(TObjectPtr<APlaceable> Placeable)
+{
+    if (OwningGridActor == nullptr)
+       return false;
+    
+    return OwningGridActor->IsPlaceableBlocked(Placeable);
+}

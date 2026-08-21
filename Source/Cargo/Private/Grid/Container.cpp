@@ -1,8 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "Grid/Container.h"
-
 
 // Sets default values
 AContainer::AContainer()
@@ -16,14 +14,14 @@ void AContainer::Init()
 	if (ContainerDA == nullptr)
 		return;
 	
-	ContainerMeshComp->SetMaterial(0, ContainerDA->Material);
+	MeshComp->SetMaterial(0, ContainerDA->Material);
 	Weight = ContainerDA->Weight;
-	Name = ContainerDA->Name;
+	Name = ContainerDA->Name;	
+	Size = ContainerDA->Size;
 }
 
 void AContainer::Init(TObjectPtr<UContainerDA> InContainerDA)
 {
-	Size = InContainerDA->Size;
 	ContainerDA = InContainerDA;
 	Init();
 }
