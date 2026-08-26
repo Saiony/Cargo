@@ -11,18 +11,19 @@ AContainer::AContainer()
 
 void AContainer::Init()
 {
-	if (ContainerDA == nullptr)
+	if (PlaceableDA == nullptr)
 		return;
 	
-	MeshComp->SetMaterial(0, ContainerDA->Material);
-	Weight = ContainerDA->Weight;
-	Name = ContainerDA->Name;	
-	Size = ContainerDA->Size;
+	MeshComp->SetMaterial(0, PlaceableDA->Material);
+	Weight = PlaceableDA->Weight;
+	Name = PlaceableDA->Name;	
+	GridShapeDefinition = PlaceableDA->Shape;
+	PlaceableTag = PlaceableDA->CargoTag;
 }
 
 void AContainer::Init(TObjectPtr<UContainerDA> InContainerDA)
 {
-	ContainerDA = InContainerDA;
+	PlaceableDA = InContainerDA;
 	Init();
 }
 

@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "BuoyancyComponent.h"
+#include "FROGGridShapeDefinition.h"
 #include "GridComponent.h"
 #include "GameFramework/Actor.h"
 #include "Components/BoxComponent.h"
@@ -13,14 +14,35 @@ UCLASS()
 class CARGO_API APlaceable : public AActor
 {
     GENERATED_BODY()
+    
+    friend class FPlaceableEditorDetails;   
 
 protected:
     APlaceable();
 
     int32 GridLevel = -1;
+    
+    UPROPERTY(EditAnywhere, Category="Cargo")
+    FFROGGridShapeDefinition GridShapeDefinition;    
+	
+    UPROPERTY(EditAnywhere, Category="Cargo")
+    TObjectPtr<UContainerDA> PlaceableDA;    
+    
+#pragma region editor
+#if WITH_EDITORONLY_DATA
+    // UPROPERTY(Transient)
+    // TObjectPtr<UInstancedStaticMeshComponent> DebugShapeISM;
+    //
+    // UPROPERTY(EditDefaultsOnly, Category="Cargo | Debug")
+    // TObjectPtr<UStaticMesh> DebugCellMesh;
+    //
+    // UPROPERTY(EditDefaultsOnly, Category="Cargo | Debug")
+    // TObjectPtr<UMaterialInterface> DebugCellMaterial;    
+#endif        
+#pragma endregion editor
 
-public:
-
+public:    
+    
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cargo")
     TObjectPtr<UBoxComponent> BoxComp;
 
@@ -41,6 +63,9 @@ public:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cargo")
     FString Name;
+    
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cargo")
+    FGameplayTag PlaceableTag;
 
     UPROPERTY(EditDefaultsOnly, Category="Cargo")
     TObjectPtr<USoundBase> GrabSound;
@@ -48,10 +73,7 @@ public:
     UPROPERTY(EditDefaultsOnly, Category="Cargo")
     TObjectPtr<USoundBase> PlaceSound;
 
-    TObjectPtr<UGridComponent> OwningGridActor;
-
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Cargo")
-    FVector2D Size;
+    TObjectPtr<UGridComponent> OwningGridActor;    
 
 protected:
 
@@ -65,6 +87,8 @@ protected:
 public:
 
     virtual void Tick(float DeltaTime) override;
+    
+    virtual void OnConstruction(const FTransform& Transform) override;
 
     UFUNCTION(BlueprintCallable, Category = "Placement")
     float GetLocalYaw() const { return LocalYaw; }
@@ -93,4 +117,5 @@ public:
 
     bool IsPlaceableBlocked(TObjectPtr<APlaceable> Placeable);
     
+    TObjectPtr<UContainerDA> GetPlaceableData() { return PlaceableDA; }
 };

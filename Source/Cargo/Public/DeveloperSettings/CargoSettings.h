@@ -17,13 +17,14 @@ struct FGameplayTag;
 /**
  * 
  */
-UCLASS(Config = Game, DefaultConfig, meta = (DisplayName = "Cargo Settings"))
+UCLASS(Config = Game, DefaultConfig, meta = (DisplayName = "Game Settings"))
 class CARGO_API UCargoSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
 		
 	UPROPERTY(EditAnywhere, Config, Category = "Mission")
 	TSoftObjectPtr<UMissionsDatabase> MissionsDatabase;
+	
 	
 public:
 	UPROPERTY(EditAnywhere, Config, Category = "Data Assets")
@@ -42,4 +43,6 @@ public:
 	TSubclassOf<AContainer> ContainerClass;
 	
 	TObjectPtr<UMissionsDatabase> GetMissionsDatabase() const;
+	
+	virtual FName GetCategoryName() const override { return FName("Cargo"); }
 };

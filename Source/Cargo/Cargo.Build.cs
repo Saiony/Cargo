@@ -23,7 +23,7 @@ public class Cargo : ModuleRules
 			"Water",
 			"CommonUI", 
 			"FrogsmithUI",
-			"SlateCore",
+			"SlateCore",	
 			"GameplayTags",
 			"DeveloperSettings"
 		});

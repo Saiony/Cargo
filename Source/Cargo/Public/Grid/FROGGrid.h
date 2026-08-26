@@ -55,7 +55,7 @@ public:
 	{
 		OccupiedSlots.Empty();
 	}
-
+	
 	int32 GetCellSize() const
 	{
 		return CellSize;

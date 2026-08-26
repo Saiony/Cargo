@@ -1,7 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Public/Grid/Placeable.h"
-
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -33,6 +32,11 @@ void APlaceable::BeginPlay()
 void APlaceable::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
+}
+
+void APlaceable::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
 }
 
 void APlaceable::Grab()
@@ -100,45 +104,14 @@ TArray<FVector> APlaceable::GetAllGridPositions(const FVector& BaseLocation, flo
 {   
 	TArray<FVector> Locations;
 
-	for (int i = 0; i < Size.X; i++)
+	for (const auto Cell : GridShapeDefinition.GetRotatedCells(Rotation))
 	{
-		for (int j = 0; j < Size.Y; j++)
-		{
-			const auto OffsetX = i * CellSize;
-			const auto OffsetY = j * CellSize;
-
-			float RotatedX, RotatedY;
-
-			if (FMath::IsNearlyEqual(Rotation, 0.0f))
-			{
-				RotatedX = OffsetX;
-				RotatedY = OffsetY;
-			}
-			else if (FMath::IsNearlyEqual(Rotation, 90.0f))
-			{
-				RotatedX = -OffsetY;
-				RotatedY = OffsetX;
-			}
-			else if (FMath::IsNearlyEqual(Rotation, 180.0f))
-			{
-				RotatedX = -OffsetX;
-				RotatedY = -OffsetY;
-			}
-			else if (FMath::IsNearlyEqual(Rotation, 270.0f))
-			{
-				RotatedX = OffsetY;
-				RotatedY = -OffsetX;
-			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("Invalid rotation angle: %f"), Rotation);
-             
-				RotatedX = OffsetX;
-				RotatedY = OffsetY;
-			}
-
-			Locations.Add(FVector(BaseLocation.X + RotatedX, BaseLocation.Y + RotatedY, BaseLocation.Z));
-		}
+		FVector LocalCellPos = FVector(Cell.X * CellSize, 
+									   Cell.Y * CellSize, 
+									   Cell.Z * CellSize);
+		
+		FVector WorldCellPos = BaseLocation + LocalCellPos;
+		Locations.Add(WorldCellPos);
 	}
 
 	return Locations;
@@ -146,50 +119,14 @@ TArray<FVector> APlaceable::GetAllGridPositions(const FVector& BaseLocation, flo
 
 TArray<FIntVector> APlaceable::GetAllGridPositionsIndex(const FVector& BaseLocation, float Rotation) const
 {   
-    TArray<FIntVector> Locations;
+	TArray<FIntVector> Locations;
+	
+	for (const auto Cell : GridShapeDefinition.GetRotatedCells(Rotation))
+	{		
+		Locations.Add(Cell);
+	}
 
-    for (int i = 0; i < Size.X; i++)
-    {
-       for (int j = 0; j < Size.Y; j++)
-       {
-          const auto OffsetX = i ;
-          const auto OffsetY = j;
-
-          float RotatedX, RotatedY;
-
-          if (FMath::IsNearlyEqual(Rotation, 0.0f))
-          {
-             RotatedX = OffsetX;
-             RotatedY = OffsetY;
-          }
-          else if (FMath::IsNearlyEqual(Rotation, 90.0f))
-          {
-             RotatedX = -OffsetY;
-             RotatedY = OffsetX;
-          }
-          else if (FMath::IsNearlyEqual(Rotation, 180.0f))
-          {
-             RotatedX = -OffsetX;
-             RotatedY = -OffsetY;
-          }
-          else if (FMath::IsNearlyEqual(Rotation, 270.0f))
-          {
-             RotatedX = OffsetY;
-             RotatedY = -OffsetX;
-          }
-          else
-          {
-             UE_LOG(LogTemp, Error, TEXT("Invalid rotation angle: %f"), Rotation);
-             
-             RotatedX = OffsetX;
-             RotatedY = OffsetY;
-          }
-
-          Locations.Add(FIntVector(RotatedX, RotatedY, PivotGridPos.Z));
-       }
-    }
-
-    return Locations;
+	return Locations;
 }
 
 bool APlaceable::IsPlaceableBlocked(TObjectPtr<APlaceable> Placeable)
@@ -217,5 +154,3 @@ void APlaceable::FallIntoSea(const FVector& Direction)
 		true
 	);
 }
-
-

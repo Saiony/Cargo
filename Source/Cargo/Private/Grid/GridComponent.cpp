@@ -156,7 +156,8 @@ bool UGridComponent::IsPlaceableBlocked(TObjectPtr<APlaceable> Placeable)
 		if (!PlaceableGrid.IsWithinBounds(AbovePos))
 			continue;
 
-		if (PlaceableGrid.GetValue(AbovePos.X, AbovePos.Y, AbovePos.Z))
+		auto PlaceableAbovePtr = PlaceableGrid.GetValue(AbovePos.X, AbovePos.Y, AbovePos.Z);
+		if (PlaceableAbovePtr && *PlaceableAbovePtr != Placeable)
 			return true;
 	}
 

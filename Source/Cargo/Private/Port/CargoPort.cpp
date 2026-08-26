@@ -59,9 +59,9 @@ void UCargoPortComponent::HandlePlaceableAddedToGrid(APlaceable* Placeable)
 	}
 	
 	if (CurrentQuestTag.IsValid())
-		ACargoGameMode::Get(this)->RegisterCargoDelivery(CurrentQuestTag, Container->ContainerDA->CargoTag);
+		ACargoGameMode::Get(this)->RegisterCargoDelivery(CurrentQuestTag, Container->PlaceableTag);
 	else if (CurrentMissionId.IsValid())
-		ACargoGameMode::Get(this)->MissionsService->RegisterCargoDelivery(CurrentMissionId, Container->ContainerDA->CargoTag);
+		ACargoGameMode::Get(this)->MissionsService->RegisterCargoDelivery(CurrentMissionId, Container->PlaceableTag);
 }
 
 void UCargoPortComponent::HandlePlaceableRemovedFromGrid(APlaceable* Placeable)
@@ -82,9 +82,9 @@ void UCargoPortComponent::HandlePlaceableRemovedFromGrid(APlaceable* Placeable)
 	}
 	
 	if (CurrentQuestTag.IsValid())
-		ACargoGameMode::Get(this)->RemoveCargoDelivery(CurrentQuestTag, Container->ContainerDA->CargoTag);
+		ACargoGameMode::Get(this)->RemoveCargoDelivery(CurrentQuestTag, Container->PlaceableTag);
 	else if (CurrentMissionId.IsValid())
-		ACargoGameMode::Get(this)->MissionsService->RemoveCargoDelivery(CurrentMissionId, Container->ContainerDA->CargoTag);
+		ACargoGameMode::Get(this)->MissionsService->RemoveCargoDelivery(CurrentMissionId, Container->PlaceableTag);
 }
 
 void UCargoPortComponent::SpawnSingleContainer(FGameplayTag CargoType)

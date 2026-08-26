@@ -193,15 +193,6 @@ public:
 	virtual void DoLook(float Yaw, float Pitch);
 	
 	void AttachPlaceable(APlaceable* Placeable, FVector WorldPos);
-	
-	// UFUNCTION(BlueprintImplementableEvent, Category="Cargo")
-	// void RotateShipContainerAdded(float FinalAngle);
-	//
-	// UFUNCTION(BlueprintImplementableEvent, Category="Cargo")
-	// void RotateShipSteering(float FinalAngle);
-	//
-	// UFUNCTION(BlueprintImplementableEvent, Category="Cargo")
-	// void RotateShipSteeringBack(float FinalAngle);
 
 	UFUNCTION()
 	void OnShipBalanceChanged(float NewBalance);

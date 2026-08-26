@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "Engine/DataAsset.h"
+#include "Grid/FROGGridShapeDefinition.h"
 #include "ContainerDA.generated.h"
 
 /**
@@ -28,6 +29,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cargo")
 	float Weight = 1.0f;	
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Arcade")
-	FVector2D Size = FVector2D(1, 1);	
+	UPROPERTY(EditAnywhere, Category="Arcade")
+	FFROGGridShapeDefinition Shape;	
 };
