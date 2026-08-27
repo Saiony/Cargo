@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Public/Grid/Placeable.h"
+
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -16,12 +17,10 @@ APlaceable::APlaceable()
     PivotComp = CreateDefaultSubobject<USceneComponent>(TEXT("PivotComp"));
     PivotComp->SetupAttachment(RootComponent);
 
-    MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
-    MeshComp->SetupAttachment(PivotComp);
-    MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    MeshComp->SetSimulatePhysics(false);
-
-    BuoyancyComp = CreateDefaultSubobject<UBuoyancyComponent>(TEXT("BuoyancyComp"));
+    BuoyancyComp = CreateDefaultSubobject<UBuoyancyComponent>(TEXT("BuoyancyComp"));	
+	
+	PlaceableVisualComp = CreateDefaultSubobject<UChildActorComponent>(TEXT("PlaceableVisualComp"));
+	PlaceableVisualComp->SetupAttachment(PivotComp);
 }
 
 void APlaceable::BeginPlay()
@@ -61,9 +60,6 @@ void APlaceable::Place(TObjectPtr<UGridComponent> GridActor, int32 GridPosX, int
 {
 	BoxComp->SetSimulatePhysics(false);
 	BoxComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	
-	MeshComp->SetSimulatePhysics(false);
-	MeshComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
  
 	BuoyancyComp->SetComponentTickEnabled(false);
     
@@ -117,7 +113,7 @@ TArray<FVector> APlaceable::GetAllGridPositions(const FVector& BaseLocation, flo
 	return Locations;
 }
 
-TArray<FIntVector> APlaceable::GetAllGridPositionsIndex(const FVector& BaseLocation, float Rotation) const
+TArray<FIntVector> APlaceable::GetAllGridPositionsIndex(float Rotation) const
 {   
 	TArray<FIntVector> Locations;
 	
@@ -127,6 +123,18 @@ TArray<FIntVector> APlaceable::GetAllGridPositionsIndex(const FVector& BaseLocat
 	}
 
 	return Locations;
+}
+
+TArray<FIntVector> APlaceable::GetAllGridPositionsIndex(FIntVector GridPos, float Rotation)
+{   
+	auto LocalGridPos = GetAllGridPositionsIndex(Rotation);
+	
+	for (auto& Cell : LocalGridPos)
+	{		
+		Cell += GridPos;
+	}
+	
+	return LocalGridPos;
 }
 
 bool APlaceable::IsPlaceableBlocked(TObjectPtr<APlaceable> Placeable)
@@ -153,4 +161,23 @@ void APlaceable::FallIntoSea(const FVector& Direction)
 		NAME_None,
 		true
 	);
+}
+
+void APlaceable::UpdateMesh()
+{
+	// InstanceMeshComp->ClearInstances();
+	// InstanceMeshComp->SetMaterial(0, PlaceableDA->Material);
+	//
+	// const auto GridCellSize = GetDefault<UCargoSettings>()->GridCellSize;
+	//
+	// for (const FIntVector& Cell : PlaceableDA->Shape.Cells)
+	// {
+	// 	const FVector LocalLocation = FVector(
+	// 		Cell.X * GridCellSize,
+	// 		Cell.Y * GridCellSize,
+	// 		Cell.Z * GridCellSize
+	// 	);
+	//
+	// 	InstanceMeshComp->AddInstance(FTransform(LocalLocation));
+	// }
 }

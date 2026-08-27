@@ -14,11 +14,20 @@ void AContainer::Init()
 	if (PlaceableDA == nullptr)
 		return;
 	
-	MeshComp->SetMaterial(0, PlaceableDA->Material);
+	// if (PlaceableDA->VisualBPClass) //right now the class in the data is pretty much an override
+	// 	PlaceableVisualComp->SetChildActorClass(PlaceableDA->VisualBPClass);
+	
+	if (!PlaceableVisualComp->GetChildActor())
+		PlaceableVisualComp->CreateChildActor();
+	
+	Cast<APlaceableVisual>(PlaceableVisualComp->GetChildActor())->Initialize(PlaceableDA);
+	
 	Weight = PlaceableDA->Weight;
 	Name = PlaceableDA->Name;	
 	GridShapeDefinition = PlaceableDA->Shape;
 	PlaceableTag = PlaceableDA->CargoTag;
+	
+	//UpdateMesh();
 }
 
 void AContainer::Init(TObjectPtr<UContainerDA> InContainerDA)

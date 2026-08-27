@@ -23,8 +23,7 @@ class CARGO_API UCargoSettings : public UDeveloperSettings
 	GENERATED_BODY()
 		
 	UPROPERTY(EditAnywhere, Config, Category = "Mission")
-	TSoftObjectPtr<UMissionsDatabase> MissionsDatabase;
-	
+	TSoftObjectPtr<UMissionsDatabase> MissionsDatabase;	
 	
 public:
 	UPROPERTY(EditAnywhere, Config, Category = "Data Assets")
@@ -41,6 +40,9 @@ public:
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo|Island")
 	TSubclassOf<AContainer> ContainerClass;
+	
+	UPROPERTY(EditAnywhere, Config, Category = "Debug")
+	TSoftObjectPtr<UStaticMesh> SimpleCube;
 	
 	TObjectPtr<UMissionsDatabase> GetMissionsDatabase() const;
 	

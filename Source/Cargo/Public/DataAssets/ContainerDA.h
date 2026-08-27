@@ -8,6 +8,7 @@
 #include "Grid/FROGGridShapeDefinition.h"
 #include "ContainerDA.generated.h"
 
+class APlaceableVisual;
 /**
  * 
  */
@@ -17,18 +18,21 @@ class CARGO_API UContainerDA : public UDataAsset
 	GENERATED_BODY()
 	
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cargo", meta = (Categories = "Cargo"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (Categories = "Cargo"))
 	FGameplayTag CargoTag;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cargo")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FString Name = "Debug";
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cargo")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TObjectPtr<UMaterialInterface> Material;
  
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cargo")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	float Weight = 1.0f;	
 	
-	UPROPERTY(EditAnywhere, Category="Arcade")
-	FFROGGridShapeDefinition Shape;	
+	UPROPERTY(EditAnywhere)
+	FFROGGridShapeDefinition Shape;
+	
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<APlaceableVisual> VisualBPClass;
 };

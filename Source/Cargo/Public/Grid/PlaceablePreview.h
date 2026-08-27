@@ -29,8 +29,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cargo")
 	TObjectPtr<USceneComponent> PivotComp;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cargo")
-	TObjectPtr<UStaticMeshComponent> ContainerMeshComp;
+	// UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cargo")
+	// TObjectPtr<UStaticMeshComponent> ContainerMeshComp;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Cargo")
 	TObjectPtr<UMaterialInterface> ValidMaterial;

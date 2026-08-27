@@ -15,9 +15,6 @@
 #define LOCTEXT_NAMESPACE "FPlaceableEditorDetails"
 
 class UCargoEditorSettings;
-// ISM used to visualize the shape, created on demand and kept alive
-// entirely by the editor module. Requires the Placeable to have a valid
-// World (i.e. an instance placed in the level) to actually render.
 static TMap<TWeakObjectPtr<APlaceable>, TWeakObjectPtr<UInstancedStaticMeshComponent>> GDebugISMs;
 
 TSharedRef<IDetailCustomization> FPlaceableEditorDetails::MakeInstance()

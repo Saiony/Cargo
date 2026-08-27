@@ -4,6 +4,7 @@
 #include "BuoyancyComponent.h"
 #include "FROGGridShapeDefinition.h"
 #include "GridComponent.h"
+#include "PlaceableVisual.h"
 #include "GameFramework/Actor.h"
 #include "Components/BoxComponent.h"
 #include "Placeable.generated.h"
@@ -26,20 +27,10 @@ protected:
     FFROGGridShapeDefinition GridShapeDefinition;    
 	
     UPROPERTY(EditAnywhere, Category="Cargo")
-    TObjectPtr<UContainerDA> PlaceableDA;    
+    TObjectPtr<UContainerDA> PlaceableDA;   
     
-#pragma region editor
-#if WITH_EDITORONLY_DATA
-    // UPROPERTY(Transient)
-    // TObjectPtr<UInstancedStaticMeshComponent> DebugShapeISM;
-    //
-    // UPROPERTY(EditDefaultsOnly, Category="Cargo | Debug")
-    // TObjectPtr<UStaticMesh> DebugCellMesh;
-    //
-    // UPROPERTY(EditDefaultsOnly, Category="Cargo | Debug")
-    // TObjectPtr<UMaterialInterface> DebugCellMaterial;    
-#endif        
-#pragma endregion editor
+    UPROPERTY(VisibleAnywhere, Category = "Visual")
+    TObjectPtr<UChildActorComponent> PlaceableVisualComp;
 
 public:    
     
@@ -49,11 +40,8 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cargo")
     TObjectPtr<USceneComponent> PivotComp;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cargo")
-    TObjectPtr<UStaticMeshComponent> MeshComp;
-
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cargo")
-    TObjectPtr<UMaterialInterface> Material;
+    // UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cargo")
+    // TObjectPtr<UStaticMeshComponent> MeshComp;
     
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cargo")
     TObjectPtr<UBuoyancyComponent> BuoyancyComp;
@@ -74,6 +62,8 @@ public:
     TObjectPtr<USoundBase> PlaceSound;
 
     TObjectPtr<UGridComponent> OwningGridActor;    
+    
+    TObjectPtr<APlaceableVisual> GetVisual() { return Cast<APlaceableVisual>(PlaceableVisualComp->GetChildActor()); }
 
 protected:
 
@@ -82,8 +72,9 @@ protected:
 
     FIntVector PivotGridPos;
 
-    virtual void BeginPlay() override;
-
+    virtual void BeginPlay() override;    
+    
+    void UpdateMesh();
 public:
 
     virtual void Tick(float DeltaTime) override;
@@ -104,7 +95,8 @@ public:
     void AlignToRotation(const FRotator& ReferenceRotation);
 
     TArray<FVector> GetAllGridPositions(const FVector& BaseLocation, float Rotation, float CellSize) const;
-    TArray<FIntVector> GetAllGridPositionsIndex(const FVector& BaseLocation, float Rotation) const;
+    TArray<FIntVector> GetAllGridPositionsIndex(float Rotation) const;
+    TArray<FIntVector> GetAllGridPositionsIndex(FIntVector GridPos, float Rotation);
 
     FIntVector GetGridPos() const { return PivotGridPos; }
 

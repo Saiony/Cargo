@@ -105,22 +105,22 @@ void ACargoPlayerController::PlayerTick(float DeltaTime)
     if (!DeprojectMousePositionToWorld(MouseWorldLocation, MouseWorldDirection))
         return;
 
+	//placeable positioning
     const float T = (DraggingZHeight - MouseWorldLocation.Z) / MouseWorldDirection.Z;
     const FVector TargetLocation = MouseWorldLocation + MouseWorldDirection * T;
-    DraggingObject->SetActorLocation(TargetLocation);
+    DraggingObject->SetActorLocation(TargetLocation + DraggingOffset); //TODO: also use MouseWorldDirection.Rotation()
 
 	//gets hit component
     FHitResult HitResult;
     FCollisionQueryParams Params;
     Params.AddIgnoredActor(DraggingObject);
-
-    const FVector TraceStart = DraggingObject->GetActorLocation();
-    const FVector TraceEnd = TraceStart - FVector(0.f, 0.f, 10000.f);
-
-    const auto HitComponent = GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, DropSurfaceChannel, Params)
-						        ? HitResult.GetComponent()
-						        : nullptr;
-
+		
+	if (!bEditMode)
+		return;
+	
+	GetHitResultUnderCursor(DropSurfaceChannel, false, HitResult);
+	const auto HitComponent = HitResult.GetComponent();
+	
     if (!HitComponent)
     {     
         PlaceablePreview->SetActorHiddenInGame(true);
@@ -129,26 +129,32 @@ void ACargoPlayerController::PlayerTick(float DeltaTime)
     }
 
     UGridComponent* GridComponent = Cast<UGridComponent>(HitComponent);
-	FVector ImpactPoint = HitResult.ImpactPoint;	
-
 	CurrentHoveredGrid = GridComponent;
+	
+	FVector ImpactPoint = HitResult.ImpactPoint;	
+	
+	FIntVector ImpactPointGrid;
 
     if (!GridComponent)
     {    	
-    	if (auto Container = Cast<AContainer>(HitComponent->GetOwner()))
+    	if (auto ContainerVisual = Cast<APlaceableVisual>(HitComponent->GetOwner()))
     	{
     		UE_LOG(LogTemp, Log, TEXT("HitComponent is a container. OriginalPos:"));    		
-    		CurrentHoveredGrid = Container->OwningGridActor;
-    		ImpactPoint = CurrentHoveredGrid->GetNextFreeZPositionWorld(ImpactPoint);
+    		CurrentHoveredGrid = Cast<APlaceable>(ContainerVisual->GetOwner())->OwningGridActor; //TODO: melhorar isso
+    		ImpactPointGrid = CurrentHoveredGrid->GetNextFreeZPositionGrid(ImpactPoint);
     	}
     	else
     	{
 	        PlaceablePreview->SetActorHiddenInGame(true);
 	        return;
     	}
-    }  
+    }
+    else
+    {
+    	ImpactPointGrid = CurrentHoveredGrid->GetNextFreeZPositionGrid(ImpactPoint);
+    }
 
-    if (CurrentHoveredGrid->CanAddPlaceableToGrid(DraggingObject, ImpactPoint, DraggingObject->GetLocalYaw()))
+    if (CurrentHoveredGrid->CanAddPlaceableToGridIndex(DraggingObject, ImpactPointGrid, DraggingObject->GetLocalYaw()))
     {
         PlaceablePreview->SetValid();
     }
@@ -158,27 +164,29 @@ void ACargoPlayerController::PlayerTick(float DeltaTime)
     }
     
     PlaceablePreview->SetActorHiddenInGame(false);
-
     PlaceablePreview->AttachToComponent(CurrentHoveredGrid, FAttachmentTransformRules::SnapToTargetIncludingScale);	
-
-    FVector LocalLocation = CurrentHoveredGrid->GetComponentTransform().InverseTransformPosition(ImpactPoint);
+	
+	//attach preview to grid and update transform
+    FVector WorldLocation = CurrentHoveredGrid->GetLocalLocationFromGridIndex(ImpactPointGrid);
 
     const float GridSize = GetDefault<UCargoSettings>()->GridCellSize;
 
-    LocalLocation.X = FMath::GridSnap(LocalLocation.X, GridSize);
-    LocalLocation.Y = FMath::GridSnap(LocalLocation.Y, GridSize);
-    LocalLocation.Z = FMath::GridSnap(LocalLocation.Z, GridSize);
+    // WorldLocation.X = FMath::GridSnap(WorldLocation.X, GridSize);
+    // WorldLocation.Y = FMath::GridSnap(WorldLocation.Y, GridSize);
+    // WorldLocation.Z = FMath::GridSnap(WorldLocation.Z, GridSize);
 
-    PlaceablePreview->SetActorRelativeLocation(LocalLocation);
+    PlaceablePreview->SetActorRelativeLocation(WorldLocation);
 	PlaceablePreview->SetActorRelativeRotation(FRotator(0.f, 0.f, 0.f));
-	PlaceablePreview->MimicPlaceableYaw(DraggingObject);
+	PlaceablePreview->MimicPlaceableYaw(DraggingObject);	
+	
+	DraggingObject->SetActorRotation(PlaceablePreview->GetActorRotation() + FRotator(DraggingRotationOffset.X, DraggingRotationOffset.Y, DraggingRotationOffset.Z)); // + MouseWorldDirection.Rotation() + );
 }
 
 void ACargoPlayerController::UpdateContainerHoverDetection(float DeltaTime)
 {
 	FHitResult HitResult;
 	
-	if (!GetHitResultUnderCursor(DropSurfaceChannel, false, HitResult))
+	if (!GetHitResultUnderCursor(PlaceableChannel, false, HitResult))
 		return;
 	
 	const auto Container = Cast<AContainer>(HitResult.GetActor());
@@ -214,13 +222,18 @@ void ACargoPlayerController::OnLeftClickStart(const FInputActionValue& Value)
 	if (!bEditMode)
 		return;
 	
-	if (!GetHitResultUnderCursor(DropSurfaceChannel, false, HitResult))
+	if (!GetHitResultUnderCursor(PlaceableChannel, false, HitResult))
 		return;
 	
 	APlaceable* Placeable = Cast<APlaceable>(HitResult.GetActor());
 	
 	if (!Placeable)
-		return;
+	{
+		Placeable = Cast<APlaceable>(HitResult.GetActor()->GetParentActor());
+		
+		if (!Placeable)
+			return;
+	}
 	
 	DraggingObject = Placeable;
 	if (Placeable->IsPlaceableBlocked(Placeable))

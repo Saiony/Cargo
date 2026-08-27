@@ -27,7 +27,7 @@ void UGridComponent::InitializeGrid(int32 InCellSize, const FIntVector& InOrigin
 	PlaceableGrid = UFROGGrid<APlaceable*>(InCellSize, InOrigin, InGridSize);
 }
 
-FVector UGridComponent::WorldToLocalGridSpace(const FVector& WorldLocation)
+FVector UGridComponent::WorldToLocal(const FVector& WorldLocation)
 {
 	return GetComponentTransform().InverseTransformPosition(WorldLocation);
 }
@@ -37,7 +37,7 @@ bool UGridComponent::CanAddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, con
 	if(!Placeable)
 		return false;
     		
-	const auto LocalLocation = WorldToLocalGridSpace(WorldLocation);
+	const auto LocalLocation = WorldToLocal(WorldLocation);
 
 	const FVector RoundedLocation = PlaceableGrid.GetRoundedLocation(LocalLocation);
 	const TArray<FVector> OccupiedGridPositions = Placeable->GetAllGridPositions(RoundedLocation, Rotation, PlaceableGrid.GetCellSize());		
@@ -56,6 +56,26 @@ bool UGridComponent::CanAddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, con
 	return true;
 }
 
+bool UGridComponent::CanAddPlaceableToGridIndex(TObjectPtr<APlaceable> Placeable, const FIntVector PlaceablePivotGridIndex, float Rotation)
+{
+	if(!Placeable)
+		return false;
+	
+	const auto OccupiedGridIndex = Placeable->GetAllGridPositionsIndex(PlaceablePivotGridIndex, Rotation);		
+
+	for (const auto GridIndex : OccupiedGridIndex)
+	{    
+		if (PlaceableGrid.GetValue(GridIndex.X, GridIndex.Y, GridIndex.Z))
+			return false;
+    
+		if (!PlaceableGrid.IsWithinBounds(GridIndex))
+			return false;
+	}
+
+	return true;
+}
+
+
 void UGridComponent::AddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const FVector& WorldLocation, float Rotation)
 {
 	if(!Placeable)
@@ -67,7 +87,7 @@ void UGridComponent::AddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const 
 		return;
 	}
 		
-	const auto LocalLocation = WorldToLocalGridSpace(WorldLocation);
+	const auto LocalLocation = WorldToLocal(WorldLocation);
 	const TArray<FVector> OccupiedLocations = Placeable->GetAllGridPositions(LocalLocation, Rotation, PlaceableGrid.GetCellSize());
 
 	for (const FVector& Pos : OccupiedLocations)
@@ -96,7 +116,7 @@ void UGridComponent::RemovePlaceableFromGrid(TObjectPtr<APlaceable> Placeable)
 	if(!Placeable)
 		return;
 		
-	const auto LocalLocation = WorldToLocalGridSpace(Placeable->GetActorLocation());
+	const auto LocalLocation = WorldToLocal(Placeable->GetActorLocation());
 
 	const TArray<FVector> OccupiedPos = Placeable->GetAllGridPositions(LocalLocation, Placeable->GetLocalYaw(), PlaceableGrid.GetCellSize());
 
@@ -127,7 +147,7 @@ TMap<FIntVector, APlaceable*> UGridComponent::GetOccupiedSlots() const
 
 FVector UGridComponent::GetNextFreeZPositionWorld(const FVector& WorldLocation)
 {
-	const FVector LocalLocation = WorldToLocalGridSpace(WorldLocation);
+	const FVector LocalLocation = WorldToLocal(WorldLocation);
 	const FVector RoundedLocation = PlaceableGrid.GetRoundedLocation(LocalLocation);
 
 	FIntVector GridIndex = PlaceableGrid.LocalToGrid(RoundedLocation);
@@ -143,9 +163,39 @@ FVector UGridComponent::GetNextFreeZPositionWorld(const FVector& WorldLocation)
 	return GetComponentTransform().TransformPosition(NextLocalLocation);
 }
 
+FIntVector UGridComponent::GetNextFreeZPositionGrid(const FVector& WorldLocation)
+{
+	const FVector LocalLocation = WorldToLocal(WorldLocation);
+	const FVector RoundedLocation = PlaceableGrid.GetRoundedLocation(LocalLocation);
+
+	FIntVector GridIndex = PlaceableGrid.LocalToGrid(RoundedLocation);
+	
+	while (PlaceableGrid.IsWithinBounds(GridIndex) && PlaceableGrid.GetValue(GridIndex.X, GridIndex.Y, GridIndex.Z))
+	{
+		GridIndex.Z++;
+	}
+	
+	return FIntVector(GridIndex.X, GridIndex.Y, GridIndex.Z);
+}
+
+FVector UGridComponent::GetLocalLocationFromGridIndex(const FIntVector GridPos)
+{
+	const float CellSize = PlaceableGrid.GetCellSize();
+	const FVector LocalLocation = FVector(GridPos.X * CellSize, GridPos.Y * CellSize, GridPos.Z * CellSize);
+	return LocalLocation;
+}
+
+
+FVector UGridComponent::GetLWorldLocationFromGridIndex(const FIntVector GridPos)
+{
+	const float CellSize = PlaceableGrid.GetCellSize();
+	const FVector LocalLocation = FVector(GridPos.X * CellSize, GridPos.Y * CellSize, GridPos.Z * CellSize);
+	return GetComponentTransform().TransformPosition(LocalLocation);
+}
+
 bool UGridComponent::IsPlaceableBlocked(TObjectPtr<APlaceable> Placeable)
 {
-	const auto LocalLocation = WorldToLocalGridSpace(Placeable->GetActorLocation());
+	const auto LocalLocation = WorldToLocal(Placeable->GetActorLocation());
 	const TArray<FVector> OccupiedPositions = Placeable->GetAllGridPositions(LocalLocation, Placeable->GetLocalYaw(), PlaceableGrid.GetCellSize());
 
 	for (const FVector& Pos : OccupiedPositions)

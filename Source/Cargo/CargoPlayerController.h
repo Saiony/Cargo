@@ -76,6 +76,12 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category="Input|Dragging")
 	float DraggingZHeight = 100.0f;
+	
+	UPROPERTY(EditAnywhere, Category="Input|Dragging")
+	FVector3d DraggingOffset;
+	
+	UPROPERTY(EditAnywhere, Category="Input|Dragging")
+	FVector3d DraggingRotationOffset;
 
 	UPROPERTY(VisibleAnywhere, Category="Input|Dragging")
 	class APlaceable* DraggingObject;
@@ -88,6 +94,9 @@ protected:
 	
 	UPROPERTY(EditAnywhere, Category="Cargo")
 	TEnumAsByte<ECollisionChannel> DropSurfaceChannel;
+	
+	UPROPERTY(EditAnywhere, Category="Cargo")
+	TEnumAsByte<ECollisionChannel> PlaceableChannel;
 	
 	UPROPERTY(EditDefaultsOnly, Category="Cargo")
 	float InteractionCheckInterval = 0.1f;

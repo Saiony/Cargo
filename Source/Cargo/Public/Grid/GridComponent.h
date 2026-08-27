@@ -29,7 +29,7 @@ protected:
 
 	void InitializeGrid(int32 InCellSize, const FIntVector& InOrigin, const FIntVector& InGridSize);
 
-	FVector WorldToLocalGridSpace(const FVector& WorldLocation);
+	FVector WorldToLocal(const FVector& WorldLocation);
 
 public:
 	UGridComponent();
@@ -39,6 +39,8 @@ public:
 	void ClearGrid();
 
 	bool CanAddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const FVector WorldLocation, float Rotation);
+	bool CanAddPlaceableToGridIndex(TObjectPtr<APlaceable> Placeable, FIntVector PlaceablePivotGridIndex,
+	                                float Rotation);
 
 	void AddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const FVector& WorldLocation, float Rotation);
 	
@@ -50,6 +52,10 @@ public:
 	
 	FVector GetNextFreeZPositionWorld(const FVector& WorldLocation);
 	
+	FIntVector GetNextFreeZPositionGrid(const FVector& WorldLocation);
+	FVector GetLocalLocationFromGridIndex(FIntVector GridPos);
+	FVector GetLWorldLocationFromGridIndex(FIntVector GridPos);
+
 	bool IsPlaceableBlocked(TObjectPtr<APlaceable> Placeable);
 	int32 GetHighestOccupiedZ();
 	TArray<FIntVector> GetPositionsFromLevel(int Z);
