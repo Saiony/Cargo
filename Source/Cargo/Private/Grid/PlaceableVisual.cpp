@@ -17,6 +17,8 @@ APlaceableVisual::APlaceableVisual()
 
 void APlaceableVisual::Initialize(TObjectPtr<UContainerDA> Data)
 {
+	ClearMeshes();
+	
 	const auto Settings = GetDefault<UCargoSettings>();
 	const auto SimpleCube = Settings->SimpleCube.Get();
 	const auto GridSize = Settings->GridCellSize;
@@ -34,6 +36,16 @@ void APlaceableVisual::Initialize(TObjectPtr<UContainerDA> Data)
 		
 		Cube->RegisterComponent();
 	}	
+}
+
+void APlaceableVisual::ClearMeshes()
+{
+	TArray<USceneComponent*> CubeChildren;
+	RootComponent->GetChildrenComponents(true, CubeChildren);
+	for (auto& Child : CubeChildren)
+	{
+		Child->DestroyComponent();
+	}
 }
 
 

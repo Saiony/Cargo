@@ -13,6 +13,7 @@ class CARGO_API APlaceableVisual : public AActor
 {
 	GENERATED_BODY()	
 	
+	void ClearMeshes();
 public:
 	// Sets default values for this component's properties
 	APlaceableVisual();
