@@ -15,16 +15,22 @@ UGridComponent::UGridComponent()
 void UGridComponent::BeginPlay()
 {
 	Super::BeginPlay();    
-	InitializeGrid(GetDefault<UCargoSettings>()->GridCellSize, FIntVector(0, 0, 0), GridSize);
+	
+	InitializeGrid();
 }
 
 void UGridComponent::OnPlaceableAdded(APlaceable* Placeable)
 {
 }
 
-void UGridComponent::InitializeGrid(int32 InCellSize, const FIntVector& InOrigin, const FIntVector& InGridSize)
+void UGridComponent::InitializeGrid()
 {
-	PlaceableGrid = UFROGGrid<APlaceable*>(InCellSize, InOrigin, InGridSize);
+	const auto GridCellSize = GetDefault<UCargoSettings>()->GridCellSize;
+	const auto Origin = FIntVector(0, 0, 0);
+	const auto GridSize = GridComponentDA->GridSize;	
+	const auto InvalidSlots = GridComponentDA->InvalidSlots.Cells;	
+	
+	PlaceableGrid = UFROGGrid<APlaceable*>(GridCellSize, Origin, GridSize, InvalidSlots);		
 }
 
 FVector UGridComponent::WorldToLocal(const FVector& WorldLocation)

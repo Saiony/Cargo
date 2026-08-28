@@ -36,13 +36,3 @@ struct CARGO_API FFROGGridShapeDefinition
 		return Result;
 	}
 };
-
-
-USTRUCT(BlueprintType)
-struct CARGO_API FTestShape
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere)
-	TArray<FIntVector> Cells;
-};

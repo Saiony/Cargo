@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/BoxComponent.h"
+#include "DataAssets/GridComponentDA.h"
 #include "DeveloperSettings/CargoSettings.h"
 #include "Grid/FROGGrid.h"
 #include "GridComponent.generated.h"
@@ -19,15 +20,15 @@ class CARGO_API UGridComponent : public UBoxComponent
 	GENERATED_BODY()
 protected:  
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
-	FIntVector GridSize = FIntVector(1, 1, 1);
-
+	TObjectPtr<UGridComponentDA> GridComponentDA;
+	
 	UFROGGrid<APlaceable*> PlaceableGrid = UFROGGrid<APlaceable*>(GetDefault<UCargoSettings>()->GridCellSize, FIntVector(0, 0, 0), FIntVector(0, 0, 0));
     
 	virtual void BeginPlay() override;
     
 	virtual void OnPlaceableAdded(APlaceable* Placeable);
 
-	void InitializeGrid(int32 InCellSize, const FIntVector& InOrigin, const FIntVector& InGridSize);
+	void InitializeGrid();
 
 	FVector WorldToLocal(const FVector& WorldLocation);
 
@@ -39,6 +40,7 @@ public:
 	void ClearGrid();
 
 	bool CanAddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const FVector WorldLocation, float Rotation);
+	
 	bool CanAddPlaceableToGridIndex(TObjectPtr<APlaceable> Placeable, FIntVector PlaceablePivotGridIndex,
 	                                float Rotation);
 

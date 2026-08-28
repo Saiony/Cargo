@@ -1,6 +1,8 @@
 ﻿#include "CargoEditor.h"
 
+#include "GridComponentDADetails.h"
 #include "PlaceableEditor.h"
+#include "DataAssets/GridComponentDA.h"
 
 
 void FCargoEditorModule::StartupModule()
@@ -9,6 +11,7 @@ void FCargoEditorModule::StartupModule()
 	
 	
 	PropertyModule.RegisterCustomClassLayout("Placeable", FOnGetDetailCustomizationInstance::CreateStatic(&FPlaceableEditorDetails::MakeInstance));
+	PropertyModule.RegisterCustomClassLayout("GridComponentDA", FOnGetDetailCustomizationInstance::CreateStatic(&FGridComponentDADetails::MakeInstance));
 
 	PropertyModule.NotifyCustomizationModuleChanged();}
 
@@ -20,6 +23,7 @@ void FCargoEditorModule::ShutdownModule()
 	
 	FPropertyEditorModule& PropertyModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
 	PropertyModule.UnregisterCustomClassLayout("Placeable");
+	PropertyModule.UnregisterCustomClassLayout(UGridComponentDA::StaticClass()->GetFName());
 }
     
 IMPLEMENT_MODULE(FCargoEditorModule, CargoEditor)
