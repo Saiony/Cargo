@@ -18,6 +18,7 @@ struct FInputActionValue;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInteractableChanged, TScriptInterface<ICargoInteractable>, NewInteractable);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnContainerHoverConfirmed, AContainer*, HoveredContainer);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSwitchEditMode, bool, bEditMode);
 
 /**
  *  Basic PlayerController class for a third person game
@@ -158,6 +159,8 @@ public:
 	FOnInteractableChanged OnInteractableChanged;
 	
 	FOnContainerHoverConfirmed OnContainerHoverConfirmed;
+	
+	FOnSwitchEditMode OnEditModeChanged;
 
 	void StartDragging(class APlaceable* InPlaceable);
 };

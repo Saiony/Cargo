@@ -4,11 +4,15 @@
 #include "Grid/GridComponent.h"
 
 #include "ConsoleVariables.h"
+#include "Components/InstancedStaticMeshComponent.h"
 #include "Grid/Placeable.h"
 
 UGridComponent::UGridComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+	
+	// InstancedMeshComp = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("InstancedMeshComp"));
+	// InstancedMeshComp->AttachToComponent(this, FAttachmentTransformRules::KeepRelativeTransform);
 }
 
 // Called when the game starts
@@ -31,11 +35,36 @@ void UGridComponent::InitializeGrid()
 	const auto InvalidSlots = GridComponentDA->InvalidSlots.Cells;	
 	
 	PlaceableGrid = UFROGGrid<APlaceable*>(GridCellSize, Origin, GridSize, InvalidSlots);		
+	InstancedMeshComp->SetStaticMesh(GridComponentDA->CellMesh);
+	
+	for (const auto& Cell : PlaceableGrid.GetAllAvailableSlots())
+	{		
+		const auto LocalPos = GridToLocalPos(Cell);
+		InstancedMeshComp->AddInstance(FTransform(LocalPos));
+	}
 }
 
 FVector UGridComponent::WorldToLocal(const FVector& WorldLocation)
 {
 	return GetComponentTransform().InverseTransformPosition(WorldLocation);
+}
+
+void UGridComponent::OnRegister()
+{
+	Super::OnRegister();
+	
+	if (!InstancedMeshComp)
+	{
+		InstancedMeshComp = NewObject<UInstancedStaticMeshComponent>(GetOwner(),TEXT("InstancedMeshComp"));
+		InstancedMeshComp->SetupAttachment(this);
+		InstancedMeshComp->SetRelativeLocation(FVector(0, 0, -50));
+		InstancedMeshComp->RegisterComponent();
+		
+		InstancedMeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		InstancedMeshComp->SetGenerateOverlapEvents(false);
+		InstancedMeshComp->SetSimulatePhysics(false);
+	}
+	
 }
 
 bool UGridComponent::CanAddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const FVector WorldLocation, float Rotation)
@@ -52,10 +81,7 @@ bool UGridComponent::CanAddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, con
 	{
 		const auto GridIndex = PlaceableGrid.LocalToGrid(Pos);
     
-		if (PlaceableGrid.GetValue(GridIndex.X, GridIndex.Y, GridIndex.Z))
-			return false;
-    
-		if (!PlaceableGrid.IsWithinBounds(GridIndex))
+		if (!PlaceableGrid.IsSlotAvailable(GridIndex))
 			return false;
 	}
 
@@ -71,10 +97,7 @@ bool UGridComponent::CanAddPlaceableToGridIndex(TObjectPtr<APlaceable> Placeable
 
 	for (const auto GridIndex : OccupiedGridIndex)
 	{    
-		if (PlaceableGrid.GetValue(GridIndex.X, GridIndex.Y, GridIndex.Z))
-			return false;
-    
-		if (!PlaceableGrid.IsWithinBounds(GridIndex))
+		if (!PlaceableGrid.IsSlotAvailable(GridIndex))
 			return false;
 	}
 
@@ -99,7 +122,7 @@ void UGridComponent::AddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const 
 	for (const FVector& Pos : OccupiedLocations)
 	{
 		const auto GridIndex = PlaceableGrid.LocalToGrid(Pos);
-		PlaceableGrid.Add(GridIndex.X, GridIndex.Y, GridIndex.Z, Placeable);
+		PlaceableGrid.Add(GridIndex, Placeable);
 
 		UE_LOG(LogTemp, Log, TEXT("Placeable added to grid [%d, %d] at world pos [%f, %f]"), GridIndex.X, GridIndex.Y, Pos.X, Pos.Y);
 	}
@@ -184,7 +207,7 @@ FIntVector UGridComponent::GetNextFreeZPositionGrid(const FVector& WorldLocation
 	return FIntVector(GridIndex.X, GridIndex.Y, GridIndex.Z);
 }
 
-FVector UGridComponent::GetLocalLocationFromGridIndex(const FIntVector GridPos)
+FVector UGridComponent::GridToLocalPos(const FIntVector GridPos)
 {
 	const float CellSize = PlaceableGrid.GetCellSize();
 	const FVector LocalLocation = FVector(GridPos.X * CellSize, GridPos.Y * CellSize, GridPos.Z * CellSize);
@@ -230,7 +253,18 @@ TArray<FIntVector> UGridComponent::GetPositionsFromLevel(int Z)
 	return PlaceableGrid.GetOccupiedPositionsAtZ(Z);
 }
 
+void UGridComponent::ShowIndicators()
+{
+	InstancedMeshComp->SetVisibility(true);
+}
+
+void UGridComponent::HideIndicators()
+{
+	InstancedMeshComp->SetVisibility(false);
+}
+
 #if !UE_BUILD_SHIPPING
+
 void UGridComponent::DrawDebugGrid(float Duration) const
 {
 	if (!GetWorld())
@@ -246,11 +280,12 @@ void UGridComponent::DrawDebugGrid(float Duration) const
 			for (int32 Z = PlaceableGrid.GetMin().Z; Z <= PlaceableGrid.GetMin().Z + Height; Z++)
 			{
 				const bool bOccupied = PlaceableGrid.GetValue(X, Y, Z) != nullptr;
+				const bool bInvalidPos = PlaceableGrid.IsInvalidSlot(FIntVector(X, Y, Z));
 
 				const FVector LocalCellCenter = FVector(X * CellSize, Y * CellSize, Z * CellSize);
 				const FVector WorldCellCenter = GetComponentTransform().TransformPosition(LocalCellCenter);
 
-				const FColor DebugColor = bOccupied ? FColor::Red : FColor::Green;
+				const FColor DebugColor = bOccupied ? FColor::Red : bInvalidPos ? FColor::Silver : FColor::Green;
 
 				DrawDebugBox(GetWorld(), WorldCellCenter, FVector(CellSize * 0.4f, CellSize * 0.4f, CellSize * 0.4f),
 					GetComponentQuat(), DebugColor, false, Duration, 0);

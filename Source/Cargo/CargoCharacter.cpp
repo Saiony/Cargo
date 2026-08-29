@@ -249,6 +249,10 @@ void ACargoCharacter::BeginPlay()
 	//Timeline component
 	UpdateFunctionFloat.BindDynamic(this, &ACargoCharacter::UpdateTimelineComp);
 	RotateTimelineComp->AddInterpFloat(Curve_RotateShipWeight, UpdateFunctionFloat, NAME_None, TEXT("Rotation"));
+	
+	//bind events
+	GetController<ACargoPlayerController>()->OnEditModeChanged.AddDynamic(this, &ACargoCharacter::OnEditModeChanged);
+	OnEditModeChanged(GetController<ACargoPlayerController>()->bEditMode);
 }
 
 void ACargoCharacter::BalanceShip()
@@ -369,6 +373,14 @@ void ACargoCharacter::RotateShip(float TargetAngle, UCurveFloat* Curve)
 
 	RotateTimelineComp->SetFloatCurve(Curve, TEXT("Rotation"));
 	RotateTimelineComp->PlayFromStart();
+}
+
+void ACargoCharacter::OnEditModeChanged(bool bEditMode)
+{
+	if (bEditMode)
+		GridComp->ShowIndicators();
+	else
+		GridComp->HideIndicators();	
 }
 
 void ACargoCharacter::UpdateTimelineComp(float Output)

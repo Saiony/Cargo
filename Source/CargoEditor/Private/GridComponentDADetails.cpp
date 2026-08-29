@@ -65,60 +65,88 @@ void FGridComponentDADetails::CustomizeDetails(IDetailLayoutBuilder& DetailBuild
 
 TSharedRef<SWidget> FGridComponentDADetails::BuildGridWidget()
 {
-	if (!EditedAsset.IsValid())
-	{
-		return SNullWidget::NullWidget;
-	}
+    if (!EditedAsset.IsValid())
+    {
+        return SNullWidget::NullWidget;
+    }
 
-	const int32 SizeX = FMath::Max(EditedAsset->GridSize.X, 0);
-	const int32 SizeY = FMath::Max(EditedAsset->GridSize.Y, 0);
+    const int32 SizeX = FMath::Max(EditedAsset->GridSize.X, 0);
+    const int32 SizeY = FMath::Max(EditedAsset->GridSize.Y, 0);
 
-	if (SizeX <= 0 || SizeY <= 0)
-	{
-		return SNew(STextBlock)
-			.Text(LOCTEXT("InvalidGridSize", "Defina GridSize.X e GridSize.Y maiores que zero para ver o grid."));
-	}
+    if (SizeX <= 0 || SizeY <= 0)
+    {
+        return SNew(STextBlock)
+            .Text(LOCTEXT(
+                "InvalidGridSize",
+                "Defina GridSize.X e GridSize.Y maiores que zero para ver o grid."
+            ));
+    }
 
-	TSharedRef<SUniformGridPanel> GridPanel = SNew(SUniformGridPanel)
-		.SlotPadding(FMargin(1.0f));
+    TSharedRef<SUniformGridPanel> GridPanel =
+        SNew(SUniformGridPanel)
+        .SlotPadding(FMargin(1.0f));
 
-	constexpr float CellSize = 20.0f;
+    constexpr float CellSize = 20.0f;
 
-	// Y = linha, X = coluna. Z é ignorado por enquanto (sempre 0).
-	for (int32 Y = 0; Y < SizeY; ++Y)
-	{
-		for (int32 X = 0; X < SizeX; ++X)
-		{
-			GridPanel->AddSlot(X, Y)
-			[
-				SNew(SBox)
-				.WidthOverride(CellSize)
-				.HeightOverride(CellSize)
-				[
-					SNew(SButton)
-					.ButtonColorAndOpacity(this, &FGridComponentDADetails::GetCellColor, X, Y)
-					.OnClicked(this, &FGridComponentDADetails::OnCellClicked, X, Y)
-					.ToolTipText(FText::Format(LOCTEXT("CellTooltip", "({0}, {1})"), FText::AsNumber(X), FText::AsNumber(Y)))
-					.ContentPadding(FMargin(0.0f))
-				]
-			];
-		}
-	}
+    const int32 MinX = -SizeX / 2;
+    const int32 MinY = -SizeY / 2;
 
-	// SHorizontalBox + AutoWidth evita que o WholeRowContent do Details Panel
-	// estique o grid pra ocupar a largura toda da linha (o que deformaria os
-	// quadrados). Assim o container só ocupa o espaço que o grid realmente usa.
-	return SNew(SHorizontalBox)
-		+ SHorizontalBox::Slot()
-		.AutoWidth()
-		.HAlign(HAlign_Left)
-		[
-			SNew(SBorder)
-			.Padding(FMargin(4.0f))
-			[
-				GridPanel
-			]
-		];
+    for (int32 X = 0; X < SizeX; ++X)
+    {
+        for (int32 Y = 0; Y < SizeY; ++Y)
+        {
+            const int32 GridX = MinX + X;
+            const int32 GridY = MinY + Y;
+
+            // Unreal top-down convention:
+            // +X = forward = screen up
+            // +Y = right   = screen right
+            const int32 VisualColumn = Y;
+            const int32 VisualRow = SizeX - 1 - X;
+
+            GridPanel->AddSlot(VisualColumn, VisualRow)
+            [
+                SNew(SBox)
+                .WidthOverride(CellSize)
+                .HeightOverride(CellSize)
+                [
+                    SNew(SButton)
+                    .ButtonColorAndOpacity(
+                        this,
+                        &FGridComponentDADetails::GetCellColor,
+                        GridX,
+                        GridY
+                    )
+                    .OnClicked(
+                        this,
+                        &FGridComponentDADetails::OnCellClicked,
+                        GridX,
+                        GridY
+                    )
+                    .ToolTipText(
+                        FText::Format(
+                            LOCTEXT("CellTooltip", "({0}, {1})"),
+                            FText::AsNumber(GridX),
+                            FText::AsNumber(GridY)
+                        )
+                    )
+                    .ContentPadding(FMargin(0.0f))
+                ]
+            ];
+        }
+    }
+
+    return SNew(SHorizontalBox)
+        + SHorizontalBox::Slot()
+        .AutoWidth()
+        .HAlign(HAlign_Left)
+        [
+            SNew(SBorder)
+            .Padding(FMargin(4.0f))
+            [
+                GridPanel
+            ]
+        ];
 }
 
 bool FGridComponentDADetails::IsCellBlocked(int32 X, int32 Y) const

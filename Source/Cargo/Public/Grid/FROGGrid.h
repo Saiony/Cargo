@@ -6,19 +6,27 @@
 
 
 template <typename T>
-class UFROGGrid 
+class UFROGGrid
 {
 	TMap<FIntVector, T> OccupiedSlots;
 	int32 CellSize;
-	FIntVector GridOrigin;	
+	FIntVector GridOrigin;
 	FIntVector GridSize;
-	
+	TSet<FIntVector> InvalidSlots;
+
 public:
-	UFROGGrid(const int32 CellSize, const FIntVector Origin, const FIntVector GridSize) :
+	UFROGGrid(const int32 CellSize, const FIntVector Origin, const FIntVector GridSize,
+	          const TArray<FIntVector>& InvalidSlots) :
 		OccupiedSlots(TMap<FIntVector, T>()),
 		CellSize(CellSize),
 		GridOrigin(Origin),
-		GridSize(GridSize)
+		GridSize(GridSize),
+		InvalidSlots(InvalidSlots)
+	{
+	}
+
+	UFROGGrid(const int32 CellSize, const FIntVector Origin, const FIntVector GridSize) : UFROGGrid(
+		CellSize, Origin, GridSize, TArray<FIntVector>())
 	{
 	}
 
@@ -38,16 +46,19 @@ public:
 		return Values;
 	}
 
-	void Add(const int32 X, const int32 Y, const int32 Z, const T Value)
+	void Add(const FIntVector& GridIndex, const T Value)
 	{
-		FIntVector Cell(X, Y, Z);
+		if (!IsSlotAvailable(GridIndex))
+			return;
+
+		FIntVector Cell(GridIndex);
 		OccupiedSlots.Add(Cell, Value);
 	}
 
 	void Remove(const int32 X, const int32 Y, const int32 Z)
 	{
 		FIntVector Cell(X, Y, Z);
-		
+
 		OccupiedSlots.Remove(Cell);
 	}
 
@@ -55,7 +66,7 @@ public:
 	{
 		OccupiedSlots.Empty();
 	}
-	
+
 	int32 GetCellSize() const
 	{
 		return CellSize;
@@ -64,6 +75,29 @@ public:
 	TMap<FIntVector, T> GetOccupiedSlots() const
 	{
 		return OccupiedSlots;
+	}
+	
+	bool IsInvalidSlot(const FIntVector& GridIndex) const
+	{
+		return InvalidSlots.Contains(GridIndex);
+	}
+	
+	bool IsSlotAvailable(const FIntVector& GridIndex) const
+	{
+		const auto IsInvalid = IsInvalidSlot(GridIndex);
+		const auto IsOccupied = OccupiedSlots.Contains(GridIndex);
+		const auto WithinBounds = IsWithinBounds(GridIndex);
+
+		return !IsInvalid && !IsOccupied && WithinBounds;
+	}
+
+	bool IsWithinBounds(const FIntVector& GridIndex) const
+	{
+		const FIntVector Min = GetMin();
+		const FIntVector Max = GetMax();
+
+		return GridIndex.X >= Min.X && GridIndex.X <= Max.X &&
+			GridIndex.Y >= Min.Y && GridIndex.Y <= Max.Y;
 	}
 
 	FVector GetRoundedLocation(const FVector& WorldLocation) const
@@ -75,7 +109,7 @@ public:
 			GridOrigin.Z + FMath::RoundToInt((WorldLocation.Z - GridOrigin.Z) / CellSize) * CellSize
 		);
 	}
-	
+
 	FIntVector GetMin() const
 	{
 		return FIntVector(-GridSize.X / 2, -GridSize.Y / 2, 0);
@@ -83,14 +117,14 @@ public:
 
 	FIntVector GetMax() const
 	{
-		return FIntVector(GridSize.X / 2, GridSize.Y / 2, GridSize.Z);
+		return FIntVector((GridSize.X - 1) / 2, (GridSize.Y -1) / 2, GridSize.Z);
 	}
 
 	friend bool operator!=(const UFROGGrid& lhs, const UFROGGrid& rhs)
 	{
 		return !(lhs == rhs);
 	}
-	
+
 	FIntVector LocalToGrid(const FVector& LocalPosition) const
 	{
 		return LocalToGrid(LocalPosition.X, LocalPosition.Y, LocalPosition.Z);
@@ -100,30 +134,21 @@ public:
 	{
 		return FIntVector
 		(
-		   FMath::FloorToInt((LocalX - GridOrigin.X) / CellSize),
-		   FMath::FloorToInt((LocalY - GridOrigin.Y) / CellSize),
-		   FMath::FloorToInt((LocalZ - GridOrigin.Z) / CellSize)
+			FMath::FloorToInt((LocalX - GridOrigin.X) / CellSize),
+			FMath::FloorToInt((LocalY - GridOrigin.Y) / CellSize),
+			FMath::FloorToInt((LocalZ - GridOrigin.Z) / CellSize)
 		);
 	}
 
 	FVector GridToLocal(const FIntVector& GridIndex) const
 	{
 		return FVector(
-		   GridOrigin.X + GridIndex.X * CellSize,
-		   GridOrigin.Y + GridIndex.Y * CellSize,
-		   0.0f
+			GridOrigin.X + GridIndex.X * CellSize,
+			GridOrigin.Y + GridIndex.Y * CellSize,
+			0.0f
 		);
 	}
-	
-	bool IsWithinBounds(const FIntVector& GridIndex) const
-	{
-		const FIntVector Min = GetMin();
-		const FIntVector Max = GetMax();
 
-		return GridIndex.X >= Min.X && GridIndex.X <= Max.X &&
-			   GridIndex.Y >= Min.Y && GridIndex.Y <= Max.Y;
-	}
-	
 	int32 GetHighestOccupiedZ() const
 	{
 		if (OccupiedSlots.IsEmpty())
@@ -140,7 +165,7 @@ public:
 
 		return HighestZ;
 	}
-	
+
 	TArray<FIntVector> GetOccupiedPositionsAtZ(int32 Z) const
 	{
 		TArray<FIntVector> Positions;
@@ -151,10 +176,32 @@ public:
 		{
 			if (Elem.Key.Z != Z)
 				continue;
-			
+
 			Positions.Add(Elem.Key);
 		}
 
 		return Positions;
+	}
+
+	TSet<FIntVector> GetAllAvailableSlots()
+	{
+		const FIntVector Min = GetMin();
+		const FIntVector Max = GetMax();
+
+		TSet<FIntVector> AllCells;
+		AllCells.Reserve((Max.X - Min.X + 1) * (Max.Y - Min.Y + 1));
+
+		for (int32 Y = Min.Y; Y <= Max.Y; ++Y)
+		{
+			for (int32 X = Min.X; X <= Max.X; ++X)
+			{
+				AllCells.Add(FIntVector(X, Y, 0));
+			}
+		}
+
+		TSet<FIntVector> OccupiedKeys;
+		OccupiedSlots.GetKeys(OccupiedKeys);
+
+		return AllCells.Difference(InvalidSlots).Difference(OccupiedKeys);
 	}
 };

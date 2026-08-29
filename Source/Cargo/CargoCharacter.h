@@ -182,7 +182,8 @@ protected:
 
 	void RotateShip(float TargetAngle, UCurveFloat* Curve);
 
-
+	UFUNCTION()
+	void OnEditModeChanged(bool bEditMode);
 public:
 	/** Handles move inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category="Input")
@@ -196,9 +197,11 @@ public:
 
 	UFUNCTION()
 	void OnShipBalanceChanged(float NewBalance);
-	
+
 	virtual void BeginPlay() override;
 	
 	virtual void Tick(float DeltaSeconds) override;
+	
+	
 };
 

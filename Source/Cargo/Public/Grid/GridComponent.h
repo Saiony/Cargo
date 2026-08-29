@@ -22,6 +22,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
 	TObjectPtr<UGridComponentDA> GridComponentDA;
 	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	TObjectPtr<UInstancedStaticMeshComponent> InstancedMeshComp;
+	
 	UFROGGrid<APlaceable*> PlaceableGrid = UFROGGrid<APlaceable*>(GetDefault<UCargoSettings>()->GridCellSize, FIntVector(0, 0, 0), FIntVector(0, 0, 0));
     
 	virtual void BeginPlay() override;
@@ -31,6 +34,8 @@ protected:
 	void InitializeGrid();
 
 	FVector WorldToLocal(const FVector& WorldLocation);
+	
+	virtual void OnRegister() override;
 
 public:
 	UGridComponent();
@@ -55,7 +60,7 @@ public:
 	FVector GetNextFreeZPositionWorld(const FVector& WorldLocation);
 	
 	FIntVector GetNextFreeZPositionGrid(const FVector& WorldLocation);
-	FVector GetLocalLocationFromGridIndex(FIntVector GridPos);
+	FVector GridToLocalPos(FIntVector GridPos);
 	FVector GetLWorldLocationFromGridIndex(FIntVector GridPos);
 
 	bool IsPlaceableBlocked(TObjectPtr<APlaceable> Placeable);
@@ -67,6 +72,10 @@ public:
 	FIntVector GetMin() const { return PlaceableGrid.GetMin(); }
 	FIntVector GetMax() const { return PlaceableGrid.GetMax(); }
 	float GetCellSize() const { return PlaceableGrid.GetCellSize(); }
+	
+	void ShowIndicators();
+	
+	void HideIndicators();
 
 #if !UE_BUILD_SHIPPING
 	void DrawDebugGrid(float Duration = 0.f) const;

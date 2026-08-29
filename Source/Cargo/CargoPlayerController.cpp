@@ -167,7 +167,7 @@ void ACargoPlayerController::PlayerTick(float DeltaTime)
     PlaceablePreview->AttachToComponent(CurrentHoveredGrid, FAttachmentTransformRules::SnapToTargetIncludingScale);	
 	
 	//attach preview to grid and update transform
-    FVector WorldLocation = CurrentHoveredGrid->GetLocalLocationFromGridIndex(ImpactPointGrid);
+    FVector WorldLocation = CurrentHoveredGrid->GridToLocalPos(ImpactPointGrid);
 
     const float GridSize = GetDefault<UCargoSettings>()->GridCellSize;
 
@@ -317,6 +317,8 @@ void ACargoPlayerController::SwitchEditMode(const FInputActionValue& Value)
 	{
 		SetInputMode(FInputModeGameOnly());
 	}
+	
+	OnEditModeChanged.Broadcast(bEditMode);
 }
 
 void ACargoPlayerController::OnToggleMap(const FInputActionInstance& InputActionInstance)
