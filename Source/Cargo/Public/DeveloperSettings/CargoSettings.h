@@ -26,7 +26,7 @@ class CARGO_API UCargoSettings : public UDeveloperSettings
 	TSoftObjectPtr<UMissionsDatabase> MissionsDatabase;	
 	
 public:
-	UPROPERTY(EditAnywhere, Config, Category = "Data Assets")
+	UPROPERTY(EditAnywhere, Config, Category = "Data Assets", meta = (Categories = "Cargo"))
 	TMap<FGameplayTag, TSoftObjectPtr<UContainerDA>> ContainersMap;
 	
 	UPROPERTY(EditAnywhere, Config, Category = "Grid")

@@ -96,6 +96,11 @@ void APlaceable::AlignToRotation(const FRotator& ReferenceRotation)
     SetActorRotation(FRotator(0.f, ReferenceRotation.Yaw, 0.f));
 }
 
+int32 APlaceable::GetPlaceableRotation()
+{
+	return PivotComp->GetRelativeRotation().Yaw;
+}
+
 TArray<FVector> APlaceable::GetAllGridPositions(const FVector& BaseLocation, float Rotation, float CellSize) const
 {   
 	TArray<FVector> Locations;
@@ -161,6 +166,8 @@ void APlaceable::FallIntoSea(const FVector& Direction)
 		NAME_None,
 		true
 	);
+	
+	OwningGridActor = nullptr;
 }
 
 void APlaceable::UpdateMesh()

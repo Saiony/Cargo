@@ -96,7 +96,7 @@ protected:
 	float MovementRotationImbalanceMultiplier = 0.5f;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
-	FVector2D ShipAngleMinMax = FVector2D(-45.0f, 45.0f);
+	FVector2D ShipAngleMinMax = FVector2D(-70.0f, 70.0f);
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
 	float ReverseGearMultiplier = 0.5f;
@@ -106,6 +106,9 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cargo")
 	float MouseSensitivity = 0.8f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cargo")
+	float MaxSpeedContainerFalloff = 0.5f;
 	
 	FDelegateHandle HasteCVarDelegateHandle;
 	
@@ -175,7 +178,7 @@ protected:
 	UFUNCTION()
 	void OnCargoHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 	
-	void PopRandomContainer(const FVector& HitDir);
+	void PopRandomContainerFromTop(const FVector& HitDir);
 	
 	UFUNCTION(Exec)
 	void PopContainersFromZ(int32 Z);

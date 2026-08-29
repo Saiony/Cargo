@@ -128,9 +128,9 @@ void FPlaceableEditorDetails::RefreshShapeDebugVisualization(APlaceable* Placeab
 	for (const FIntVector& Cell : RotatedCells)
 	{
 		const FVector CellCenterLocal(
-			(Cell.X - 0.5f) * CellSize,
-			(Cell.Y - 0.5f) * CellSize,
-			(Cell.Z - 0.5f) * CellSize);
+			(Cell.X) * CellSize,
+			(Cell.Y ) * CellSize,
+			(Cell.Z) * CellSize);
 
 		FTransform InstanceTransform;
 		InstanceTransform.SetLocation(CellCenterLocal);

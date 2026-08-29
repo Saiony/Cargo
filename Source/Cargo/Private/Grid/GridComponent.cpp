@@ -140,6 +140,40 @@ void UGridComponent::AddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const 
 	OnPlaceableAdded(Placeable);
 }
 
+void UGridComponent::AddPlaceableToGridIndex(TObjectPtr<APlaceable> Placeable, const FIntVector PlaceablePivotGridIndex, float Rotation)
+{
+	if(!Placeable)
+		return;
+		
+	if (!CanAddPlaceableToGridIndex(Placeable, PlaceablePivotGridIndex, Rotation))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Unable to place Placeable on Grid"));
+		return;
+	}
+		
+	const auto PlaceablePositions = Placeable->GetAllGridPositionsIndex(PlaceablePivotGridIndex, Rotation);
+
+	for (const auto PlaceablePos : PlaceablePositions)
+	{
+		PlaceableGrid.Add(PlaceablePos, Placeable);
+
+		UE_LOG(LogTemp, Log, TEXT("Placeable added to grid [%d, %d]"), PlaceablePos.X, PlaceablePos.Y);
+	}
+
+	Placeable->Place(this, PlaceablePivotGridIndex.X, PlaceablePivotGridIndex.Y, PlaceablePivotGridIndex.Z);	
+	
+	Placeable->AttachToComponent(this, FAttachmentTransformRules::SnapToTargetIncludingScale);
+	
+	// inherit location but zeroes the local rotation
+	const auto LocalLocation = GridToLocalPos(PlaceablePivotGridIndex);
+	Placeable->SetActorRelativeLocation(LocalLocation);
+	Placeable->SetActorRelativeRotation(FRotator(0.f, 0.f, 0.f));
+	
+	
+	OnPlaceableAddedToGrid.Broadcast(Placeable);
+	OnPlaceableAdded(Placeable);
+}
+
 void UGridComponent::RemovePlaceableFromGrid(TObjectPtr<APlaceable> Placeable)
 {
 	if(!Placeable)

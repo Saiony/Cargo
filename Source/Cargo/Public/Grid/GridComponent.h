@@ -50,7 +50,8 @@ public:
 	                                float Rotation);
 
 	void AddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const FVector& WorldLocation, float Rotation);
-	
+	void AddPlaceableToGridIndex(TObjectPtr<APlaceable> Placeable, FIntVector PlaceablePivotGridIndex, float Rotation);
+
 	void RemovePlaceableFromGrid(TObjectPtr<APlaceable> Placeable);
 
 	APlaceable* GetPlaceableAt(const FIntVector WorldLocation);

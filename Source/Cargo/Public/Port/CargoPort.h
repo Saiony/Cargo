@@ -49,6 +49,7 @@ public:
 	void AttachPlaceable(APlaceable* Placeable, FVector WorldPos);
 
 	void AddPlaceable(APlaceable* Placeable, FVector WorldPos, float Rotation);
+	void AddPlaceableIndex(APlaceable* Placeable, FIntVector Index, float Rotation);
 
 	void StartQuestDelivery(FGameplayTag QuestTag);
 	

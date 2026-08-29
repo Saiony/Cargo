@@ -93,6 +93,7 @@ public:
     void RotateClockwise();
 
     void AlignToRotation(const FRotator& ReferenceRotation);
+    int32 GetPlaceableRotation();
 
     TArray<FVector> GetAllGridPositions(const FVector& BaseLocation, float Rotation, float CellSize) const;
     TArray<FIntVector> GetAllGridPositionsIndex(float Rotation) const;

@@ -170,24 +170,32 @@ void ACargoCharacter::OnShipBalanceChanged(float NewBalance)
 {
 	const auto BalanceAbs = fabs(NewBalance);
 	
-	if (BalanceAbs < 14)
+	if (BalanceAbs < 29)
 		return;
 	
 	int32 MaxLevelToPop = -1;
 	
 	if (BalanceAbs < 30)
 	{
-		MaxLevelToPop = 3;
+		MaxLevelToPop = 5;
 	}
 	else if (BalanceAbs < 35)
 	{
-		MaxLevelToPop = 2;
+		MaxLevelToPop = 4;
 	}
 	else if (BalanceAbs < 40)
 	{
+		MaxLevelToPop = 3;
+	}
+	else if (BalanceAbs < 50)
+	{
+		MaxLevelToPop = 2;
+	}
+	else if (BalanceAbs < 60)
+	{
 		MaxLevelToPop = 1;
 	}
-	else
+	else if (BalanceAbs > 70)
 	{
 		MaxLevelToPop = 0;
 	}
@@ -314,11 +322,12 @@ void ACargoCharacter::OnCargoHit(UPrimitiveComponent* HitComponent, AActor* Othe
 	const float HitVelocity = FloatingMovement->Velocity.Size();
 	KnockbackVelocity = Hit.ImpactNormal.GetSafeNormal() * KnockbackStrength * 100.f;
 	
-	if (HitVelocity > OriginalMaxSpeed * 0.8f)
-		PopRandomContainer(Hit.ImpactNormal);
+	UE_LOG(LogTemp, Log, TEXT("Hit Velocity: %f / %f -> %.2f%% "), HitVelocity, OriginalMaxSpeed, HitVelocity / OriginalMaxSpeed)
+	if (HitVelocity > OriginalMaxSpeed * MaxSpeedContainerFalloff)
+		PopRandomContainerFromTop(Hit.ImpactNormal);
 }
 
-void ACargoCharacter::PopRandomContainer(const FVector& HitDir)
+void ACargoCharacter::PopRandomContainerFromTop(const FVector& HitDir)
 {
 	const auto HighestOccupiedZ = GridComp->GetHighestOccupiedZ();
 	const auto PositionsTop = GridComp->GetPositionsFromLevel(HighestOccupiedZ);

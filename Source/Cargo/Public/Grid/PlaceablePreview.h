@@ -36,7 +36,9 @@ protected:
 	TObjectPtr<UMaterialInterface> ValidMaterial;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Cargo")
-	TObjectPtr<UMaterialInterface> InvalidMaterial;
+	TObjectPtr<UMaterialInterface> InvalidMaterial;	
+	
+	void ClearPreviewMeshes();
 	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

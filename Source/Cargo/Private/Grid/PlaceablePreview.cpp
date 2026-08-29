@@ -25,6 +25,8 @@ void APlaceablePreview::Initialize(TObjectPtr<APlaceable> Placeable)
 {
 	MimicPlaceableYaw(Placeable);	
 	
+	ClearPreviewMeshes();
+	
 	const auto Visual = Placeable->GetVisual();
 	TArray<UStaticMeshComponent*> MeshComponents;
 	Visual->GetComponents<UStaticMeshComponent>(MeshComponents);
@@ -97,3 +99,16 @@ void APlaceablePreview::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
+void APlaceablePreview::ClearPreviewMeshes()
+{
+	TArray<USceneComponent*> ChildComponentss;
+	PivotComp->GetChildrenComponents(true, ChildComponentss);
+
+	for (USceneComponent* Child : ChildComponentss)
+	{
+		if (IsValid(Child))
+		{
+			Child->DestroyComponent();
+		}
+	}
+}

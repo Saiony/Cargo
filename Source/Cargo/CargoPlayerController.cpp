@@ -187,9 +187,12 @@ void ACargoPlayerController::UpdateContainerHoverDetection(float DeltaTime)
 	FHitResult HitResult;
 	
 	if (!GetHitResultUnderCursor(PlaceableChannel, false, HitResult))
+	{
+		OnContainerHoverConfirmed.Broadcast(nullptr);
 		return;
+	}
 	
-	const auto Container = Cast<AContainer>(HitResult.GetActor());
+	const auto Container = Cast<AContainer>(HitResult.GetActor()->GetOwner());
 	
 	if (!Container)
 	{		
