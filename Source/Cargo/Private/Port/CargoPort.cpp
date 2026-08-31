@@ -49,6 +49,24 @@ void UCargoPortComponent::AddPlaceable(APlaceable* Placeable, FVector WorldPos, 
 	Placeable->SetActorRotation(WorldRotation);
 }
 
+void UCargoPortComponent::AddPlaceableIndex(APlaceable* Placeable, FIntVector Index, float Rotation)
+{
+	if (!IsOpen)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CargoPortComponent: Attempt to add placeable to a closed port"));
+		return;
+	}
+
+	AddPlaceableToGridIndex(Placeable, Index, Rotation);
+
+	const FRotator WorldRotation = GetComponentRotation() + FRotator(0, Rotation, 0);
+	const FVector WorldPos = GetComponentTransform().TransformPosition(GridToLocalPos(Index));
+
+	Placeable->SetActorLocation(WorldPos, false);
+	AttachPlaceable(Placeable, WorldPos);
+	Placeable->SetActorRotation(WorldRotation);
+}
+
 void UCargoPortComponent::HandlePlaceableAddedToGrid(APlaceable* Placeable)
 {
 	const auto Container = Cast<AContainer>(Placeable);
@@ -59,9 +77,9 @@ void UCargoPortComponent::HandlePlaceableAddedToGrid(APlaceable* Placeable)
 	}
 	
 	if (CurrentQuestTag.IsValid())
-		ACargoGameMode::Get(this)->RegisterCargoDelivery(CurrentQuestTag, Container->ContainerDA->CargoTag);
+		ACargoGameMode::Get(this)->RegisterCargoDelivery(CurrentQuestTag, Container->PlaceableTag);
 	else if (CurrentMissionId.IsValid())
-		ACargoGameMode::Get(this)->MissionsService->RegisterCargoDelivery(CurrentMissionId, Container->ContainerDA->CargoTag);
+		ACargoGameMode::Get(this)->MissionsService->RegisterCargoDelivery(CurrentMissionId, Container->PlaceableTag);
 }
 
 void UCargoPortComponent::HandlePlaceableRemovedFromGrid(APlaceable* Placeable)
@@ -82,9 +100,9 @@ void UCargoPortComponent::HandlePlaceableRemovedFromGrid(APlaceable* Placeable)
 	}
 	
 	if (CurrentQuestTag.IsValid())
-		ACargoGameMode::Get(this)->RemoveCargoDelivery(CurrentQuestTag, Container->ContainerDA->CargoTag);
+		ACargoGameMode::Get(this)->RemoveCargoDelivery(CurrentQuestTag, Container->PlaceableTag);
 	else if (CurrentMissionId.IsValid())
-		ACargoGameMode::Get(this)->MissionsService->RemoveCargoDelivery(CurrentMissionId, Container->ContainerDA->CargoTag);
+		ACargoGameMode::Get(this)->MissionsService->RemoveCargoDelivery(CurrentMissionId, Container->PlaceableTag);
 }
 
 void UCargoPortComponent::SpawnSingleContainer(FGameplayTag CargoType)
@@ -116,21 +134,20 @@ void UCargoPortComponent::SpawnSingleContainer(FGameplayTag CargoType)
 	NewContainer->Init(ContainerDA); // agora o Size já está correto ANTES de qualquer validação
 
 	//finds first empty location
-	for (int32 X = PlaceableGrid.GetMin().X; X <= PlaceableGrid.GetMax().X; X++)
+	for (int32 Z = PlaceableGrid.GetMin().Z; Z <= PlaceableGrid.GetMax().Z; Z++)
 	{
-		for (int32 Y = PlaceableGrid.GetMin().Y; Y <= PlaceableGrid.GetMax().Y; Y++)
+		for (int32 X = PlaceableGrid.GetMin().X; X <= PlaceableGrid.GetMax().X; X++)
 		{
-			for (int32 Z = PlaceableGrid.GetMin().Z; Z <= PlaceableGrid.GetMax().Z; Z++)
+			for (int32 Y = PlaceableGrid.GetMin().Y; Y <= PlaceableGrid.GetMax().Y; Y++)
 			{
-				const FVector LocalPos = PlaceableGrid.GridToLocal(FIntVector(X, Y, Z));
-				const FVector WorldPos = GetComponentTransform().TransformPosition(LocalPos);
-
-				if (!CanAddPlaceableToGrid(NewContainer, WorldPos, GridRelativeRotation))
+				if (!CanAddPlaceableToGridIndex(NewContainer, FIntVector(X, Y, Z),
+				                                NewContainer->GetPlaceableRotation()))
 					continue;
 
-				AddPlaceable(NewContainer, WorldPos, GridRelativeRotation);
+				AddPlaceableIndex(NewContainer, FIntVector(X, Y, Z), GridRelativeRotation);
 
-				UE_LOG(LogTemp, Log, TEXT("- Spawned %s at %s"), *NewContainer->GetName(), *WorldPos.ToString());
+				UE_LOG(LogTemp, Log, TEXT("- Spawned %s at %s"), *NewContainer->GetName(),
+				       *FIntVector(X, Y, Z).ToString());
 				return;
 			}
 		}

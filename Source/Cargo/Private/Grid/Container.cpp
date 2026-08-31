@@ -1,8 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "Grid/Container.h"
-
 
 // Sets default values
 AContainer::AContainer()
@@ -13,18 +11,28 @@ AContainer::AContainer()
 
 void AContainer::Init()
 {
-	if (ContainerDA == nullptr)
+	if (PlaceableDA == nullptr)
 		return;
 	
-	ContainerMeshComp->SetMaterial(0, ContainerDA->Material);
-	Weight = ContainerDA->Weight;
-	Name = ContainerDA->Name;
+	// if (PlaceableDA->VisualBPClass) //right now the class in the data is pretty much an override
+	// 	PlaceableVisualComp->SetChildActorClass(PlaceableDA->VisualBPClass);
+	
+	if (!PlaceableVisualComp->GetChildActor())
+		PlaceableVisualComp->CreateChildActor();
+	
+	Cast<APlaceableVisual>(PlaceableVisualComp->GetChildActor())->Initialize(PlaceableDA);
+	
+	Weight = PlaceableDA->Weight;
+	Name = PlaceableDA->Name;	
+	GridShapeDefinition = PlaceableDA->Shape;
+	PlaceableTag = PlaceableDA->CargoTag;
+	
+	//UpdateMesh();
 }
 
 void AContainer::Init(TObjectPtr<UContainerDA> InContainerDA)
 {
-	Size = InContainerDA->Size;
-	ContainerDA = InContainerDA;
+	PlaceableDA = InContainerDA;
 	Init();
 }
 
@@ -45,4 +53,3 @@ void AContainer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 }
-

@@ -10,6 +10,11 @@ public class CargoEditorTarget : TargetRules
 		Type = TargetType.Editor;
 		DefaultBuildSettings = BuildSettingsVersion.V6;
 		IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_7;
-		ExtraModuleNames.Add("Cargo");
+
+		ExtraModuleNames.AddRange(new string[]
+		{
+			"Cargo",
+			"CargoEditor"
+		});
 	}
 }

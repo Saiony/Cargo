@@ -10,22 +10,23 @@
 #include "UI/MapWidget.h"
 #include "CargoSettings.generated.h"
 
+class AContainer;
 class APlaceablePreview;
 
 struct FGameplayTag;
 /**
  * 
  */
-UCLASS(Config = Game, DefaultConfig, meta = (DisplayName = "Cargo Settings"))
+UCLASS(Config = Game, DefaultConfig, meta = (DisplayName = "Game Settings"))
 class CARGO_API UCargoSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
 		
 	UPROPERTY(EditAnywhere, Config, Category = "Mission")
-	TSoftObjectPtr<UMissionsDatabase> MissionsDatabase;
+	TSoftObjectPtr<UMissionsDatabase> MissionsDatabase;	
 	
 public:
-	UPROPERTY(EditAnywhere, Config, Category = "Data Assets")
+	UPROPERTY(EditAnywhere, Config, Category = "Data Assets", meta = (Categories = "Cargo"))
 	TMap<FGameplayTag, TSoftObjectPtr<UContainerDA>> ContainersMap;
 	
 	UPROPERTY(EditAnywhere, Config, Category = "Grid")
@@ -37,5 +38,13 @@ public:
 	UPROPERTY(EditAnywhere, Config, Category = "UI")
 	TSubclassOf<UMapWidget> MapWidgetClass;
 	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo|Island")
+	TSubclassOf<AContainer> ContainerClass;
+	
+	UPROPERTY(EditAnywhere, Config, Category = "Debug")
+	TSoftObjectPtr<UStaticMesh> SimpleCube;
+	
 	TObjectPtr<UMissionsDatabase> GetMissionsDatabase() const;
+	
+	virtual FName GetCategoryName() const override { return FName("Cargo"); }
 };

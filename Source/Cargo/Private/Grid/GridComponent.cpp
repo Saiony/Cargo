@@ -4,32 +4,67 @@
 #include "Grid/GridComponent.h"
 
 #include "ConsoleVariables.h"
+#include "Components/InstancedStaticMeshComponent.h"
 #include "Grid/Placeable.h"
 
 UGridComponent::UGridComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+	
+	// InstancedMeshComp = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("InstancedMeshComp"));
+	// InstancedMeshComp->AttachToComponent(this, FAttachmentTransformRules::KeepRelativeTransform);
 }
 
 // Called when the game starts
 void UGridComponent::BeginPlay()
 {
 	Super::BeginPlay();    
-	InitializeGrid(GetDefault<UCargoSettings>()->GridCellSize, FIntVector(0, 0, 0), GridSize);
+	
+	InitializeGrid();
 }
 
 void UGridComponent::OnPlaceableAdded(APlaceable* Placeable)
 {
 }
 
-void UGridComponent::InitializeGrid(int32 InCellSize, const FIntVector& InOrigin, const FIntVector& InGridSize)
+void UGridComponent::InitializeGrid()
 {
-	PlaceableGrid = UFROGGrid<APlaceable*>(InCellSize, InOrigin, InGridSize);
+	const auto GridCellSize = GetDefault<UCargoSettings>()->GridCellSize;
+	const auto Origin = FIntVector(0, 0, 0);
+	const auto GridSize = GridComponentDA->GridSize;	
+	const auto InvalidSlots = GridComponentDA->InvalidSlots.Cells;	
+	
+	PlaceableGrid = UFROGGrid<APlaceable*>(GridCellSize, Origin, GridSize, InvalidSlots);		
+	InstancedMeshComp->SetStaticMesh(GridComponentDA->CellMesh);
+	
+	for (const auto& Cell : PlaceableGrid.GetAllAvailableSlots())
+	{		
+		const auto LocalPos = GridToLocalPos(Cell);
+		InstancedMeshComp->AddInstance(FTransform(LocalPos));
+	}
 }
 
-FVector UGridComponent::WorldToLocalGridSpace(const FVector& WorldLocation)
+FVector UGridComponent::WorldToLocal(const FVector& WorldLocation)
 {
 	return GetComponentTransform().InverseTransformPosition(WorldLocation);
+}
+
+void UGridComponent::OnRegister()
+{
+	Super::OnRegister();
+	
+	if (!InstancedMeshComp)
+	{
+		InstancedMeshComp = NewObject<UInstancedStaticMeshComponent>(GetOwner(),TEXT("InstancedMeshComp"));
+		InstancedMeshComp->SetupAttachment(this);
+		InstancedMeshComp->SetRelativeLocation(FVector(0, 0, -50));
+		InstancedMeshComp->RegisterComponent();
+		
+		InstancedMeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		InstancedMeshComp->SetGenerateOverlapEvents(false);
+		InstancedMeshComp->SetSimulatePhysics(false);
+	}
+	
 }
 
 bool UGridComponent::CanAddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const FVector WorldLocation, float Rotation)
@@ -37,7 +72,7 @@ bool UGridComponent::CanAddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, con
 	if(!Placeable)
 		return false;
     		
-	const auto LocalLocation = WorldToLocalGridSpace(WorldLocation);
+	const auto LocalLocation = WorldToLocal(WorldLocation);
 
 	const FVector RoundedLocation = PlaceableGrid.GetRoundedLocation(LocalLocation);
 	const TArray<FVector> OccupiedGridPositions = Placeable->GetAllGridPositions(RoundedLocation, Rotation, PlaceableGrid.GetCellSize());		
@@ -46,15 +81,29 @@ bool UGridComponent::CanAddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, con
 	{
 		const auto GridIndex = PlaceableGrid.LocalToGrid(Pos);
     
-		if (PlaceableGrid.GetValue(GridIndex.X, GridIndex.Y, GridIndex.Z))
-			return false;
-    
-		if (!PlaceableGrid.IsWithinBounds(GridIndex))
+		if (!PlaceableGrid.IsSlotAvailable(GridIndex))
 			return false;
 	}
 
 	return true;
 }
+
+bool UGridComponent::CanAddPlaceableToGridIndex(TObjectPtr<APlaceable> Placeable, const FIntVector PlaceablePivotGridIndex, float Rotation)
+{
+	if(!Placeable)
+		return false;
+	
+	const auto OccupiedGridIndex = Placeable->GetAllGridPositionsIndex(PlaceablePivotGridIndex, Rotation);		
+
+	for (const auto GridIndex : OccupiedGridIndex)
+	{    
+		if (!PlaceableGrid.IsSlotAvailable(GridIndex))
+			return false;
+	}
+
+	return true;
+}
+
 
 void UGridComponent::AddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const FVector& WorldLocation, float Rotation)
 {
@@ -67,18 +116,60 @@ void UGridComponent::AddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const 
 		return;
 	}
 		
-	const auto LocalLocation = WorldToLocalGridSpace(WorldLocation);
+	const auto LocalLocation = WorldToLocal(WorldLocation);
 	const TArray<FVector> OccupiedLocations = Placeable->GetAllGridPositions(LocalLocation, Rotation, PlaceableGrid.GetCellSize());
 
 	for (const FVector& Pos : OccupiedLocations)
 	{
 		const auto GridIndex = PlaceableGrid.LocalToGrid(Pos);
-		PlaceableGrid.Add(GridIndex.X, GridIndex.Y, GridIndex.Z, Placeable);
+		PlaceableGrid.Add(GridIndex, Placeable);
 
 		UE_LOG(LogTemp, Log, TEXT("Placeable added to grid [%d, %d] at world pos [%f, %f]"), GridIndex.X, GridIndex.Y, Pos.X, Pos.Y);
 	}
 
-	Placeable->Place(this, LocalLocation.X, LocalLocation.Y, LocalLocation.Z);
+	Placeable->Place(this, LocalLocation.X, LocalLocation.Y, LocalLocation.Z);	
+	
+	Placeable->AttachToComponent(this, FAttachmentTransformRules::SnapToTargetIncludingScale);
+	
+	// inherit location but zeroes the local rotation
+	Placeable->SetActorRelativeLocation(LocalLocation);
+	Placeable->SetActorRelativeRotation(FRotator(0.f, 0.f, 0.f));
+	
+	
+	OnPlaceableAddedToGrid.Broadcast(Placeable);
+	OnPlaceableAdded(Placeable);
+}
+
+void UGridComponent::AddPlaceableToGridIndex(TObjectPtr<APlaceable> Placeable, const FIntVector PlaceablePivotGridIndex, float Rotation)
+{
+	if(!Placeable)
+		return;
+		
+	if (!CanAddPlaceableToGridIndex(Placeable, PlaceablePivotGridIndex, Rotation))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Unable to place Placeable on Grid"));
+		return;
+	}
+		
+	const auto PlaceablePositions = Placeable->GetAllGridPositionsIndex(PlaceablePivotGridIndex, Rotation);
+
+	for (const auto PlaceablePos : PlaceablePositions)
+	{
+		PlaceableGrid.Add(PlaceablePos, Placeable);
+
+		UE_LOG(LogTemp, Log, TEXT("Placeable added to grid [%d, %d]"), PlaceablePos.X, PlaceablePos.Y);
+	}
+
+	Placeable->Place(this, PlaceablePivotGridIndex.X, PlaceablePivotGridIndex.Y, PlaceablePivotGridIndex.Z);	
+	
+	Placeable->AttachToComponent(this, FAttachmentTransformRules::SnapToTargetIncludingScale);
+	
+	// inherit location but zeroes the local rotation
+	const auto LocalLocation = GridToLocalPos(PlaceablePivotGridIndex);
+	Placeable->SetActorRelativeLocation(LocalLocation);
+	Placeable->SetActorRelativeRotation(FRotator(0.f, 0.f, 0.f));
+	
+	
 	OnPlaceableAddedToGrid.Broadcast(Placeable);
 	OnPlaceableAdded(Placeable);
 }
@@ -88,7 +179,7 @@ void UGridComponent::RemovePlaceableFromGrid(TObjectPtr<APlaceable> Placeable)
 	if(!Placeable)
 		return;
 		
-	const auto LocalLocation = WorldToLocalGridSpace(Placeable->GetActorLocation());
+	const auto LocalLocation = WorldToLocal(Placeable->GetActorLocation());
 
 	const TArray<FVector> OccupiedPos = Placeable->GetAllGridPositions(LocalLocation, Placeable->GetLocalYaw(), PlaceableGrid.GetCellSize());
 
@@ -102,6 +193,16 @@ void UGridComponent::RemovePlaceableFromGrid(TObjectPtr<APlaceable> Placeable)
 	OnPlaceableRemovedFromGrid.Broadcast(Placeable);
 }
 
+APlaceable* UGridComponent::GetPlaceableAt(const FIntVector GridPos)
+{
+	const auto PlaceablePtr = PlaceableGrid.GetValue(GridPos.X, GridPos.Y, GridPos.Z);
+	
+	if (!PlaceablePtr)
+		return nullptr;
+	
+	return *PlaceablePtr;
+}
+
 TMap<FIntVector, APlaceable*> UGridComponent::GetOccupiedSlots() const
 {
 	return PlaceableGrid.GetOccupiedSlots();
@@ -109,7 +210,7 @@ TMap<FIntVector, APlaceable*> UGridComponent::GetOccupiedSlots() const
 
 FVector UGridComponent::GetNextFreeZPositionWorld(const FVector& WorldLocation)
 {
-	const FVector LocalLocation = WorldToLocalGridSpace(WorldLocation);
+	const FVector LocalLocation = WorldToLocal(WorldLocation);
 	const FVector RoundedLocation = PlaceableGrid.GetRoundedLocation(LocalLocation);
 
 	FIntVector GridIndex = PlaceableGrid.LocalToGrid(RoundedLocation);
@@ -125,9 +226,39 @@ FVector UGridComponent::GetNextFreeZPositionWorld(const FVector& WorldLocation)
 	return GetComponentTransform().TransformPosition(NextLocalLocation);
 }
 
+FIntVector UGridComponent::GetNextFreeZPositionGrid(const FVector& WorldLocation)
+{
+	const FVector LocalLocation = WorldToLocal(WorldLocation);
+	const FVector RoundedLocation = PlaceableGrid.GetRoundedLocation(LocalLocation);
+
+	FIntVector GridIndex = PlaceableGrid.LocalToGrid(RoundedLocation);
+	
+	while (PlaceableGrid.IsWithinBounds(GridIndex) && PlaceableGrid.GetValue(GridIndex.X, GridIndex.Y, GridIndex.Z))
+	{
+		GridIndex.Z++;
+	}
+	
+	return FIntVector(GridIndex.X, GridIndex.Y, GridIndex.Z);
+}
+
+FVector UGridComponent::GridToLocalPos(const FIntVector GridPos)
+{
+	const float CellSize = PlaceableGrid.GetCellSize();
+	const FVector LocalLocation = FVector(GridPos.X * CellSize, GridPos.Y * CellSize, GridPos.Z * CellSize);
+	return LocalLocation;
+}
+
+
+FVector UGridComponent::GetLWorldLocationFromGridIndex(const FIntVector GridPos)
+{
+	const float CellSize = PlaceableGrid.GetCellSize();
+	const FVector LocalLocation = FVector(GridPos.X * CellSize, GridPos.Y * CellSize, GridPos.Z * CellSize);
+	return GetComponentTransform().TransformPosition(LocalLocation);
+}
+
 bool UGridComponent::IsPlaceableBlocked(TObjectPtr<APlaceable> Placeable)
 {
-	const auto LocalLocation = WorldToLocalGridSpace(Placeable->GetActorLocation());
+	const auto LocalLocation = WorldToLocal(Placeable->GetActorLocation());
 	const TArray<FVector> OccupiedPositions = Placeable->GetAllGridPositions(LocalLocation, Placeable->GetLocalYaw(), PlaceableGrid.GetCellSize());
 
 	for (const FVector& Pos : OccupiedPositions)
@@ -138,33 +269,57 @@ bool UGridComponent::IsPlaceableBlocked(TObjectPtr<APlaceable> Placeable)
 		if (!PlaceableGrid.IsWithinBounds(AbovePos))
 			continue;
 
-		if (PlaceableGrid.GetValue(AbovePos.X, AbovePos.Y, AbovePos.Z))
+		auto PlaceableAbovePtr = PlaceableGrid.GetValue(AbovePos.X, AbovePos.Y, AbovePos.Z);
+		if (PlaceableAbovePtr && *PlaceableAbovePtr != Placeable)
 			return true;
 	}
 
 	return false;
 }
 
+int32 UGridComponent::GetHighestOccupiedZ()
+{
+	return PlaceableGrid.GetHighestOccupiedZ();
+}
+
+TArray<FIntVector> UGridComponent::GetPositionsFromLevel(int Z)
+{
+	return PlaceableGrid.GetOccupiedPositionsAtZ(Z);
+}
+
+void UGridComponent::ShowIndicators()
+{
+	InstancedMeshComp->SetVisibility(true);
+}
+
+void UGridComponent::HideIndicators()
+{
+	InstancedMeshComp->SetVisibility(false);
+}
+
 #if !UE_BUILD_SHIPPING
+
 void UGridComponent::DrawDebugGrid(float Duration) const
 {
 	if (!GetWorld())
 		return;
 
 	const float CellSize = PlaceableGrid.GetCellSize();
+	const int32 Height = 0;
 
 	for (int32 X = PlaceableGrid.GetMin().X; X <= PlaceableGrid.GetMax().X; X++)
 	{
 		for (int32 Y = PlaceableGrid.GetMin().Y; Y <= PlaceableGrid.GetMax().Y; Y++)
 		{
-			for (int32 Z = PlaceableGrid.GetMin().Z; Z <= PlaceableGrid.GetMax().Z; Z++)
+			for (int32 Z = PlaceableGrid.GetMin().Z; Z <= PlaceableGrid.GetMin().Z + Height; Z++)
 			{
 				const bool bOccupied = PlaceableGrid.GetValue(X, Y, Z) != nullptr;
+				const bool bInvalidPos = PlaceableGrid.IsInvalidSlot(FIntVector(X, Y, Z));
 
 				const FVector LocalCellCenter = FVector(X * CellSize, Y * CellSize, Z * CellSize);
 				const FVector WorldCellCenter = GetComponentTransform().TransformPosition(LocalCellCenter);
 
-				const FColor DebugColor = bOccupied ? FColor::Red : FColor::Green;
+				const FColor DebugColor = bOccupied ? FColor::Red : bInvalidPos ? FColor::Silver : FColor::Green;
 
 				DrawDebugBox(GetWorld(), WorldCellCenter, FVector(CellSize * 0.4f, CellSize * 0.4f, CellSize * 0.4f),
 					GetComponentQuat(), DebugColor, false, Duration, 0);

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/BoxComponent.h"
+#include "DataAssets/GridComponentDA.h"
 #include "DeveloperSettings/CargoSettings.h"
 #include "Grid/FROGGrid.h"
 #include "GridComponent.generated.h"
@@ -19,17 +20,22 @@ class CARGO_API UGridComponent : public UBoxComponent
 	GENERATED_BODY()
 protected:  
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
-	FIntVector GridSize = FIntVector(1, 1, 1);
-
+	TObjectPtr<UGridComponentDA> GridComponentDA;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	TObjectPtr<UInstancedStaticMeshComponent> InstancedMeshComp;
+	
 	UFROGGrid<APlaceable*> PlaceableGrid = UFROGGrid<APlaceable*>(GetDefault<UCargoSettings>()->GridCellSize, FIntVector(0, 0, 0), FIntVector(0, 0, 0));
     
 	virtual void BeginPlay() override;
     
 	virtual void OnPlaceableAdded(APlaceable* Placeable);
 
-	void InitializeGrid(int32 InCellSize, const FIntVector& InOrigin, const FIntVector& InGridSize);
+	void InitializeGrid();
 
-	FVector WorldToLocalGridSpace(const FVector& WorldLocation);
+	FVector WorldToLocal(const FVector& WorldLocation);
+	
+	virtual void OnRegister() override;
 
 public:
 	UGridComponent();
@@ -39,18 +45,42 @@ public:
 	void ClearGrid();
 
 	bool CanAddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const FVector WorldLocation, float Rotation);
+	
+	bool CanAddPlaceableToGridIndex(TObjectPtr<APlaceable> Placeable, FIntVector PlaceablePivotGridIndex,
+	                                float Rotation);
 
 	void AddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const FVector& WorldLocation, float Rotation);
-	
+	void AddPlaceableToGridIndex(TObjectPtr<APlaceable> Placeable, FIntVector PlaceablePivotGridIndex, float Rotation);
+
 	void RemovePlaceableFromGrid(TObjectPtr<APlaceable> Placeable);
+
+	APlaceable* GetPlaceableAt(const FIntVector WorldLocation);
 	
 	TMap<FIntVector, APlaceable*> GetOccupiedSlots() const;
 	
 	FVector GetNextFreeZPositionWorld(const FVector& WorldLocation);
+	
+	FIntVector GetNextFreeZPositionGrid(const FVector& WorldLocation);
+	FVector GridToLocalPos(FIntVector GridPos);
+	FVector GetLWorldLocationFromGridIndex(FIntVector GridPos);
+
 	bool IsPlaceableBlocked(TObjectPtr<APlaceable> Placeable);
+	int32 GetHighestOccupiedZ();
+	TArray<FIntVector> GetPositionsFromLevel(int Z);
+
+	TObjectPtr<APlaceable> GetPlaceableFromLevel(int Z);
+
+	FIntVector GetMin() const { return PlaceableGrid.GetMin(); }
+	FIntVector GetMax() const { return PlaceableGrid.GetMax(); }
+	float GetCellSize() const { return PlaceableGrid.GetCellSize(); }
+	
+	void ShowIndicators();
+	
+	void HideIndicators();
 
 #if !UE_BUILD_SHIPPING
 	void DrawDebugGrid(float Duration = 0.f) const;
+	
 #endif
 
 	FOnPlaceableAddedToGrid OnPlaceableAddedToGrid;

@@ -23,14 +23,14 @@ public class Cargo : ModuleRules
 			"Water",
 			"CommonUI", 
 			"FrogsmithUI",
-			"SlateCore",
+			"SlateCore",	
 			"GameplayTags",
 			"DeveloperSettings"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]
 		{
-			"UMG"
+			"UMG", "DUETween"
 		});
 
 		PublicIncludePaths.AddRange(new string[] {

@@ -18,6 +18,7 @@ struct FInputActionValue;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInteractableChanged, TScriptInterface<ICargoInteractable>, NewInteractable);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnContainerHoverConfirmed, AContainer*, HoveredContainer);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSwitchEditMode, bool, bEditMode);
 
 /**
  *  Basic PlayerController class for a third person game
@@ -76,6 +77,12 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category="Input|Dragging")
 	float DraggingZHeight = 100.0f;
+	
+	UPROPERTY(EditAnywhere, Category="Input|Dragging")
+	FVector3d DraggingOffset;
+	
+	UPROPERTY(EditAnywhere, Category="Input|Dragging")
+	FVector3d DraggingRotationOffset;
 
 	UPROPERTY(VisibleAnywhere, Category="Input|Dragging")
 	class APlaceable* DraggingObject;
@@ -88,6 +95,9 @@ protected:
 	
 	UPROPERTY(EditAnywhere, Category="Cargo")
 	TEnumAsByte<ECollisionChannel> DropSurfaceChannel;
+	
+	UPROPERTY(EditAnywhere, Category="Cargo")
+	TEnumAsByte<ECollisionChannel> PlaceableChannel;
 	
 	UPROPERTY(EditDefaultsOnly, Category="Cargo")
 	float InteractionCheckInterval = 0.1f;
@@ -149,4 +159,8 @@ public:
 	FOnInteractableChanged OnInteractableChanged;
 	
 	FOnContainerHoverConfirmed OnContainerHoverConfirmed;
+	
+	FOnSwitchEditMode OnEditModeChanged;
+
+	void StartDragging(class APlaceable* InPlaceable);
 };

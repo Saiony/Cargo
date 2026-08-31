@@ -16,9 +16,6 @@ class CARGO_API AContainer : public APlaceable
 public:
 	// Sets default values for this actor's properties
 	AContainer();
-	
-	UPROPERTY(EditAnywhere, Category="Cargo")
-	TObjectPtr<UContainerDA> ContainerDA;
 
 	void Init(TObjectPtr<UContainerDA> InContainerDA);
 protected:
@@ -29,6 +26,6 @@ protected:
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-	
+
 	virtual void OnConstruction(const FTransform& Transform) override;
 };
