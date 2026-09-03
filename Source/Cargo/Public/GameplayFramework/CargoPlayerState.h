@@ -10,6 +10,15 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnWeightChanged, float, NewCurrent
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBaseSpeedChanged, float, NewBaseSpeed);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBalanceChanged, float, NewBalance);
 
+enum class ShipCollisionType
+{
+	Unknown = 0,
+	Light,
+	Heavy
+};
+
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnShipCollision, AActor*, ShipCollisionType);
+
 /**
  * 
  */
@@ -34,6 +43,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cargo")
 	float ShipSpeedMultiplier = 1;
 	
+	FString ShipName = "DEBUG";
+	
+	FString CaptainName = "DEBUG";
+	
 	void CalculateShipSpeedMultiplier();
 	
 public:	
@@ -47,6 +60,8 @@ public:
 	
 	UPROPERTY(BlueprintAssignable, Category = "Cargo")
 	FOnBalanceChanged OnBalanceChanged;
+
+	FOnShipCollision OnShipCollisionEvent;
 	
 	// --- Getters ---
 
@@ -63,7 +78,11 @@ public:
 	
 	float GetShipBalanceWeight() const { return ShipBalanceWeight; }
 	
-	float GetShipBalanceRotation() const { return ShipBalanceRotation; }
+	float GetShipBalanceRotation() const { return ShipBalanceRotation; }	
+	
+	FString GetShipName() const { return ShipName; }
+	
+	FString GetCaptainName() const { return CaptainName; }
 
 	// --- Setters ---
 
@@ -81,4 +100,6 @@ public:
 	
 	UFUNCTION(Category = "Cargo")
 	void SetShipBalanceRotation(float NewBalance);
+
+	void NotifyShipCollision(AActor* OtherActor, ShipCollisionType CollisionType);
 };

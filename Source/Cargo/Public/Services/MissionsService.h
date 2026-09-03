@@ -8,6 +8,8 @@
 #include "Mission/MissionStatus.h"
 #include "MissionsService.generated.h"
 
+enum class ShipCollisionType;
+
 using FActiveMissionsMap = TMap<FGuid, TObjectPtr<UMissionStatus>>;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FActiveMissionsUpdatedDelegate, const FActiveMissionsMap&);
@@ -25,6 +27,8 @@ class CARGO_API UMissionsService : public UFORGServiceBase
 	TMap<FGuid, TObjectPtr<UMissionStatus>> ActiveMissions;
 		
 	void CompleteMission(TObjectPtr<UMissionStatus> Mission);
+
+	void OnShipCollision(AActor* OtherActor, ShipCollisionType CollisionType);
 	
 public:
 	FActiveMissionsUpdatedDelegate ActiveMissionsUpdatedDelegate;
@@ -36,6 +40,8 @@ public:
 	UMissionsService();
 	
 	virtual void Boot(FOnServiceBooted OnBootFinished) override;
+	virtual void PostLogin(APlayerController* NewPlayer) override;
+	virtual void Logout(AController* Exiting) override;
 	
 	void AcceptMission(TObjectPtr<UMissionData> MissionData, FGameplayTag StartIslandTag);
 	

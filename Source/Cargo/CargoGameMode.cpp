@@ -19,6 +19,25 @@ void ACargoGameMode::BeginPlay()
 	BootService(0);
 }
 
+void ACargoGameMode::PostLogin(APlayerController* NewPlayer)
+{
+	Super::PostLogin(NewPlayer);
+
+	if (Services.IsEmpty())
+		GetComponents<UFORGServiceBase>(Services);
+
+	for (const auto Service : Services)
+		Service->PostLogin(NewPlayer);
+}
+
+void ACargoGameMode::Logout(AController* Exiting)
+{
+	for (const auto Service : Services)
+		Service->Logout(Exiting);
+
+	Super::Logout(Exiting);
+}
+
 ACargoGameMode::ACargoGameMode(const FObjectInitializer& ObjectInitializer)
 {
 	MissionsService = ObjectInitializer.CreateDefaultSubobject<UMissionsService>(this, TEXT("MissionsService"));

@@ -176,7 +176,7 @@ protected:
 	void OnPlaceableRemoved(APlaceable* Placeable);
 
 	UFUNCTION()
-	void OnCargoHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+	void OnShipHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 	
 	void PopRandomContainerFromTop(const FVector& HitDir);
 	
@@ -204,7 +204,5 @@ public:
 	virtual void BeginPlay() override;
 	
 	virtual void Tick(float DeltaSeconds) override;
-	
-	
 };
 

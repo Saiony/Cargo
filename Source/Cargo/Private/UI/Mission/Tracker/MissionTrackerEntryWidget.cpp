@@ -20,7 +20,7 @@ void UMissionTrackerEntryWidget::Init(TObjectPtr<UMissionData> MissionData)
 	{
 		auto ReqWidget = CreateWidget<UCargoRequirementEntryWidget>(this, RequirementWidgetClass);
 
-		ReqWidget->Init(Requirement.CargoType, Requirement.Quantity);
+		ReqWidget->Init(Requirement.CargoType, 0, Requirement.Quantity);
 		RequirementsContainer->AddChild(ReqWidget);
 		RequirementWidgets.Add(Requirement.CargoType, ReqWidget);
 	}

@@ -164,7 +164,7 @@ void UCargoPortComponent::StartQuestDelivery(FGameplayTag QuestTag)
 	
 	CurrentQuestTag = QuestTag;	
 }
-
+				
 void UCargoPortComponent::StartMissionDelivery(const FGuid MissionId)
 {
 	IsOpen = true;

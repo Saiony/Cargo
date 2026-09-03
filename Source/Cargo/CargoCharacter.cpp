@@ -7,7 +7,6 @@
 #include "InputActionValue.h"
 #include "Cargo.h"
 #include "BuoyancyComponent.h"
-#include "DUETween.h"
 #include "Components/AudioComponent.h"
 #include "Components/TimelineComponent.h"
 #include "GameFramework/FloatingPawnMovement.h"
@@ -248,7 +247,7 @@ void ACargoCharacter::BeginPlay()
 	if (UPrimitiveComponent* CollisionComp = Cast<UPrimitiveComponent>(GetRootComponent()))
 	{
 		CollisionComp->SetNotifyRigidBodyCollision(true);
-		CollisionComp->OnComponentHit.AddDynamic(this, &ACargoCharacter::OnCargoHit);
+		CollisionComp->OnComponentHit.AddDynamic(this, &ACargoCharacter::OnShipHit);
 	}
 	
 	CargoPlayerState = GetPlayerState<ACargoPlayerState>();
@@ -309,22 +308,23 @@ void ACargoCharacter::OnHasteCVarChanged(IConsoleVariable* ConsoleVariable)
 	FloatingMovement->Acceleration = Haste ? OriginalAcceleration * 10 : OriginalAcceleration;
 }
 
-void ACargoCharacter::OnCargoHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+void ACargoCharacter::OnShipHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {	
 	const float Now = GetWorld()->GetTimeSeconds();
 	if (Now - LastKnockbackTime < KnockbackCooldown)
 		return;
 	
 	LastKnockbackTime = Now;
-	
-	UE_LOG(LogTemp, Log, TEXT("Hit %s"), *OtherActor->GetName());
 		
 	const float HitVelocity = FloatingMovement->Velocity.Size();
 	KnockbackVelocity = Hit.ImpactNormal.GetSafeNormal() * KnockbackStrength * 100.f;
+	const ShipCollisionType CollisionType = HitVelocity > OriginalMaxSpeed * MaxSpeedContainerFalloff ? ShipCollisionType::Heavy : ShipCollisionType::Light;	
 	
-	UE_LOG(LogTemp, Log, TEXT("Hit Velocity: %f / %f -> %.2f%% "), HitVelocity, OriginalMaxSpeed, HitVelocity / OriginalMaxSpeed)
-	if (HitVelocity > OriginalMaxSpeed * MaxSpeedContainerFalloff)
+	if (CollisionType == ShipCollisionType::Heavy)
 		PopRandomContainerFromTop(Hit.ImpactNormal);
+	
+	CargoPlayerState->NotifyShipCollision(OtherActor, CollisionType);
+	UE_LOG(LogTemp, Log, TEXT("Hit Velocity: %f / %f -> %.2f%% "), HitVelocity, OriginalMaxSpeed, HitVelocity / OriginalMaxSpeed)
 }
 
 void ACargoCharacter::PopRandomContainerFromTop(const FVector& HitDir)

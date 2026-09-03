@@ -4,6 +4,7 @@
 #include "Services/MissionsService.h"
 
 #include "CargoGameMode.h"
+#include "GameplayFramework/CargoPlayerState.h"
 
 
 UMissionsService::UMissionsService()
@@ -14,6 +15,29 @@ UMissionsService::UMissionsService()
 void UMissionsService::Boot(FOnServiceBooted OnBootFinished)
 {	
 	Super::Boot(OnBootFinished);
+}
+
+void UMissionsService::PostLogin(APlayerController* NewPlayer)
+{
+	const auto PlayerState = NewPlayer->GetPlayerState<ACargoPlayerState>();
+	PlayerState->OnShipCollisionEvent.AddUObject(this, &ThisClass::OnShipCollision);
+}
+
+void UMissionsService::Logout(AController* Exiting)
+{
+	const auto PlayerState = Exiting->GetPlayerState<ACargoPlayerState>();
+	PlayerState->OnShipCollisionEvent.RemoveAll(this);
+}
+
+void UMissionsService::OnShipCollision(AActor* OtherActor, ShipCollisionType CollisionType)
+{
+	for (const auto ActiveMission : ActiveMissions)
+	{
+		if (CollisionType == ShipCollisionType::Light)
+			ActiveMission.Value->AddCollision_Light();
+		else if (CollisionType == ShipCollisionType::Heavy)
+			ActiveMission.Value->AddCollision_Hard();
+	}
 }
 
 void UMissionsService::AcceptMission(const TObjectPtr<UMissionData> MissionData, FGameplayTag StartIslandTag)
@@ -37,9 +61,6 @@ void UMissionsService::RegisterCargoDelivery(const FGuid MissionId, FGameplayTag
 	
 	Mission->AddCargoDelivery(CargoType);
 	MissionProgressUpdatedDelegate.Broadcast(Mission, CargoType);
-	
-	if (Mission->IsComplete())
-		CompleteMission(Mission);
 }
 
 void UMissionsService::RemoveCargoDelivery(const FGuid MissionId, FGameplayTag CargoType)
@@ -72,7 +93,7 @@ TArray<TObjectPtr<UMissionStatus>> UMissionsService::GetActiveMissionsForDestina
 
 void UMissionsService::CompleteMission(const TObjectPtr<UMissionStatus> Mission)
 {
-	ACargoGameMode::Get(this)->EconomyService->AddMoney(Mission->Reward.Money);
+	ACargoGameMode::Get(this)->EconomyService->AddMoney(Mission->GetBaseReward().Money);
 	
 	MissionCompletedDelegate.Broadcast(Mission);
 	ActiveMissions.Remove(Mission->GetId());

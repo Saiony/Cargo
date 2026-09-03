@@ -9,7 +9,8 @@
 #include "../Quest/QuestStatus.h"
 #include "MissionStatus.generated.h"
 
-struct FCargoStatus;
+struct FMissionReward;
+
 /**
  * 
  */
@@ -31,7 +32,15 @@ class CARGO_API UMissionStatus : public UObject
 	FGameplayTag DestinationTag;
 	
 	UPROPERTY(VisibleAnywhere)
-	TObjectPtr<UMissionData> OriginalMissionData;
+	TObjectPtr<UMissionData> OriginalMissionData;	
+	
+	int32 NumShipCollisions_Light = -1;
+	
+	int32 NumShipCollisions_Hard = -1;
+
+	FReward BaseReward;
+	
+	bool IsCompleted = false;
 
 public:
 	void Initialize(TObjectPtr<UMissionData> MissionData, FGameplayTag InStartIslandTag);
@@ -52,9 +61,19 @@ public:
 	
 	void RemoveCargoDelivery(FGameplayTag CargoType);
 	
-	bool IsComplete() const;
-	
-	FReward Reward;
+	int32 GetNumDamagedContainers() const;	
 	
 	TMap<FGameplayTag, FCargoStatus> GetDeliveredQuantities() const { return DeliveredQuantities; }
+	
+	int32 GetNumShipCollisions_Light() const { return NumShipCollisions_Light; }
+	
+	int32 GetNumShipCollisions_Hard() const { return NumShipCollisions_Hard; }
+	
+	FReward GetBaseReward() const { return BaseReward; }
+	
+	FMissionReward CompleteMission();
+	
+	void AddCollision_Light();
+	
+	void AddCollision_Hard();
 };

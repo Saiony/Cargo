@@ -3,6 +3,7 @@
 
 #include "Mission/MissionStatus.h"
 
+#include "Mission/MissionReward.h"
 #include "Quest/QuestData.h"
 #include "Quest/QuestStatus.h"
 
@@ -12,7 +13,9 @@ void UMissionStatus::Initialize(TObjectPtr<UMissionData> MissionData, FGameplayT
 	OriginalMissionData = MissionData;
 	StartIslandTag = InStartIslandTag;
 	DestinationTag = MissionData->DestinationTag;	
-	Reward = MissionData->Reward;
+	BaseReward = MissionData->Reward;
+	NumShipCollisions_Light = 0;
+	NumShipCollisions_Hard = 0;
 	
 	for (const auto Req : MissionData->CargoRequirements)
 	{
@@ -53,13 +56,30 @@ void UMissionStatus::RemoveCargoDelivery(FGameplayTag CargoType)
 	RemoveCargo(CargoType, 1);
 }
 
-bool UMissionStatus::IsComplete() const
+int32 UMissionStatus::GetNumDamagedContainers() const
 {
+	int32 NumDamaged = 0;
 	for (auto Delivered : DeliveredQuantities)
 	{
-		if (!Delivered.Value.IsComplete())
-			return false;
+		if (Delivered.Value.IsDamaged)
+			NumDamaged++;
 	}
 	
-	return true;
+	return NumDamaged;
+}
+
+FMissionReward UMissionStatus::CompleteMission()
+{
+	IsCompleted = true;
+	return FMissionReward(this);
+}
+
+void UMissionStatus::AddCollision_Light()
+{
+	NumShipCollisions_Light++;
+}
+
+void UMissionStatus::AddCollision_Hard()
+{
+	NumShipCollisions_Hard++;
 }

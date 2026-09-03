@@ -63,3 +63,8 @@ void ACargoPlayerState::SetShipBalanceRotation(float NewBalance)
 	ShipBalanceRotation = NewBalance;
 	OnBalanceChanged.Broadcast(GetShipBalanceTotal());
 }
+
+void ACargoPlayerState::NotifyShipCollision(AActor* OtherActor, ShipCollisionType CollisionType)
+{
+	OnShipCollisionEvent.Broadcast(OtherActor, CollisionType);
+}

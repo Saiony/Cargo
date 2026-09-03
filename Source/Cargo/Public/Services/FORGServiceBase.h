@@ -8,6 +8,8 @@
 
 DECLARE_DELEGATE(FOnServiceBooted);
 
+class AController;
+class APlayerController;
 
 UCLASS(DefaultToInstanced)
 class CARGO_API UFORGServiceBase : public UActorComponent
@@ -28,6 +30,8 @@ public:
 
 	virtual void SetReplication(const bool NewStatus);
 	virtual bool GetComponentClassCanReplicate() const override { return true; }
+	virtual void PostLogin(APlayerController* NewPlayer) {}
+	virtual void Logout(AController* Exiting) {}
 
 protected:
 	virtual bool CanEverTick() const { return false; }

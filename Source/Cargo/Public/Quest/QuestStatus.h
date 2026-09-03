@@ -22,11 +22,16 @@ struct FCargoStatus
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1"))
 	int32 TotalQuantity = 0;
 	
-	void Initialize(FGameplayTag InCargoType, int32 InDeliveredQuantity, int32 InTotalQuantity)
+	int32 BasePrice = -1;
+	
+	bool IsDamaged = false;
+	
+	void Initialize(FGameplayTag InCargoType, int32 InDeliveredQuantity, int32 InTotalQuantity, int32 InBasePrice)
 	{
-		this->CargoType = InCargoType;
-		this->DeliveredQuantity = InDeliveredQuantity;
-		this->TotalQuantity = InTotalQuantity;
+		CargoType = InCargoType;
+		DeliveredQuantity = InDeliveredQuantity;
+		TotalQuantity = InTotalQuantity;
+		BasePrice = InBasePrice;
 	}
 	
 	bool IsComplete()

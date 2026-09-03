@@ -42,6 +42,8 @@ class ACargoGameMode : public AGameModeBase
 	FGameplayTagContainer TagsContainer = FGameplayTagContainer();	
 	
 	virtual void BeginPlay() override;
+	virtual void PostLogin(APlayerController* NewPlayer) override;
+	virtual void Logout(AController* Exiting) override;
 	
 	void BootService(int32 Index);
 	

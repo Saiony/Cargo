@@ -30,6 +30,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	float Weight = 1.0f;	
 	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 BasePrice = 10;
+	
 	UPROPERTY(EditAnywhere)
 	FFROGGridShapeDefinition Shape;
 	
