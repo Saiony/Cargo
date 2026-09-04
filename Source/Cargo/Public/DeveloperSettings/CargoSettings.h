@@ -12,6 +12,7 @@
 
 class AContainer;
 class APlaceablePreview;
+class UBOLWidget;
 
 struct FGameplayTag;
 /**
@@ -37,6 +38,9 @@ public:
 	
 	UPROPERTY(EditAnywhere, Config, Category = "UI")
 	TSubclassOf<UMapWidget> MapWidgetClass;
+
+	UPROPERTY(EditAnywhere, Config, Category = "UI")
+	TSoftClassPtr<UBOLWidget> BOLWidgetClass;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo|Island")
 	TSubclassOf<AContainer> ContainerClass;

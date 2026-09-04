@@ -7,10 +7,12 @@
 #include "Grid/Container.h"
 #include "Grid/Placeable.h"
 #include "CargoGameMode.h"
+#include "Interaction/PortBellInteractable.h"
 
 UCargoPortComponent::UCargoPortComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+	PortBellClass = APortBellInteractable::StaticClass();
 }
 
 void UCargoPortComponent::BeginPlay()
@@ -19,6 +21,34 @@ void UCargoPortComponent::BeginPlay()
 
 	OnPlaceableAddedToGrid.AddDynamic(this, &UCargoPortComponent::HandlePlaceableAddedToGrid);
 	OnPlaceableRemovedFromGrid.AddDynamic(this, &UCargoPortComponent::HandlePlaceableRemovedFromGrid);
+
+	if (PortBellClass)
+	{
+		FActorSpawnParameters SpawnParameters;
+		SpawnParameters.Owner = GetOwner();
+		SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		PortBell = GetWorld()->SpawnActor<APortBellInteractable>(
+			PortBellClass, GetComponentTransform(), SpawnParameters);
+		if (PortBell)
+		{
+			PortBell->AttachToComponent(this, FAttachmentTransformRules::KeepWorldTransform);
+			PortBell->SetActorRelativeTransform(PortBellRelativeTransform);
+			PortBell->OnBellRung.AddDynamic(this, &ThisClass::OnBellClicked);
+		}
+	}
+}
+
+void UCargoPortComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (PortBell)
+	{
+		PortBell->OnBellRung.RemoveDynamic(this, &ThisClass::OnBellClicked);
+		PortBell->Destroy();
+		PortBell = nullptr;
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void UCargoPortComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -173,10 +203,39 @@ void UCargoPortComponent::StartMissionDelivery(const FGuid MissionId)
 	CurrentMissionId = MissionId;
 }
 
+void UCargoPortComponent::OnBellClicked()
+{
+	if (!IsOpen)
+	{
+		return;
+	}
+
+	ACargoGameMode* CargoGameMode = ACargoGameMode::Get(this);
+	if (!CargoGameMode)
+	{
+		return;
+	}
+
+	if (CurrentQuestTag.IsValid())
+	{
+		if (UQuestStatus* QuestStatus = CargoGameMode->GetQuestStatus(CurrentQuestTag))
+		{
+			CargoGameMode->CheckIfQuestEnded(QuestStatus);
+		}
+		return;
+	}
+
+	if (CurrentMissionId.IsValid() && CargoGameMode->MissionsService)
+	{
+		CargoGameMode->MissionsService->CompleteMission(CurrentMissionId);
+	}
+}
+
 void UCargoPortComponent::Clear()
 {
 	IsOpen = false;
 	CurrentQuestTag = FGameplayTag();
+	CurrentMissionId.Invalidate();
 
 	ClearGrid();
 }

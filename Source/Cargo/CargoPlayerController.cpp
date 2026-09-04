@@ -21,6 +21,12 @@
 
 class UCargoUIManagerSubsystem;
 
+ACargoPlayerController::ACargoPlayerController()
+{
+	bEnableMouseOverEvents = true;
+	bEnableClickEvents = true;
+}
+
 void ACargoPlayerController::BeginPlay()
 {
 	Super::BeginPlay();

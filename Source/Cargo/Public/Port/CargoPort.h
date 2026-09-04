@@ -10,6 +10,7 @@
 
 struct FCargoRequirement;
 class AContainer;
+class APortBellInteractable;
 struct FGameplayTag;
 class UStaticMeshComponent;
 
@@ -29,6 +30,7 @@ protected:
 	TSubclassOf<AContainer> ContainerClass;	
     
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
     
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
@@ -39,6 +41,18 @@ protected:
 	void HandlePlaceableRemovedFromGrid(APlaceable* Placeable);
 	
 	void SpawnSingleContainer(FGameplayTag CargoType);
+
+	UFUNCTION()
+	void OnBellClicked();
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo|Port|Interaction")
+	TSubclassOf<APortBellInteractable> PortBellClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo|Port|Interaction")
+	FTransform PortBellRelativeTransform;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Transient, Category="Cargo|Port|Interaction")
+	TObjectPtr<APortBellInteractable> PortBell;
 
 public:
 	UPROPERTY(VisibleAnywhere, Category="Cargo|Port")

@@ -5,10 +5,16 @@
 #include "Debug/CameraDebugCategories.h"
 #include "Island/CargoIsland.h"
 #include "Quest/QuestStatus.h"
+#include "Subsystem/CargoUIManagerSubsystem.h"
 
 void ACargoGameMode::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (UCargoUIManagerSubsystem* UIManager = GetGameInstance()->GetSubsystem<UCargoUIManagerSubsystem>())
+	{
+		UIManager->BindToMissionsService(MissionsService);
+	}
 
 	for (TObjectPtr<UQuestData> AvailableQuest : AvailableQuestsOnStart)
 	{

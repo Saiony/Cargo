@@ -5,6 +5,7 @@
 
 #include "CargoGameMode.h"
 #include "GameplayFramework/CargoPlayerState.h"
+#include "Mission/MissionReward.h"
 
 
 UMissionsService::UMissionsService()
@@ -76,6 +77,18 @@ void UMissionsService::RemoveCargoDelivery(const FGuid MissionId, FGameplayTag C
 	MissionProgressUpdatedDelegate.Broadcast(*Mission, CargoType);
 }
 
+void UMissionsService::CompleteMission(const FGuid MissionId)
+{
+	const TObjectPtr<UMissionStatus>* Mission = ActiveMissions.Find(MissionId);
+	if (!Mission || !IsValid(*Mission))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("MissionsService: Cannot complete inactive mission %s"), *MissionId.ToString());
+		return;
+	}
+
+	CompleteMission(*Mission);
+}
+
 TArray<TObjectPtr<UMissionStatus>> UMissionsService::GetActiveMissionsForDestination(const FGameplayTag DestinationTag)
 {
 	TArray<TObjectPtr<UMissionStatus>> Missions = TArray<TObjectPtr<UMissionStatus>>();
@@ -93,7 +106,8 @@ TArray<TObjectPtr<UMissionStatus>> UMissionsService::GetActiveMissionsForDestina
 
 void UMissionsService::CompleteMission(const TObjectPtr<UMissionStatus> Mission)
 {
-	ACargoGameMode::Get(this)->EconomyService->AddMoney(Mission->GetBaseReward().Money);
+	const FMissionReward MissionReward = Mission->CompleteMission();
+	ACargoGameMode::Get(this)->EconomyService->AddMoney(MissionReward.FinalReward.Money);
 	
 	MissionCompletedDelegate.Broadcast(Mission);
 	ActiveMissions.Remove(Mission->GetId());

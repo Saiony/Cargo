@@ -18,8 +18,20 @@ void UBOLWidget::NativeOnInitialized()
 	ConfirmButton->OnClicked.AddDynamic(this, &ThisClass::OnConfirmButtonClicked);
 }
 
-void UBOLWidget::Init(const TObjectPtr<ACargoPlayerState> PlayerState, const FMissionReward& MissionReward)
-{	
+void UBOLWidget::Init(const TObjectPtr<UMissionStatus> MissionStatus)
+{
+	if (!IsValid(MissionStatus))
+	{
+		return;
+	}
+
+	const TObjectPtr<ACargoPlayerState> PlayerState = GetOwningPlayerState<ACargoPlayerState>();
+	if (!IsValid(PlayerState))
+	{
+		return;
+	}
+
+	const FMissionReward MissionReward(MissionStatus);
 	Show();
 	
 	ShipNameText->SetText(FText::FromString(PlayerState->GetShipName()));

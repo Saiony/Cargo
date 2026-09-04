@@ -49,5 +49,8 @@ public:
 	
 	void RemoveCargoDelivery(FGuid MissionId, FGameplayTag CargoType);
 
+	/** Completes the active mission identified by MissionId, if it still exists. */
+	void CompleteMission(FGuid MissionId);
+
 	TArray<TObjectPtr<UMissionStatus>> GetActiveMissionsForDestination(FGameplayTag DestinationTag);
 };

@@ -81,7 +81,7 @@ protected:
 	UFUNCTION()
 	void OnConfirmButtonClicked();
 public:
-	void Init(TObjectPtr<ACargoPlayerState> PlayerState, const FMissionReward& MissionReward);	
+	void Init(TObjectPtr<UMissionStatus> MissionStatus);	
 	void Show();	
 	void Hide();
 };
