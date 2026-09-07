@@ -30,10 +30,10 @@ public:
 	float NavigationHeight = -294.484f;
 
 	UPROPERTY(EditAnywhere, Category="Cargo|Island", meta=(ClampMin="0.0", Units="cm", ToolTip="Search half extents around each island XY at Navigation Height. Distance is measured between projected points, excluding offsets from island pivots."))
-	FVector NavigationSearchExtent = FVector(100000.f, 100000.f, 50000.f);
+	FVector NavigationSearchExtent = FVector(500.f, 500.f, 50.f);
 
 	UPROPERTY(EditAnywhere, Category="Cargo|Island", meta=(ClampMin="0.0", ClampMax="1.0", ToolTip="Reject pairs when the combined horizontal projection offsets exceed this fraction of the direct island separation. 0.1 allows up to 10 percent."))
-	float MaxProjectionErrorRatio = 0.1f;
+	float MaxProjectionErrorRatio = 1.0f;
 
 	UFUNCTION(CallInEditor, Category="Cargo|Island")
 	void RecalculateDistances();
