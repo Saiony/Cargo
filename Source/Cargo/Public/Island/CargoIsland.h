@@ -53,7 +53,7 @@ protected:
 	FText IslandName;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Island")
-	TSoftClassPtr<UIslandWidget> IslandWidgetClass;	
+	TSoftClassPtr<UIslandWidget> IslandWidgetClass;
 	
 	void OnQuestAccepted(TObjectPtr<UQuestData> QuestData, AActor* QuestInstigator);	
 	

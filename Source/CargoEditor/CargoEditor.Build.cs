@@ -25,7 +25,10 @@ public class CargoEditor : ModuleRules
                 "AssetTools",
                 "UnrealEd",
                 "InputCore",
-                "DeveloperSettings"
+                "DeveloperSettings",
+                "NavigationSystem",
+                "Landscape",
+                "Water"
             }
         );
     }
