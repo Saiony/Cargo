@@ -3,7 +3,6 @@
 #include "Port/CargoPort.h"
 
 #include "GameplayTagContainer.h"
-#include "Components/StaticMeshComponent.h"
 #include "Grid/Container.h"
 #include "Grid/Placeable.h"
 #include "CargoGameMode.h"
@@ -12,7 +11,6 @@
 UCargoPortComponent::UCargoPortComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
-	PortBellClass = APortBellInteractable::StaticClass();
 }
 
 void UCargoPortComponent::BeginPlay()
@@ -24,19 +22,22 @@ void UCargoPortComponent::BeginPlay()
 
 	if (PortBellClass)
 	{
-		FActorSpawnParameters SpawnParameters;
-		SpawnParameters.Owner = GetOwner();
-		SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = GetOwner();
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-		PortBell = GetWorld()->SpawnActor<APortBellInteractable>(
-			PortBellClass, GetComponentTransform(), SpawnParameters);
-		if (PortBell)
-		{
-			PortBell->AttachToComponent(this, FAttachmentTransformRules::KeepWorldTransform);
-			PortBell->SetActorRelativeTransform(PortBellRelativeTransform);
-			PortBell->OnBellRung.AddDynamic(this, &ThisClass::OnBellClicked);
-		}
+		const FTransform BellWorldTransform = PortBellRelativeTransform * GetComponentTransform();
+		PortBell = GetWorld()->SpawnActor<APortBellInteractable>(PortBellClass, BellWorldTransform, SpawnParams);
 	}
+
+	if (!PortBell)
+	{
+		UE_LOG(LogTemp, Error, TEXT("CargoPortComponent '%s': PortBellClass must be configured with a PortBellInteractable Blueprint"), *GetName());
+		return;
+	}
+
+	PortBell->AttachToComponent(this, FAttachmentTransformRules::KeepWorldTransform);
+	PortBell->OnBellRung.AddDynamic(this, &ThisClass::OnBellClicked);
 }
 
 void UCargoPortComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)

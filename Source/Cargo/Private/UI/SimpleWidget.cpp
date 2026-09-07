@@ -28,12 +28,12 @@ void USimpleWidget::Show()
 	}
 }
 
-void USimpleWidget::Hide()
+void USimpleWidget::Hide(bool WithAnimation)
 {
-	if (!VisibilityAnimation)
+	if (!WithAnimation)
 	{
-		bIsHiding = false;
-		SetVisibility(ESlateVisibility::Collapsed);
+		bIsHiding = true;
+		SetVisibility(ESlateVisibility::Hidden);
 		return;
 	}
 

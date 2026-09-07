@@ -12,7 +12,6 @@ struct FCargoRequirement;
 class AContainer;
 class APortBellInteractable;
 struct FGameplayTag;
-class UStaticMeshComponent;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class CARGO_API UCargoPortComponent : public UGridComponent
@@ -26,9 +25,15 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Cargo")
 	TObjectPtr<UGridComponent> GridComp;	
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo|Island")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
 	TSubclassOf<AContainer> ContainerClass;	
-    
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Port|Interaction")
+	TSubclassOf<APortBellInteractable> PortBellClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Port|Interaction")
+	FTransform PortBellRelativeTransform;
+	
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
     
@@ -44,12 +49,6 @@ protected:
 
 	UFUNCTION()
 	void OnBellClicked();
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo|Port|Interaction")
-	TSubclassOf<APortBellInteractable> PortBellClass;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo|Port|Interaction")
-	FTransform PortBellRelativeTransform;
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Transient, Category="Cargo|Port|Interaction")
 	TObjectPtr<APortBellInteractable> PortBell;

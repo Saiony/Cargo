@@ -21,7 +21,7 @@ public:
 	void Show();
 
 	UFUNCTION(BlueprintCallable, Category = "Widget")
-	void Hide();
+	void Hide(bool WithAnimation);
 
 protected:
 	virtual void NativeOnInitialized() override;

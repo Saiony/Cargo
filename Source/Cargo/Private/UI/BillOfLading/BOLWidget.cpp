@@ -6,6 +6,7 @@
 #include "CommonTextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Mission/MissionStatus.h"
+#include "PrimaryGameLayout.h"
 #include "UI/SimpleWidget.h"
 #include "UI/Quest/CargoRequirementEntryWidget.h"
 
@@ -17,7 +18,6 @@ void UBOLWidget::NativeOnInitialized()
 	
 	ConfirmButton->OnClicked.AddDynamic(this, &ThisClass::OnConfirmButtonClicked);
 }
-
 void UBOLWidget::Init(const TObjectPtr<UMissionStatus> MissionStatus)
 {
 	if (!IsValid(MissionStatus))
@@ -32,7 +32,6 @@ void UBOLWidget::Init(const TObjectPtr<UMissionStatus> MissionStatus)
 	}
 
 	const FMissionReward MissionReward(MissionStatus);
-	Show();
 	
 	ShipNameText->SetText(FText::FromString(PlayerState->GetShipName()));
 	CaptainNameText->SetText(FText::FromString(PlayerState->GetCaptainName()));
@@ -40,13 +39,13 @@ void UBOLWidget::Init(const TObjectPtr<UMissionStatus> MissionStatus)
 	OriginLocationText->SetText(FText::FromName(MissionReward.StartIslandTag.GetTagName()));
 	DestinationLocationText->SetText(FText::FromName(MissionReward.DestinationTag.GetTagName()));
 	
-	DeliveryTimeText->SetText(FText::FromString("Conceito de tempo nao implementado :("));
-	MissingCargoDiscount->SetText(FText::AsNumber(MissionReward.MissingCargoDiscount));
-	DamagedCargoDiscount->SetText(FText::AsNumber(MissionReward.DamagedCargoDiscount));
-	RecklessNavigationDiscount->SetText(FText::AsNumber(MissionReward.RecklessNavigationDiscount));
+	DeliveryTimeText->SetText(FText::FromString("-"));
+	MissingCargoDiscount->SetText(FText::AsNumber(-MissionReward.MissingCargoDiscount));
+	DamagedCargoDiscount->SetText(FText::AsNumber(-MissionReward.DamagedCargoDiscount));
+	RecklessNavigationDiscount->SetText(FText::AsNumber(-MissionReward.RecklessNavigationDiscount));
 	
 	BaseRewardText->SetText(FText::AsNumber(MissionReward.BaseReward.Money));
-	FinalRewardText->SetText(FText::AsNumber(MissionReward.FinalReward.Money));
+	FinalRewardText->SetText(FText::AsNumber(MissionReward.FinalReward.Money));		
 	
 	//populates delivered/total cargo requirements
 	for (const auto& RequirementTuple : MissionReward.DeliveredQuantities)
@@ -56,25 +55,59 @@ void UBOLWidget::Init(const TObjectPtr<UMissionStatus> MissionStatus)
 
 		ReqWidget->Init(CargoStatus);
 		RequirementsContainer->AddChild(ReqWidget);
-	}
+	}	
 	
-	for (int i = 0; i < MissionReward.Stars; i++)
-	{
-		Stars[i]->Show();
-	}
+	EarnedStars = MissionReward.Stars;
+	UE_LOG(LogTemp, Log, TEXT("BOLWidget: Earned %d stars"), EarnedStars);
+	Show();
 }
 
 void UBOLWidget::Show()
 {
-	SetVisibility(ESlateVisibility::Visible);
+	FWidgetAnimationDynamicEvent FinishedEvent;
+	FinishedEvent.BindDynamic(this, &ThisClass::OnShowAnimationFinished);
+
+	BindToAnimationFinished(ShowAnimation, FinishedEvent);
+	
+	PlayAnimation(ShowAnimation);	
+}
+
+void UBOLWidget::OnShowAnimationFinished()
+{
+	ShowStars(EarnedStars);
 }
 
 void UBOLWidget::Hide()
 {
-	SetVisibility(ESlateVisibility::Hidden);
+	if (UPrimaryGameLayout* Layout = UPrimaryGameLayout::GetPrimaryGameLayoutForPrimaryPlayer(this))
+	{
+		Layout->FindAndRemoveWidgetFromLayer(this);
+		return;
+	}
+
+	RemoveFromParent();
 }
 
 void UBOLWidget::OnConfirmButtonClicked()
 {
 	Hide();
+}
+
+void UBOLWidget::ShowStars(int8 TotalStars)
+{
+	FTimerDelegate Delegate;
+
+	Delegate.BindWeakLambda(this, [this, Index = 0, TotalStars]() mutable
+	{
+		if (Index >= TotalStars || Index >= Stars.Num())
+		{
+			GetWorld()->GetTimerManager().ClearTimer(StarsTimerHandle);
+			return;
+		}
+
+		Stars[Index]->Show();
+		Index++;
+	});
+
+	GetWorld()->GetTimerManager().SetTimer(StarsTimerHandle, Delegate, StarsInterval, true);
 }

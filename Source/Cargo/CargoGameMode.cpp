@@ -11,6 +11,10 @@ void ACargoGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 
+#if WITH_EDITOR
+	AddDebugInitialTags();
+#endif
+
 	if (UCargoUIManagerSubsystem* UIManager = GetGameInstance()->GetSubsystem<UCargoUIManagerSubsystem>())
 	{
 		UIManager->BindToMissionsService(MissionsService);
@@ -24,6 +28,16 @@ void ACargoGameMode::BeginPlay()
 	GetComponents<UFORGServiceBase>(Services);
 	BootService(0);
 }
+
+#if WITH_EDITOR
+void ACargoGameMode::AddDebugInitialTags()
+{
+	for (const FGameplayTag& DebugTag : Debug_InitialTags)
+	{
+		AddTag(DebugTag);
+	}
+}
+#endif
 
 void ACargoGameMode::PostLogin(APlayerController* NewPlayer)
 {

@@ -9,7 +9,7 @@ void UCargoRequirementEntryWidget::Init(FGameplayTag CargoType, int32 DeliveredQ
 {
 	RequirementNameText->SetText(FText::FromName(CargoType.GetTagName()));
 	RequiredQuantityText->SetText(FText::AsNumber(RequiredQuantity));
-	UpdateDelivered(0);
+	UpdateDelivered(DeliveredQuantity);
 }
 
 void UCargoRequirementEntryWidget::Init(const FCargoStatus& CargoStatus)

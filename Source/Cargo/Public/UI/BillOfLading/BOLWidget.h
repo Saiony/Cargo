@@ -22,6 +22,7 @@ class CARGO_API UBOLWidget : public UFrogsmithActivatableWidget
 {
 	GENERATED_BODY()
 	
+protected:
 	UPROPERTY(EditDefaultsOnly, meta = (BindWidget))
 	TObjectPtr<UButton> ConfirmButton;
 	
@@ -55,7 +56,7 @@ class CARGO_API UBOLWidget : public UFrogsmithActivatableWidget
 	UPROPERTY(EditDefaultsOnly, meta = (BindWidget))
 	TObjectPtr<UCommonTextBlock> FinalRewardText;
 	
-	UPROPERTY(EditDefaultsOnly, meta = (BindWidget))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (BindWidget))
 	TObjectPtr<UVerticalBox> RequirementsContainer;
 	
 	/*stars*/
@@ -66,22 +67,38 @@ class CARGO_API UBOLWidget : public UFrogsmithActivatableWidget
 	TObjectPtr<USimpleWidget> Star2;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<USimpleWidget> Star3;
+	TObjectPtr<USimpleWidget> Star3;	
 	
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<USimpleWidget>> Stars;
 	
-	/*class references*/
-	UPROPERTY(EditDefaultsOnly, meta = (BindWidget))
-	TSoftClassPtr<UCargoRequirementEntryWidget> CargoRequirementWidgetClass;	
+	UPROPERTY( EditDefaultsOnly, Category = "Cargo")
+	float StarsInterval = 0.5f;
 	
-protected:
+	FTimerHandle StarsTimerHandle;
+	
+	int8 EarnedStars;
+	
+	/*animations*/
+	UPROPERTY(Transient, meta = (BindWidgetAnim))
+	TObjectPtr<UWidgetAnimation> ShowAnimation;
+
+protected:	
+	/*class references*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Cargo")
+	TSoftClassPtr<UCargoRequirementEntryWidget> CargoRequirementWidgetClass;
+
 	virtual void NativeOnInitialized() override;
 	
 	UFUNCTION()
 	void OnConfirmButtonClicked();
+	void ShowStars(int8 TotalStars);
+
+	UFUNCTION()
+	void OnShowAnimationFinished();
 public:
-	void Init(TObjectPtr<UMissionStatus> MissionStatus);	
+	void Init(TObjectPtr<UMissionStatus> MissionStatus);
+
 	void Show();	
 	void Hide();
 };

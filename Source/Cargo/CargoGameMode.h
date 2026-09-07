@@ -46,12 +46,22 @@ class ACargoGameMode : public AGameModeBase
 	virtual void Logout(AController* Exiting) override;
 	
 	void BootService(int32 Index);
+
+#if WITH_EDITOR
+	void AddDebugInitialTags();
+#endif
 	
 	//Delegates
 	
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnServicesBooted);
 	UPROPERTY(BlueprintAssignable)
 	FOnServicesBooted OnServicesBooted;
+	
+
+#if WITH_EDITORONLY_DATA
+	UPROPERTY(EditDefaultsOnly, Category="Cargo|Debug")
+	TArray<FGameplayTag> Debug_InitialTags;
+#endif
 	
 public:		
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
