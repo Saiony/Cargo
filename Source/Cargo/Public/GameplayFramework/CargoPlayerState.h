@@ -85,6 +85,8 @@ public:
 	
 	FString GetPlayerInputText(FGameplayTag Tag) const;
 
+	const FString* FindPlayerDataTag(FGameplayTag Tag) const { return PlayerDataTags.Find(Tag); }
+
 	// --- Setters ---
 
 	UFUNCTION(Category = "Cargo")

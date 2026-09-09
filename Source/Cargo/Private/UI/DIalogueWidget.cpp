@@ -2,7 +2,10 @@
 
 #include "CargoGameMode.h"
 #include "Subsystem/FROGDialogueSubsystem.h"
-#include "CommonTextBlock.h"
+#include "Components/RichTextBlock.h"
+#include "DeveloperSettings/CargoSettings.h"
+#include "GameplayFramework/CargoPlayerState.h"
+#include "GameFramework/PlayerController.h"
 #include "CommonUIExtensions.h"
 #include "PrimaryGameLayout.h"
 #include "Animation/WidgetAnimation.h"
@@ -95,13 +98,13 @@ void UDIalogueWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 
 	if(CharsToShow >= FullStr.Len())
 	{
-		TextDialogue->SetText(FullLineText);
+		TextDialogue->SetText(FormattedLine.ToRichText(FormattedLine.PlainText.Len()));
 		bIsTyping = false;
 		return;
 	}
 	if (CharsToShow > LastCharsShown)
 	{
-		TextDialogue->SetText(FText::FromString(FullStr.Left(CharsToShow)));
+		TextDialogue->SetText(FormattedLine.ToRichText(CharsToShow));
 		for (int32 i = LastCharsShown; i < CharsToShow; ++i)
 		{
 			const TCHAR Ch = FullStr[i];
@@ -142,7 +145,7 @@ void UDIalogueWidget::ShowNextLine()
 	UE_LOG(LogTemp, Warning, TEXT("ShowNextLine: Getting line at index %d"), CurrentLineIndex);
 	const FARCDialogueLine& Line = CurrentDialogueData->DialogueLines[CurrentLineIndex];
 
-	FullLineText = Line.Text;
+	PrepareLineText(Line.Text);
 	TextDialogue->SetText(FText::GetEmpty());
 	CurrentCharCount = 0.0f;
 	LastCharsShown = 0;
@@ -274,7 +277,7 @@ void UDIalogueWidget::OnInputActionContinue()
 
 	if(bIsTyping)
 	{
-		TextDialogue->SetText(FullLineText);
+		TextDialogue->SetText(FormattedLine.ToRichText(FormattedLine.PlainText.Len()));
 		bIsTyping = false;
 		return;
 	}
@@ -300,4 +303,29 @@ void UDIalogueWidget::FinishHide()
 	OnDialogueFinishedDelegate.Clear();
 	UCommonUIExtensions::PopContentFromLayer(this);
 	Completion.Broadcast(Definition);
+}
+
+void UDIalogueWidget::PrepareLineText(const FText& Text)
+{
+	const auto PlayerState = GetOwningPlayer()->GetPlayerState<ACargoPlayerState>();
+	FormattedLine.Parse(Text.ToString(), [PlayerState](const FString& TagName) -> TOptional<FString>
+	{
+		const auto Tag = FGameplayTag::RequestGameplayTag(FName(*TagName), false);
+		const auto Value = PlayerState ? PlayerState->FindPlayerDataTag(Tag) : nullptr;
+		return Value ? TOptional<FString>(*Value) : TOptional<FString>();
+	});
+	FullLineText = FText::FromString(FormattedLine.PlainText);
+	UpdatePlayerDataStyle();
+}
+
+void UDIalogueWidget::UpdatePlayerDataStyle()
+{
+	auto Styles = NewObject<UDataTable>(TextDialogue);
+	Styles->RowStruct = FRichTextStyleRow::StaticStruct();
+	FRichTextStyleRow Row;
+	Row.TextStyle = TextDialogue->GetCurrentDefaultTextStyle();
+	Styles->AddRow(TEXT("Default"), Row);
+	Row.TextStyle.SetColorAndOpacity(GetDefault<UCargoSettings>()->DialoguePlayerDataColor);
+	Styles->AddRow(TEXT("PlayerData"), Row);
+	TextDialogue->SetTextStyleSet(Styles);
 }

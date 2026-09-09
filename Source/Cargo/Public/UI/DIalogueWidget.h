@@ -5,12 +5,13 @@
 #include "FrogsmithActivatableWidget.h"
 #include "Components/VerticalBox.h"
 #include "Dialogue/DialogueData.h"
+#include "Dialogue/DialogueText.h"
 
 #include "DIalogueWidget.generated.h"
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnDialoguefinished, UDialogueData*);
 
-class UCommonTextBlock;
+class URichTextBlock;
 class UImage;
 
 UCLASS()
@@ -46,6 +47,8 @@ private:
 	void OnChoiceSelected(int buttonIndex);
 	void Hide();
 	void FinishHide();
+	void PrepareLineText(const FText& Text);
+	void UpdatePlayerDataStyle();
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Arcade", meta=(AllowPrivateAccess))
@@ -68,7 +71,7 @@ protected:
 	TObjectPtr<UImage> ImageRightPortrait;
 
 	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<UCommonTextBlock> TextDialogue;
+	TObjectPtr<URichTextBlock> TextDialogue;
 	
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UVerticalBox> OptionsVerticalBox;
@@ -100,6 +103,7 @@ private:
 	
 	int32 CurrentLineIndex = -1;
 	FText FullLineText;
+	FDialogueText FormattedLine;
 	float CurrentCharCount;
 	bool bIsTyping;
 	
