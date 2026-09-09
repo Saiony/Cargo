@@ -43,9 +43,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cargo")
 	float ShipSpeedMultiplier = 1;
 	
-	FString ShipName = "DEBUG";
+	FString ShipName = "Giants Otarios";
 	
-	FString CaptainName = "DEBUG";
+	FString CaptainName = "Saiony";
 	
 	void CalculateShipSpeedMultiplier();
 	

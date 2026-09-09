@@ -72,6 +72,9 @@ protected:
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<USimpleWidget>> Stars;
 	
+	UPROPERTY(EditDefaultsOnly, Category = "Audio")
+	TObjectPtr<USoundBase> StarsSound;
+	
 	UPROPERTY( EditDefaultsOnly, Category = "Cargo")
 	float StarsInterval = 0.5f;
 	
@@ -82,13 +85,18 @@ protected:
 	/*animations*/
 	UPROPERTY(Transient, meta = (BindWidgetAnim))
 	TObjectPtr<UWidgetAnimation> ShowAnimation;
+	
+	UPROPERTY(Transient, meta = (BindWidgetAnim))
+	TObjectPtr<UWidgetAnimation> FinishAnimation;
 
 protected:	
 	/*class references*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Cargo")
-	TSoftClassPtr<UCargoRequirementEntryWidget> CargoRequirementWidgetClass;
+	TSubclassOf<UCargoRequirementEntryWidget> CargoRequirementWidgetClass;
 
 	virtual void NativeOnInitialized() override;
+	
+	virtual void NativeOnActivated() override;
 	
 	UFUNCTION()
 	void OnConfirmButtonClicked();
@@ -96,6 +104,9 @@ protected:
 
 	UFUNCTION()
 	void OnShowAnimationFinished();
+	
+	UFUNCTION()
+	void OnFinishAnimationFinished();
 public:
 	void Init(TObjectPtr<UMissionStatus> MissionStatus);
 
