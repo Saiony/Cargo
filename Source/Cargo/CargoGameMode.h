@@ -8,6 +8,7 @@
 #include "Quest/QuestData.h"
 #include "Services/EconomyService.h"
 #include "Services/MissionsService.h"
+#include "Services/UIService.h"
 #include "CargoGameMode.generated.h"
 
 class APlaceable;
@@ -36,6 +37,9 @@ class ACargoGameMode : public AGameModeBase
 	TArray<TObjectPtr<UQuestData>> AvailableQuests;
 	
 	TInlineComponentArray<TObjectPtr<UFORGServiceBase>> Services;
+	
+	UPROPERTY()
+	TMap<TSubclassOf<UFORGServiceBase>, TObjectPtr<UFORGServiceBase>> ServicesMap;
 	
 	int QuestFinishedDelegate;	
 	
@@ -70,6 +74,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UEconomyService> EconomyService;
 	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TObjectPtr<UUIService> UIService;	
+	
 	ACargoGameMode(const FObjectInitializer& ObjectInitializer);
 
 	FActiveQuestsDelegate ActiveQuestsDelegate;
@@ -85,7 +92,7 @@ public:
 	{
 		return Cast<ACargoGameMode>(UGameplayStatics::GetGameMode(WorldContextObject));
 	};
-	
+		
 	void ActivateQuest(UQuestData* QuestData, AActor* QuestInstigator = nullptr);
 
 	TObjectPtr<UQuestStatus> GetQuestStatus(FGameplayTag QuestTag);
@@ -104,4 +111,16 @@ public:
 	void CheckIfQuestEnded(TObjectPtr<UQuestStatus> QuestStatus);	
 	
 	void AddAvailableQuest(TObjectPtr<UQuestData> Quest);
+	
+	template <typename T>
+	T* GetService() const
+	{
+		static_assert(TIsDerivedFrom<T, UFORGServiceBase>::IsDerived, "T must derive from UFORGServiceBase");
+
+		const auto Service = Services.Find(T::StaticClass());
+		if (!Service)
+			return nullptr;
+			
+		return Cast<T>(*Service);
+	}
 };

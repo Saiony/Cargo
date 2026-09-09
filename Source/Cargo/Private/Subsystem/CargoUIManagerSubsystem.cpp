@@ -61,8 +61,7 @@ void UCargoUIManagerSubsystem::HandleMissionCompleted(TObjectPtr<UMissionStatus>
 		return;
 	}
 
-	if (UBOLWidget* BOLWidget = Layout->PushWidgetToLayerStack<UBOLWidget>(
-		TAG_UI_Layer_Prompt, BOLWidgetClass.LoadSynchronous()))
+	if (UBOLWidget* BOLWidget = Layout->PushWidgetToLayerStack<UBOLWidget>(TAG_UI_Layer_Prompt, BOLWidgetClass.LoadSynchronous()))
 	{
 		BOLWidget->Init(MissionStatus);
 	}

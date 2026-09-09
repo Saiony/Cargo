@@ -8,6 +8,7 @@
 #include "GameplayTagContainer.h"
 #include "Mission/MissionsDatabase.h"
 #include "UI/MapWidget.h"
+#include "UI/Generic/CargoInputTextWidget.h"
 #include "CargoSettings.generated.h"
 
 class AContainer;
@@ -41,6 +42,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Config, Category = "UI")
 	TSoftClassPtr<UBOLWidget> BOLWidgetClass;
+	
+	UPROPERTY(EditAnywhere, Config, Category = "UI")
+	TSoftClassPtr<UCargoInputTextWidget> InputTextWidgetClass;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo|Island")
 	TSubclassOf<AContainer> ContainerClass;

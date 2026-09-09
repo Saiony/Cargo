@@ -62,6 +62,11 @@ ACargoGameMode::ACargoGameMode(const FObjectInitializer& ObjectInitializer)
 {
 	MissionsService = ObjectInitializer.CreateDefaultSubobject<UMissionsService>(this, TEXT("MissionsService"));
 	EconomyService = ObjectInitializer.CreateDefaultSubobject<UEconomyService>(this, TEXT("EconomyService"));
+	UIService = ObjectInitializer.CreateDefaultSubobject<UUIService>(this, TEXT("UIService"));
+		
+	ServicesMap.Add(MissionsService->GetClass(), MissionsService);
+	ServicesMap.Add(EconomyService->GetClass(), EconomyService);
+	ServicesMap.Add(UIService->GetClass(), UIService);
 }
 
 void ACargoGameMode::BootService(const int32 Index)

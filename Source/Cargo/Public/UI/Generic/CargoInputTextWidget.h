@@ -1,0 +1,60 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "CommonTextBlock.h"
+#include "FrogsmithActivatableWidget.h"
+#include "CargoInputTextWidget.generated.h"
+
+class UButton;
+
+UINTERFACE()
+class UCargoInputTextListener : public UInterface
+{
+	GENERATED_BODY()
+};
+
+class ICargoInputTextListener
+{
+	GENERATED_BODY()
+
+public:
+	virtual void OnCargoInputTextConfirmed(const FString& Text) = 0;
+};
+
+class UEditableTextBox;
+/**
+ * 
+ */
+UCLASS()
+class CARGO_API UCargoInputTextWidget : public UFrogsmithActivatableWidget
+{
+	GENERATED_BODY()
+	
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UCommonTextBlock> TitleText;
+	
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UEditableTextBox> InputTextBox;
+	
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> ConfirmButton;
+	
+	UPROPERTY(Category="Cargo")
+	TObjectPtr<USoundWave> TypingSound;
+	
+	UPROPERTY()
+	TObjectPtr<ICargoInputTextListener> Listener;
+	
+protected:
+	virtual void NativeConstruct() override;
+	
+	UFUNCTION()
+	void OnTextChanged(const FText& Text);
+	
+	UFUNCTION()
+	void OnConfirmButtonClicked();
+public:
+	void Init(const FString& Title, const FString& PreviewText, TObjectPtr<ICargoInputTextListener> InListener);	
+};

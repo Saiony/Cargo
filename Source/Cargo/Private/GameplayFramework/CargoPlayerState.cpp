@@ -28,6 +28,19 @@ void ACargoPlayerState::CalculateShipSpeedMultiplier()
 	}
 }
 
+FString ACargoPlayerState::GetPlayerInputText(FGameplayTag Tag) const
+{
+	const auto Text = PlayerDataTags.Find(Tag);
+	
+	if (!Text)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ACargoPlayerState::GetPlayerInputText: Invalid tag '%s'"), *Tag.ToString());
+		return FString();
+	}
+	
+	return *Text;
+}
+
 void ACargoPlayerState::AddWeight(float Weight)
 {
 	CurrentWeight += Weight;
@@ -67,4 +80,15 @@ void ACargoPlayerState::SetShipBalanceRotation(float NewBalance)
 void ACargoPlayerState::NotifyShipCollision(AActor* OtherActor, ShipCollisionType CollisionType)
 {
 	OnShipCollisionEvent.Broadcast(OtherActor, CollisionType);
+}
+
+void ACargoPlayerState::AddPlayerDataTag(FGameplayTag Tag, FString Text)
+{
+	if (!Tag.MatchesTag(Tag))
+	{
+		UE_LOG(LogTemp, Error, TEXT("ACargoPlayerState::AddPlayerInputText: Invalid tag '%s'"), *Tag.ToString());
+		return;
+	}
+	
+	PlayerDataTags.Add(Tag, Text);
 }

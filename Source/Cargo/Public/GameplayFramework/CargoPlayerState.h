@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "GameFramework/PlayerState.h"
 #include "CargoPlayerState.generated.h"
 
@@ -43,9 +44,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cargo")
 	float ShipSpeedMultiplier = 1;
 	
-	FString ShipName = "Giants Otarios";
-	
-	FString CaptainName = "Saiony";
+	TMap<FGameplayTag, FString> PlayerDataTags;
 	
 	void CalculateShipSpeedMultiplier();
 	
@@ -80,9 +79,11 @@ public:
 	
 	float GetShipBalanceRotation() const { return ShipBalanceRotation; }	
 	
-	FString GetShipName() const { return ShipName; }
+	FString GetShipName() const { return PlayerDataTags.FindRef(FGameplayTag::RequestGameplayTag(TEXT("PlayerData.ShipName"))); }
 	
-	FString GetCaptainName() const { return CaptainName; }
+	FString GetCaptainName() const { return PlayerDataTags.FindRef(FGameplayTag::RequestGameplayTag(TEXT("PlayerData.CaptainName"))); }
+	
+	FString GetPlayerInputText(FGameplayTag Tag) const;
 
 	// --- Setters ---
 
@@ -102,4 +103,6 @@ public:
 	void SetShipBalanceRotation(float NewBalance);
 
 	void NotifyShipCollision(AActor* OtherActor, ShipCollisionType CollisionType);
+	
+	void AddPlayerDataTag(FGameplayTag Tag, FString Text);
 };
