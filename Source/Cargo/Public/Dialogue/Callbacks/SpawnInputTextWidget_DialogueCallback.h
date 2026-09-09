@@ -14,14 +14,17 @@ class CARGO_API USpawnInputTextWidget_DialogueCallback : public UARCDialogueCall
 {
 	GENERATED_BODY()
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo")
+	UPROPERTY(EditAnywhere, Category="Cargo")
 	FString TitleText;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo")
+	UPROPERTY(EditAnywhere, Category="Cargo")
 	FString HintText;	
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (Categories = "PlayerData"), Category="Cargo")
+	UPROPERTY(EditAnywhere, meta = (Categories = "PlayerData"), Category="Cargo")
 	FGameplayTag PlayerDataTag;
+
+	UPROPERTY(Transient)
+	TWeakObjectPtr<UCargoInputTextWidget> InputTextWidget;
 	
 public:
 	virtual void ExecuteCallback(UDialogueData* DialogueDefinition, ACargoGameMode* GameMode, AActor* Instigator = nullptr) override;

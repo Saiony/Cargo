@@ -41,11 +41,11 @@ class CARGO_API UCargoInputTextWidget : public UFrogsmithActivatableWidget
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> ConfirmButton;
 	
-	UPROPERTY(Category="Cargo")
+	UPROPERTY(EditDefaultsOnly, Category="Cargo")
 	TObjectPtr<USoundWave> TypingSound;
 	
 	UPROPERTY()
-	TObjectPtr<ICargoInputTextListener> Listener;
+	TScriptInterface<ICargoInputTextListener> Listener;
 	
 protected:
 	virtual void NativeConstruct() override;
@@ -56,5 +56,7 @@ protected:
 	UFUNCTION()
 	void OnConfirmButtonClicked();
 public:
-	void Init(const FString& Title, const FString& PreviewText, TObjectPtr<ICargoInputTextListener> InListener);	
+	void Init(const FString& Title, const FString& PreviewText, TScriptInterface<ICargoInputTextListener> InListener);
+	
+	void Hide();
 };

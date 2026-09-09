@@ -22,7 +22,7 @@ void UUIService::Boot(FOnServiceBooted OnBootFinished)
 	OnBootFinished.Execute();
 }
 
-UUserWidget* UUIService::ShowWidget(const TSubclassOf<UUserWidget> WidgetClass) const
+UFrogsmithActivatableWidget* UUIService::ShowWidget(const TSubclassOf<UFrogsmithActivatableWidget> WidgetClass) const
 {
 	if (WidgetClass == nullptr)
 	{
@@ -38,7 +38,7 @@ UUserWidget* UUIService::ShowWidget(const TSubclassOf<UUserWidget> WidgetClass) 
 		return nullptr;
 	}
 	
-	const auto Widget = Layout->PushWidgetToLayerStack<UUserWidget>(TAG_UI_Layer_Menu, WidgetClass);
+	const auto Widget = Layout->PushWidgetToLayerStack<UFrogsmithActivatableWidget>(TAG_UI_Layer_Menu, WidgetClass);
 	if (!Widget)
 	{
 		UE_LOG(LogTemp, Error, TEXT("UI Service: Failed to push widget to layer stack"));
@@ -50,7 +50,7 @@ UUserWidget* UUIService::ShowWidget(const TSubclassOf<UUserWidget> WidgetClass) 
 
 UCargoInputTextWidget* UUIService::ShowInputTextWidget() const
 {
-	const auto InputTextWidgetClass = GetDefault<UCargoSettings>()->InputTextWidgetClass.Get();
+	const auto InputTextWidgetClass = GetDefault<UCargoSettings>()->InputTextWidgetClass.LoadSynchronous();
 	const auto InputTextWidget = ShowWidget(InputTextWidgetClass);
 	
 	return Cast<UCargoInputTextWidget>(InputTextWidget);

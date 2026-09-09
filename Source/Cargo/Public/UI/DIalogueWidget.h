@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -14,9 +12,7 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnDialoguefinished, UDialogueData*);
 
 class UCommonTextBlock;
 class UImage;
-/**
- * 
- */
+
 UCLASS()
 class CARGO_API UDIalogueWidget : public UFrogsmithActivatableWidget
 {
@@ -49,6 +45,7 @@ private:
 	void DisplayChoices();
 	void OnChoiceSelected(int buttonIndex);
 	void Hide();
+	void FinishHide();
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Arcade", meta=(AllowPrivateAccess))

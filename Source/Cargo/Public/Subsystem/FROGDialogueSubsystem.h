@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -20,9 +18,6 @@ struct FPendingDialogue
 	TWeakObjectPtr<AActor> Instigator;
 };
 
-/**
- * 
- */
 UCLASS()
 class CARGO_API UFROGDialogueSubsystem : public UGameInstanceSubsystem
 {
@@ -30,57 +25,71 @@ class CARGO_API UFROGDialogueSubsystem : public UGameInstanceSubsystem
 
 public:
 	UFROGDialogueSubsystem();
-	
-	virtual void Initialize(FSubsystemCollectionBase& Collection) override;	
-	
+
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+
 	void PlayDialogue(UDialogueData* DialogueData, AActor* Instigator);
 
 	UFUNCTION(BlueprintCallable, Category="Arcade")
 	void PlayDialogue(FGameplayTag DialogueID, AActor* Instigator = nullptr);
 
-	void NotifyDialogueStarted(UDialogueData* DialogueData, AActor* Instigator = nullptr);
-	
+	void SetNextDialogue(TSoftObjectPtr<UDialogueData> DialogueData);
+
 protected:
-	//void OnReceivedStartDialogueMessage(FGameplayTag GameplayTag, const FARCGameplayEvent_DialogueStartPayload& Payload);
 	void PlayNextQueuedDialogue();
 	void OnDialogueFinished(UDialogueData* DialogueData);
-	void HandlePreCallbacks(UDialogueData* Definition);
-	void HandlePostCallbacks(UDialogueData* Definition);
-	
+	void StartDialogueWidget();
+	void FinishDialogue();
+	void ExecuteCallbacks(const TArray<UARCDialogueCallbackBase*>& Callbacks, FSimpleDelegate Completion);
+	void ExecuteNextCallback();
+	void PushDialogueWidget(UDialogueData* DialogueData);
+
 private:
-	/** Discovers all DIALOGUE_DATA primary assets via Asset Manager and begins async load. */
+
 	void LoadDialogueDefinitions();
 
-	/** Called when all dialogue definitions have finished loading. Builds the tag→definition map. */
+
 	void OnDialoguesLoaded();
 
-	/** Primary asset IDs discovered from the Asset Manager scan. */
+
 	UPROPERTY(Transient)
 	TArray<FPrimaryAssetId> CachedDialogueIds;
 
-	/** Runtime registry built after assets are loaded. Maps DialogueTag → loaded definition. */
+
 	UPROPERTY(Transient)
 	TMap<FGameplayTag, TObjectPtr<UDialogueData>> DialogueRegistry;
 
-	/** Soft class path to the dialogue widget blueprint – set in constructor. */
+
 	UPROPERTY()
 	TSoftClassPtr<UDIalogueWidget> DialogueWidgetClass;
 
 	UPROPERTY()
 	TObjectPtr<UDIalogueWidget> DialogueWidget;
 
+	UPROPERTY(Transient)
+	TObjectPtr<UDialogueData> CurrentDialogue;
+
+	UPROPERTY(Transient)
+	TSoftObjectPtr<UDialogueData> NextDialogue;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UARCDialogueCallbackBase>> ActiveCallbacks;
+
+	int32 CallbackIndex = 0;
+	FSimpleDelegate OnCallbacksCompleted;
+
 	TSharedPtr<struct FStreamableHandle> DialogueLoadHandle;
 
-	/** True once all dialogue definitions have been loaded and the registry is populated. */
+
 	bool bDialoguesReady = false;
 
-	/** True while a dialogue widget is on screen. Prevents overlapping pushes. */
+
 	bool bIsPlayingDialogue = false;
 
 	UPROPERTY(Transient)
 	TWeakObjectPtr<AActor> CurrentInstigator;
 
-	/** Queued dialogue waiting to be played after the current one finishes. */
+
 	UPROPERTY()
 	TArray<FPendingDialogue> PendingDialogueQueue;
 };

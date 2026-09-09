@@ -1,6 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Dialogue/Callbacks/AddAvailableQuestDialogueCallback.h"
 
 void UAddAvailableQuestDialogueCallback::ExecuteCallback(UDialogueData* DialogueDefinition, ACargoGameMode* GameMode, AActor* Instigator)
@@ -10,4 +7,5 @@ void UAddAvailableQuestDialogueCallback::ExecuteCallback(UDialogueData* Dialogue
 	GameMode->AddAvailableQuest(QuestData);	
 	
 	UE_LOG(LogTemp, Log, TEXT("Giving quest %s to player"), *QuestData->GetName());
+	CompleteCallback();
 }

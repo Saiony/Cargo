@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "FORGServiceBase.h"
-#include "UI/Generic/CargoInputText.h"
 #include "UI/Generic/CargoInputTextWidget.h"
 #include "UIService.generated.h"
 
@@ -19,7 +18,7 @@ public:
 	
 	virtual void Boot(FOnServiceBooted OnBootFinished) override;
 	
-	UUserWidget* ShowWidget(TSubclassOf<UUserWidget> WidgetClass) const;
+	UFrogsmithActivatableWidget* ShowWidget(TSubclassOf<UFrogsmithActivatableWidget> WidgetClass) const;
 	
 	UCargoInputTextWidget* ShowInputTextWidget() const;
 };

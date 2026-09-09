@@ -1,6 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "UI/DIalogueWidget.h"
 
 #include "CargoGameMode.h"
@@ -61,7 +58,7 @@ void UDIalogueWidget::OnAnimationFinished_Implementation(const UWidgetAnimation*
 	if(Animation == HideAnimation)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("HideAnimation finished, popping widget"));
-		UCommonUIExtensions::PopContentFromLayer(this);
+		FinishHide();
 	}
 }
 
@@ -102,18 +99,12 @@ void UDIalogueWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 		bIsTyping = false;
 		return;
 	}
-
-	// só atualiza texto/som se algum caractere novo foi revelado neste frame
 	if (CharsToShow > LastCharsShown)
 	{
 		TextDialogue->SetText(FText::FromString(FullStr.Left(CharsToShow)));
-
-		// percorre só os caracteres novos revelados desde o último frame
 		for (int32 i = LastCharsShown; i < CharsToShow; ++i)
 		{
 			const TCHAR Ch = FullStr[i];
-
-			// pula espaços e toca o som só a cada CharsPerSound caracteres
 			const bool bShouldPlaySound = !FChar::IsWhitespace(Ch) && (i % FMath::Max(1, CharsPerSound) == 0);
 
 			if (bShouldPlaySound && DialogueAudio)
@@ -204,8 +195,6 @@ void UDIalogueWidget::UpdateVisualsForLine(const FARCDialogueLine& Line)
 
 void UDIalogueWidget::OnDialogueFinished()
 {
-	OnDialogueFinishedDelegate.Broadcast(CurrentDialogueData);
-	
 	if (CurrentDialogueData->Choices.IsEmpty())
 	{		
 		Hide();
@@ -232,17 +221,10 @@ void UDIalogueWidget::OnChoiceSelected(int buttonIndex)
 {
 	OptionsVerticalBox->ClearChildren();
 	
-	auto SelectedChoice = CurrentDialogueData->Choices[buttonIndex];
-	
-	if (!SelectedChoice.DialogueData.IsNull())
-	{
-		UE_LOG(LogTemp, Log, TEXT("New Dialogue started"));
-		InitializeDialogue(SelectedChoice.DialogueData.Get());
-		
-		ACargoGameMode::Get(this)->AddTag(SelectedChoice.ChoiceTag);
-		return;
-	}
-	
+	const auto& SelectedChoice = CurrentDialogueData->Choices[buttonIndex];
+	ACargoGameMode::Get(this)->AddTag(SelectedChoice.ChoiceTag);
+	GetGameInstance()->GetSubsystem<UFROGDialogueSubsystem>()->SetNextDialogue(SelectedChoice.DialogueData);
+
 	Hide();
 }
 
@@ -257,17 +239,6 @@ void UDIalogueWidget::InitializeDialogue(UDialogueData* InDialogueDefinition)
 	CurrentDialogueData = InDialogueDefinition;
 	UE_LOG(LogTemp, Log, TEXT("InitializeDialogue called with definition: %s"), InDialogueDefinition ? *InDialogueDefinition->GetName() : TEXT("nullptr"));
 
-	if (const UWorld* World = GetWorld())
-	{
-		if (UGameInstance* GI = World->GetGameInstance())
-		{
-			if (UFROGDialogueSubsystem* DialogueSubsystem = GI->GetSubsystem<UFROGDialogueSubsystem>())
-			{
-				DialogueSubsystem->NotifyDialogueStarted(InDialogueDefinition, CurrentInstigator.Get());
-			}
-		}
-	}
-	
 	if(ShowAnimation)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("ShowAnimation exists, playing it. Animation pointer: %p, Duration: %f"), 
@@ -296,6 +267,11 @@ void UDIalogueWidget::InitializeDialogue(UDialogueData* InDialogueDefinition)
 
 void UDIalogueWidget::OnInputActionContinue()
 {
+	if (!CurrentDialogueData || OptionsVerticalBox->GetChildrenCount() > 0 || CurrentLineIndex >= CurrentDialogueData->DialogueLines.Num())
+	{
+		return;
+	}
+
 	if(bIsTyping)
 	{
 		TextDialogue->SetText(FullLineText);
@@ -314,5 +290,14 @@ void UDIalogueWidget::Hide()
 		return;
 	}
 
-	UPrimaryGameLayout::GetPrimaryGameLayoutForPrimaryPlayer(this)->FindAndRemoveWidgetFromLayer(this);
+	FinishHide();
+}
+
+void UDIalogueWidget::FinishHide()
+{
+	const auto Definition = CurrentDialogueData;
+	const auto Completion = OnDialogueFinishedDelegate;
+	OnDialogueFinishedDelegate.Clear();
+	UCommonUIExtensions::PopContentFromLayer(this);
+	Completion.Broadcast(Definition);
 }

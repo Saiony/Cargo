@@ -117,7 +117,7 @@ public:
 	{
 		static_assert(TIsDerivedFrom<T, UFORGServiceBase>::IsDerived, "T must derive from UFORGServiceBase");
 
-		const auto Service = Services.Find(T::StaticClass());
+		auto Service = ServicesMap.Find(T::StaticClass());
 		if (!Service)
 			return nullptr;
 			
