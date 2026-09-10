@@ -8,7 +8,10 @@
 #include "Cargo.h"
 #include "BuoyancyComponent.h"
 #include "Components/AudioComponent.h"
+#include "Components/DecalComponent.h"
 #include "Components/TimelineComponent.h"
+#include "Engine/Canvas.h"
+#include "Engine/CanvasRenderTarget2D.h"
 #include "GameFramework/FloatingPawnMovement.h"
 #include "GameplayFramework/CargoPlayerState.h"
 #include "Grid/Placeable.h"
@@ -40,6 +43,9 @@ ACargoCharacter::ACargoCharacter()
 	MovementAudioComp = CreateDefaultSubobject<UAudioComponent>(TEXT("MovementAudioComp"));	
 	
 	RotateTimelineComp = CreateDefaultSubobject<UTimelineComponent>(TEXT("RotateTimelineComp"));
+	
+	ShipNameDecalComp = CreateDefaultSubobject<UDecalComponent>(TEXT("ShipNameDecalComp"));
+	ShipNameDecalComp->SetupAttachment(MeshComponent);
 		
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationYaw = false;
@@ -260,6 +266,10 @@ void ACargoCharacter::BeginPlay()
 	//bind events
 	GetController<ACargoPlayerController>()->OnEditModeChanged.AddDynamic(this, &ACargoCharacter::OnEditModeChanged);
 	OnEditModeChanged(GetController<ACargoPlayerController>()->bEditMode);
+	
+	CargoPlayerState->OnShipNameChanged.AddDynamic(this, &ThisClass::OnShipNameChanged);
+	
+	InitializeShipName();
 }
 
 void ACargoCharacter::BalanceShip()
@@ -391,6 +401,48 @@ void ACargoCharacter::OnEditModeChanged(bool bEditMode)
 	else
 		GridComp->HideIndicators();	
 }
+
+void ACargoCharacter::InitializeShipName()
+{
+	ShipNameRenderTarget = UCanvasRenderTarget2D::CreateCanvasRenderTarget2D(this, UCanvasRenderTarget2D::StaticClass(), 2048, 512);
+
+	ShipNameRenderTarget->ClearColor = FLinearColor::Transparent;
+
+	ShipNameRenderTarget->OnCanvasRenderTargetUpdate.AddDynamic(this, &ThisClass::DrawShipName);
+
+	ShipNameMaterial = ShipNameDecalComp->CreateDynamicMaterialInstance();
+
+	ShipNameMaterial->SetTextureParameterValue(TEXT("ShipNameTexture"), ShipNameRenderTarget);
+
+	ShipNameRenderTarget->UpdateResource();
+}
+
+void ACargoCharacter::OnShipNameChanged(FString NewShipName)
+{
+	ShipNameRenderTarget->UpdateResource();
+}
+
+void ACargoCharacter::DrawShipName(UCanvas* Canvas, int Width, int Height)
+{
+	const auto ShipName = CargoPlayerState->GetShipName();
+	
+	Canvas->K2_DrawText
+	(
+		ShipNameFont,
+		ShipName,
+		FVector2D(Width * 0.5f, Height * 0.5f),
+		FVector2D(1.0f, 1.0f),
+		FLinearColor::White,
+		1.f,
+		FLinearColor::Black,
+		FVector2D::ZeroVector,
+		true,
+		true,
+		false,
+		FLinearColor::Black
+	);
+}
+
 
 void ACargoCharacter::UpdateTimelineComp(float Output)
 {

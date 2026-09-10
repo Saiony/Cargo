@@ -90,5 +90,8 @@ void ACargoPlayerState::AddPlayerDataTag(FGameplayTag Tag, FString Text)
 		return;
 	}
 	
+	if (Tag.MatchesTag(FGameplayTag::RequestGameplayTag(TEXT("PlayerData.ShipName"), false)))
+		OnShipNameChanged.Broadcast(Text);
+	
 	PlayerDataTags.Add(Tag, Text);
 }

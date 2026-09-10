@@ -10,6 +10,7 @@
 #include "Logging/LogMacros.h"
 #include "CargoCharacter.generated.h"
 
+class UCanvasRenderTarget2D;
 class UGameplayCameraComponent;
 class UBuoyancyComponent;
 class USphereComponent;
@@ -52,6 +53,20 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UTimelineComponent> RotateTimelineComp;
+	
+	/*decal*/
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TObjectPtr<UDecalComponent> ShipNameDecalComp;
+	
+	UPROPERTY(Transient)
+	TObjectPtr<UCanvasRenderTarget2D> ShipNameRenderTarget;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> ShipNameMaterial;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Cargo")
+	TObjectPtr<UFont> ShipNameFont;	
+	/*decal*/
 	
 	UPROPERTY(EditAnywhere, Category="Cargo|Curves")
 	UCurveFloat* Curve_RotateShipWeight;
@@ -187,6 +202,11 @@ protected:
 
 	UFUNCTION()
 	void OnEditModeChanged(bool bEditMode);
+
+	UFUNCTION()
+	void DrawShipName(UCanvas* Canvas, int Width, int Height);
+	
+	void InitializeShipName();
 public:
 	/** Handles move inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category="Input")
@@ -201,6 +221,9 @@ public:
 	UFUNCTION()
 	void OnShipBalanceChanged(float NewBalance);
 
+	UFUNCTION()
+	void OnShipNameChanged(FString NewShipName);
+	
 	virtual void BeginPlay() override;
 	
 	virtual void Tick(float DeltaSeconds) override;

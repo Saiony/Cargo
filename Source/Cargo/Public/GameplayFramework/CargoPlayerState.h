@@ -10,6 +10,7 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnWeightChanged, float, NewCurrentWeight, float, MaxWeight);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBaseSpeedChanged, float, NewBaseSpeed);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBalanceChanged, float, NewBalance);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnShipNameChanged, FString, NewShipName);
 
 enum class ShipCollisionType
 {
@@ -61,6 +62,8 @@ public:
 	FOnBalanceChanged OnBalanceChanged;
 
 	FOnShipCollision OnShipCollisionEvent;
+	
+	FOnShipNameChanged OnShipNameChanged;
 	
 	// --- Getters ---
 
