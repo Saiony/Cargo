@@ -12,6 +12,12 @@ void UCargoInputTextWidget::NativeConstruct()
 	ConfirmButton->OnClicked.AddDynamic(this, &ThisClass::OnConfirmButtonClicked);
 }
 
+void UCargoInputTextWidget::NativeOnActivated()
+{
+	Super::NativeOnActivated();
+	InputTextBox->SetText(FText::GetEmpty());
+}
+
 void UCargoInputTextWidget::Init(const FString& Title, const FString& PreviewText, const TScriptInterface<ICargoInputTextListener> InListener)
 {
 	TitleText->SetText(FText::FromString(Title));

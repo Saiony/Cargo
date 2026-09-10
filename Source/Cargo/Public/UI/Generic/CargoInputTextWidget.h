@@ -50,6 +50,8 @@ class CARGO_API UCargoInputTextWidget : public UFrogsmithActivatableWidget
 protected:
 	virtual void NativeConstruct() override;
 	
+	virtual void NativeOnActivated() override;
+	
 	UFUNCTION()
 	void OnTextChanged(const FText& Text);
 	
