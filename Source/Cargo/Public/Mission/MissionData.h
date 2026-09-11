@@ -8,6 +8,13 @@
 #include "../Quest/QuestData.h"
 #include "MissionData.generated.h"
 
+UENUM(BlueprintType)
+enum class EMissionDifficulty : uint8
+{
+	Easy,
+	Medium,
+	Hard
+};
 
 struct FCargoRequirement;
 /**
@@ -22,6 +29,9 @@ class CARGO_API UMissionData : public UPrimaryDataAsset
 	FGuid Id;
 	
 public:		
+	UPROPERTY(EditDefaultsOnly, meta = (Categories = "Location", ToolTip = "Origin used to calculate the suggested reward."))
+	FGameplayTag OriginTag;
+
 	UPROPERTY(EditDefaultsOnly, meta = (Categories = "Location"))
 	FGameplayTag DestinationTag;
 	
@@ -33,6 +43,12 @@ public:
 	
 	UPROPERTY(EditDefaultsOnly)
 	FReward Reward;
+
+	UPROPERTY(EditDefaultsOnly)
+	EMissionDifficulty Difficulty = EMissionDifficulty::Easy;
+
+	UFUNCTION(CallInEditor, meta = (DisplayName = "CalculateSuggestion", ToolTip = "Replace Reward Money with the calculated suggestion."))
+	void CalculateSuggestion();
 	
 	UMissionData();
 	

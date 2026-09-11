@@ -28,6 +28,19 @@ class CARGO_API UCargoSettings : public UDeveloperSettings
 	TSoftObjectPtr<UMissionsDatabase> MissionsDatabase;	
 	
 public:
+	UPROPERTY(EditAnywhere, Config, Category = "Mission", meta = (RequiredAssetDataTags = "RowStructure=/Script/Cargo.IslandDistanceRow"))
+	TSoftObjectPtr<UDataTable> IslandDistanceTable;
+
+	UPROPERTY(EditAnywhere, Config, Category = "Mission", meta = (ClampMin = "0"))
+	float MissionRewardMultiplier = 1.0f;
+
+	UPROPERTY(EditAnywhere, Config, Category = "Mission", meta = (ClampMin = "0"))
+	TMap<EMissionDifficulty, float> MissionDifficultyMultipliers = {
+		{EMissionDifficulty::Easy, 1.0f},
+		{EMissionDifficulty::Medium, 1.5f},
+		{EMissionDifficulty::Hard, 2.0f}
+	};
+
 	UPROPERTY(EditAnywhere, Config, Category = "Data Assets", meta = (Categories = "Cargo"))
 	TMap<FGameplayTag, TSoftObjectPtr<UContainerDA>> ContainersMap;
 	

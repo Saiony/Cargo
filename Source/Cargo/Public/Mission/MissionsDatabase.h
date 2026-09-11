@@ -28,5 +28,8 @@ class CARGO_API UMissionsDatabase : public UDataAsset
 	TMap<FGameplayTag, FMissions> Database;
 	
 public:
+	UFUNCTION(CallInEditor, Category = "Missions", meta = (DisplayName = "Apply Locations To Mission Origins", ToolTip = "Copy each database location to the OriginTag of all missions in that group."))
+	void ApplyLocationsToMissionOrigins();
+
 	FMissions* GetMissionsForLocation(FGameplayTag LocationTag);
 };
