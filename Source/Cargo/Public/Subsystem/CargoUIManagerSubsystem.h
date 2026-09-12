@@ -7,8 +7,7 @@
 #include "CargoUIManagerSubsystem.generated.h"
 
 class UUserWidget;
-class UMissionsService;
-class UMissionStatus;
+class UDeliveryMissionStatus;
 
 /**
  * 
@@ -21,15 +20,8 @@ class CARGO_API UCargoUIManagerSubsystem : public UGameUIManagerSubsystem
 	UPROPERTY()
 	UUserWidget* MapWidgetInstance;
 
-	TWeakObjectPtr<UMissionsService> BoundMissionsService;
-
-	void HandleMissionCompleted(TObjectPtr<UMissionStatus> MissionStatus);
-	
 public:
-	virtual void Deinitialize() override;
-
-	/** Connects mission-domain events to their UI presentation. */
-	void BindToMissionsService(UMissionsService* MissionsService);
+	void ShowMissionResult(UDeliveryMissionStatus* MissionStatus, FSimpleDelegate OnFinished);
 
 	void ToggleMap();
 	

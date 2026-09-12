@@ -9,7 +9,7 @@
 #include "UI/Quest/CargoRequirementEntryWidget.h"
 
 
-void UMissionTrackerEntryWidget::Init(TObjectPtr<UMissionData> MissionData)
+void UMissionTrackerEntryWidget::Init(TObjectPtr<UDeliveryMissionData> MissionData)
 {
 	DestinationText->SetText(FText::FromName(MissionData->DestinationTag.GetTagName()));
 	

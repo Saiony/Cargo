@@ -6,6 +6,7 @@
 #include "CargoGameMode.h"
 #include "PrimaryGameLayout.h"
 #include "Island/CargoIsland.h"
+#include "Mission/TravelMissionStatus.h"
 #include "Quest/QuestStatus.h"
 #include "Subsystem/FROGDialogueSubsystem.h"
 #include "TagDeclaration/UITypes.h"
@@ -32,34 +33,41 @@ void UIslandWidget::OnDialogueButtonClicked()
 {	
 	auto DialogueSubsystem = GetGameInstance()->GetSubsystem<UFROGDialogueSubsystem>();
 	
-	//if we have an active quest to deliver things here, play the quest dialogue instead
-	if (auto ActiveQuest = ACargoGameMode::Get(this)->GetQuestStatusByDestination(Island->GetLocationTag()))
+	// An active quest at this destination takes priority over the island's other dialogues.
+	if (auto ActiveQuest = ACargoGameMode::Get(this)->QuestService->GetQuestStatusByDestination(Island->GetLocationTag()))
 	{
-		UE_LOG(LogTemp, Log, TEXT("Play start delivery quest dialogue"));		
-		DialogueSubsystem->PlayDialogue(ActiveQuest->StartDeliveryDialogue.LoadSynchronous()->DialogueTag, Island);	
-		Island->GetPort()->StartQuestDelivery(ActiveQuest->QuestTag);
-		
-		if (ActiveQuest->DeliveredQuantities.Num() == 0)
+		//travel mission
+		if (Cast<UTravelMissionStatus>(ActiveQuest->MissionStatus))
 		{
-			ACargoGameMode::Get(this)->CheckIfQuestEnded(ActiveQuest);
+			ACargoGameMode::Get(this)->QuestService->CompleteTravelQuest(ActiveQuest->QuestTag, Island);
+			return;
 		}
+	
+		//delivery mission
+		if (UDialogueData* Dialogue = ActiveQuest->StartDeliveryDialogue.LoadSynchronous())
+			DialogueSubsystem->PlayDialogue(Dialogue, Island);
 		
+		if (auto* Delivery = Cast<UDeliveryMissionStatus>(ActiveQuest->MissionStatus))
+			Island->GetPort()->StartMissionDelivery(Delivery->GetId());
+
 		return;
 	}
 	
 	//if we have an active quest that started here, play in progress dialogue instead
-	if (auto ActiveQuest = ACargoGameMode::Get(this)->GetQuestStatusByOrigin(Island->GetLocationTag()))
+	if (auto ActiveQuest = ACargoGameMode::Get(this)->QuestService->GetQuestStatusByOrigin(Island->GetLocationTag()))
 	{
 		UE_LOG(LogTemp, Log, TEXT("Play in progress quest dialogue"));		
-		DialogueSubsystem->PlayDialogue(ActiveQuest->InProgressDialogue.LoadSynchronous()->DialogueTag, Island);	
+		if (UDialogueData* Dialogue = ActiveQuest->InProgressDialogue.LoadSynchronous())
+			DialogueSubsystem->PlayDialogue(Dialogue, Island);	
 		return;
 	}
 	
 	//if we have an available quest for this island, play start dialogue and activate it
-	if (auto AvailableQuest = ACargoGameMode::Get(this)->GetAvailableQuestByStartLocation(Island->GetLocationTag()))
+	if (auto AvailableQuest = ACargoGameMode::Get(this)->QuestService->GetAvailableQuestByStartLocation(Island->GetLocationTag()))
 	{
 		UE_LOG(LogTemp, Log, TEXT("Play start quest dialogue"));		
-		DialogueSubsystem->PlayDialogue(AvailableQuest->StartDialogue.LoadSynchronous()->DialogueTag, Island);	
+		if (UDialogueData* Dialogue = AvailableQuest->StartDialogue.LoadSynchronous())
+			DialogueSubsystem->PlayDialogue(Dialogue, Island);	
 		return;
 	}
 	

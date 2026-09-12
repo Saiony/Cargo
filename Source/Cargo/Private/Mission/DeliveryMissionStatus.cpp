@@ -1,15 +1,15 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Mission/MissionStatus.h"
+#include "Mission/DeliveryMissionStatus.h"
 
 #include "Mission/MissionReward.h"
 #include "Quest/QuestData.h"
 #include "Quest/QuestStatus.h"
 
-void UMissionStatus::Initialize(TObjectPtr<UMissionData> MissionData, FGameplayTag InStartIslandTag)
+void UDeliveryMissionStatus::Initialize(TObjectPtr<UDeliveryMissionData> MissionData, FGameplayTag InStartIslandTag, FGuid InstanceId)
 {
-	Id = MissionData->GetId();
+	Id = InstanceId.IsValid() ? InstanceId : MissionData->GetId();
 	OriginalMissionData = MissionData;
 	StartIslandTag = InStartIslandTag;
 	DestinationTag = MissionData->DestinationTag;	
@@ -24,7 +24,7 @@ void UMissionStatus::Initialize(TObjectPtr<UMissionData> MissionData, FGameplayT
 	}
 }
 
-void UMissionStatus::AddCargo(FGameplayTag CargoType, int32 Quantity)
+void UDeliveryMissionStatus::AddCargo(FGameplayTag CargoType, int32 Quantity)
 {
 	if (!DeliveredQuantities.Contains(CargoType))
 	{
@@ -35,7 +35,7 @@ void UMissionStatus::AddCargo(FGameplayTag CargoType, int32 Quantity)
 	DeliveredQuantities[CargoType].DeliveredQuantity += Quantity;
 }
 
-void UMissionStatus::RemoveCargo(FGameplayTag CargoType, int32 Quantity)
+void UDeliveryMissionStatus::RemoveCargo(FGameplayTag CargoType, int32 Quantity)
 {
 	if (!DeliveredQuantities.Contains(CargoType))
 	{
@@ -46,17 +46,17 @@ void UMissionStatus::RemoveCargo(FGameplayTag CargoType, int32 Quantity)
 	DeliveredQuantities[CargoType].DeliveredQuantity -= Quantity;
 }
 
-void UMissionStatus::AddCargoDelivery(FGameplayTag CargoType)
+void UDeliveryMissionStatus::AddCargoDelivery(FGameplayTag CargoType)
 {
 	AddCargo(CargoType, 1);
 }
 
-void UMissionStatus::RemoveCargoDelivery(FGameplayTag CargoType)
+void UDeliveryMissionStatus::RemoveCargoDelivery(FGameplayTag CargoType)
 {
 	RemoveCargo(CargoType, 1);
 }
 
-int32 UMissionStatus::GetNumDamagedContainers() const
+int32 UDeliveryMissionStatus::GetNumDamagedContainers() const
 {
 	int32 NumDamaged = 0;
 	for (auto Delivered : DeliveredQuantities)
@@ -68,18 +68,18 @@ int32 UMissionStatus::GetNumDamagedContainers() const
 	return NumDamaged;
 }
 
-FMissionReward UMissionStatus::CompleteMission()
+FMissionReward UDeliveryMissionStatus::CompleteMission()
 {
 	IsCompleted = true;
 	return FMissionReward(this);
 }
 
-void UMissionStatus::AddCollision_Light()
+void UDeliveryMissionStatus::AddCollision_Light()
 {
 	NumShipCollisions_Light++;
 }
 
-void UMissionStatus::AddCollision_Hard()
+void UDeliveryMissionStatus::AddCollision_Hard()
 {
 	NumShipCollisions_Hard++;
 }

@@ -13,9 +13,9 @@ void UQuestsTrackerWidget::NativeConstruct()
 	Super::NativeConstruct();	
 	
 	ACargoGameMode* GM = ACargoGameMode::Get(this);
-	GM->ActiveQuestsDelegate.AddUObject(this, &ThisClass::OnActiveQuestsChanged);
-	GM->OnQuestProgressUpdatedDelegate.AddUObject(this, &ThisClass::OnQuestProgressUpdated);
-	GM->QuestCompletedDelegate.AddUObject(this, &ThisClass::OnQuestCompleted);
+	GM->QuestService->ActiveQuestsDelegate.AddUObject(this, &ThisClass::OnActiveQuestsChanged);
+	GM->QuestService->OnQuestProgressUpdatedDelegate.AddUObject(this, &ThisClass::OnQuestProgressUpdated);
+	GM->QuestService->QuestCompletedDelegate.AddUObject(this, &ThisClass::OnQuestCompleted);
 }
 
 void UQuestsTrackerWidget::OnActiveQuestsChanged(const FActiveQuestsMap& ActiveQuests)

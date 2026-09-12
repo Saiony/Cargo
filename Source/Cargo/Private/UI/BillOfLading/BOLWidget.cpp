@@ -5,11 +5,14 @@
 
 #include "CommonTextBlock.h"
 #include "Components/VerticalBox.h"
-#include "Mission/MissionStatus.h"
+#include "Mission/DeliveryMissionStatus.h"
 #include "PrimaryGameLayout.h"
+#include "GameplayFramework/CargoPlayerState.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/SimpleWidget.h"
 #include "UI/Quest/CargoRequirementEntryWidget.h"
+
+class ACargoPlayerState;
 
 void UBOLWidget::NativeOnInitialized()
 {
@@ -24,11 +27,12 @@ void UBOLWidget::NativeOnActivated()
 {
 	Super::NativeOnActivated();	
 	
-	RequirementsContainer->ClearChildren(); //important because unreal reuses widgets
+	RequirementsContainer->ClearChildren(); // Unreal reuses widgets.
+	ConfirmButton->SetIsEnabled(true);
 }
 
 
-void UBOLWidget::Init(const TObjectPtr<UMissionStatus> MissionStatus)
+void UBOLWidget::Init(const TObjectPtr<UDeliveryMissionStatus> MissionStatus)
 {	
 	if (!IsValid(MissionStatus))
 	{
@@ -98,6 +102,13 @@ void UBOLWidget::Hide()
 
 void UBOLWidget::OnConfirmButtonClicked()
 {
+	ConfirmButton->SetIsEnabled(false);
+	if (!FinishAnimation)
+	{
+		OnFinishAnimationFinished();
+		return;
+	}
+	UnbindAllFromAnimationFinished(FinishAnimation);
 	FWidgetAnimationDynamicEvent FinishedEvent;
 	FinishedEvent.BindDynamic(this, &ThisClass::OnFinishAnimationFinished);
 	
@@ -107,7 +118,11 @@ void UBOLWidget::OnConfirmButtonClicked()
 
 void UBOLWidget::OnFinishAnimationFinished()
 {
+	GetWorld()->GetTimerManager().ClearTimer(StarsTimerHandle);
 	Hide();
+	
+	OnFinished.Broadcast();
+	OnFinished.Clear();
 }
 
 void UBOLWidget::ShowStars(int8 TotalStars)

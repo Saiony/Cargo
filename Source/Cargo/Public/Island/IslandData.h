@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "Engine/DataAsset.h"
-#include "Mission/MissionData.h"
+#include "Mission/DeliveryMissionData.h"
 #include "IslandData.generated.h"
 
 /**

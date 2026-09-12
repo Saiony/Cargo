@@ -3,6 +3,7 @@
 
 #include "UI/Quest/QuestEntryWidget.h"
 #include "Components/VerticalBox.h"
+#include "Mission/DeliveryMissionData.h"
 #include "UI/Quest/CargoRequirementEntryWidget.h"
 
 void UQuestEntryWidget::Init(FGameplayTag QuestTag, UQuestData* QuestData)
@@ -13,12 +14,17 @@ void UQuestEntryWidget::Init(FGameplayTag QuestTag, UQuestData* QuestData)
 	MyQuestTag = QuestTag;
 
 	QuestTitleText->SetText(QuestData->Title);
-	DestinationText->SetText(FText::FromName(QuestData->DestinationTag.GetTagName()));
+
 
 	RequirementsContainer->ClearChildren();
 	RequirementWidgets.Empty();
 
-	for (const FCargoRequirement& Requirement : QuestData->CargoRequirements)
+	const auto* Delivery = Cast<UDeliveryMissionData>(QuestData->MissionData);
+	DestinationText->SetText(Delivery ? FText::FromName(Delivery->DestinationTag.GetTagName()) : FText::GetEmpty());
+	if (!Delivery)
+		return;
+
+	for (const FCargoRequirement& Requirement : Delivery->CargoRequirements)
 	{
 		UCargoRequirementEntryWidget* ReqWidget = CreateWidget<UCargoRequirementEntryWidget>(this, RequirementWidgetClass);
 

@@ -7,7 +7,7 @@
 #include "Quest/QuestStatus.h"
 #include "MissionReward.generated.h"
 
-class UMissionStatus;
+class UDeliveryMissionStatus;
 
 USTRUCT(BlueprintType)
 struct FMissionReward
@@ -34,15 +34,15 @@ struct FMissionReward
 	
 	FMissionReward() = default;
 	
-	FMissionReward(TObjectPtr<UMissionStatus> MissionStatus);
+	FMissionReward(TObjectPtr<UDeliveryMissionStatus> MissionStatus);
 
-	FReward CalculateFinalReward(TObjectPtr<UMissionStatus> MissionStatus) const;
+	FReward CalculateFinalReward(TObjectPtr<UDeliveryMissionStatus> MissionStatus) const;
 	
-	int8 CalculateStars(TObjectPtr<UMissionStatus> MissionStatus, const FReward& Reward) const;
+	int8 CalculateStars(TObjectPtr<UDeliveryMissionStatus> MissionStatus, const FReward& Reward) const;
 	
-	int32 CalculateDamagedCargoDiscount(TObjectPtr<UMissionStatus> MissionStatus) const;
+	int32 CalculateDamagedCargoDiscount(TObjectPtr<UDeliveryMissionStatus> MissionStatus) const;
 	
-	int32 CalculateMissingCargoDiscount(TObjectPtr<UMissionStatus> MissionStatus) const;
+	int32 CalculateMissingCargoDiscount(TObjectPtr<UDeliveryMissionStatus> MissionStatus) const;
 
-	int32 CalculateRecklessNavigationDiscount(TObjectPtr<UMissionStatus> MissionStatus) const;
+	int32 CalculateRecklessNavigationDiscount(TObjectPtr<UDeliveryMissionStatus> MissionStatus) const;
 };

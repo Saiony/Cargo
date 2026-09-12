@@ -6,6 +6,7 @@
 #include "GameplayTagContainer.h"
 #include "Dialogue/DialogueData.h"
 #include "Engine/DataAsset.h"
+#include "Mission/BaseMissionData.h"
 #include "QuestData.generated.h"
 
 USTRUCT(BlueprintType)
@@ -42,45 +43,38 @@ class CARGO_API UQuestData : public UPrimaryDataAsset
 	GENERATED_BODY()
 	
 public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo", meta = (Categories = "Quest"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (Categories = "Quest"))
 	FGameplayTag QuestTag;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
 	FText Title;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo", meta = (Categories = "Location"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (Categories = "Location"))
 	FGameplayTag StartLocationTag;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo", meta = (Categories = "Location"))
-	FGameplayTag DestinationTag;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
-	bool IsDeliveryOnly;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
-	TArray<FCargoRequirement> CargoRequirements;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	/*dialogues*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSoftObjectPtr<UDialogueData> StartDialogue;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSoftObjectPtr<UDialogueData> StartDeliveryDialogue;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSoftObjectPtr<UDialogueData> EndDeliveryDialogue;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSoftObjectPtr<UDialogueData> InProgressDialogue;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	FDialogueWithCondition AlternativeEndDeliveryDialogue;
+	/*dialogues*/
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSoftObjectPtr<UQuestData> NextQuest; 
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
-	TSoftObjectPtr<UQuestData> PreviousQuest;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	FReward Reward;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UBaseMissionData> MissionData;
 };

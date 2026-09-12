@@ -4,7 +4,7 @@
 #include "Components/Button.h"
 #include "Components/EditableTextBox.h"
 
-void UCargoInputTextWidget::NativeConstruct()
+void UCargoInputTextWidget::NativeOnInitialized()
 {
 	Super::NativeConstruct();
 	

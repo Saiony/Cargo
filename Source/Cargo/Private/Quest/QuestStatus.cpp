@@ -3,6 +3,9 @@
 
 #include "Quest/QuestStatus.h"
 
+#include "MissionStatusFactory.h"
+#include "Mission/DeliveryMissionStatus.h"
+
 void UQuestStatus::Initialize(UQuestData* QuestData)
 {
 	if (!QuestData)
@@ -14,7 +17,6 @@ void UQuestStatus::Initialize(UQuestData* QuestData)
 	OriginalQuestData = QuestData;
 	QuestTag = QuestData->QuestTag;
 	Title = QuestData->Title;
-	DestinationTag = QuestData->DestinationTag;
 	StartDeliveryDialogue = QuestData->StartDeliveryDialogue;
 	EndDeliveryDialogue = QuestData->EndDeliveryDialogue;
 	InProgressDialogue = QuestData->InProgressDialogue;
@@ -24,9 +26,5 @@ void UQuestStatus::Initialize(UQuestData* QuestData)
 	NextQuest = QuestData->NextQuest;
 	StartIslandTag = QuestData->StartLocationTag;
 	
-	for (const auto Req : QuestData->CargoRequirements)
-	{
-		auto CargoStatus =  FCargoStatus(Req.CargoType, 0, Req.Quantity);
-		DeliveredQuantities.Add(Req.CargoType, CargoStatus);
-	}
+	MissionStatus = MissionStatusFactory::CreateMissionStatus(this, QuestData->MissionData);	
 }

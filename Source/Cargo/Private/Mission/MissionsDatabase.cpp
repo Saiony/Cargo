@@ -8,7 +8,7 @@ void UMissionsDatabase::ApplyLocationsToMissionOrigins()
 #if WITH_EDITOR
 	for (const auto& Entry : Database)
 	{
-		for (UMissionData* Mission : Entry.Value.Missions)
+		for (UDeliveryMissionData* Mission : Entry.Value.Missions)
 		{
 			if (!IsValid(Mission) || Mission->OriginTag == Entry.Key)
 			{

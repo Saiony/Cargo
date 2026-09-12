@@ -1,12 +1,12 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Mission/MissionData.h"
+#include "Mission/DeliveryMissionData.h"
 #include "DeveloperSettings/CargoSettings.h"
 #include "Island/IslandDistanceRow.h"
 #include "Misc/MessageDialog.h"
 
-void UMissionData::CalculateSuggestion()
+void UDeliveryMissionData::CalculateSuggestion()
 {
 #if WITH_EDITOR
 	// Load the distance table and the selected mission difficulty multiplier from CargoSettings.
@@ -71,12 +71,12 @@ void UMissionData::CalculateSuggestion()
 #endif
 }
 
-UMissionData::UMissionData()
+UDeliveryMissionData::UDeliveryMissionData()
 {
 	Id = FGuid::NewGuid();
 }
 
-void UMissionData::PostDuplicate(EDuplicateMode::Type DuplicateMode)
+void UDeliveryMissionData::PostDuplicate(EDuplicateMode::Type DuplicateMode)
 {
 	Super::PostDuplicate(DuplicateMode);
 	

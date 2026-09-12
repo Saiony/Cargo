@@ -55,13 +55,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Island")
 	TSoftClassPtr<UIslandWidget> IslandWidgetClass;
 	
-	void OnQuestAccepted(TObjectPtr<UQuestData> QuestData, AActor* QuestInstigator);	
 	
-	void OnQuestCompleted(TObjectPtr<UQuestStatus> QuestStatus);
+	void OnMissionAccepted(TObjectPtr<UDeliveryMissionStatus> MissionStatus, FGameplayTag InstigatorIslandTag);
 	
-	void OnMissionAccepted(TObjectPtr<UMissionStatus> MissionStatus, FGameplayTag InstigatorIslandTag);
-	
-	void OnMissionCompleted(TObjectPtr<UMissionStatus> MissionStatus);
+	void OnMissionCompleted(TObjectPtr<UDeliveryMissionStatus> MissionStatus);
 
 public:
 	// ICargoInteractable Interface

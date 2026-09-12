@@ -64,7 +64,6 @@ public:
 	void AddPlaceable(APlaceable* Placeable, FVector WorldPos, float Rotation);
 	void AddPlaceableIndex(APlaceable* Placeable, FIntVector Index, float Rotation);
 
-	void StartQuestDelivery(FGameplayTag QuestTag);
 	
 	void StartMissionDelivery(FGuid MissionId);
 
@@ -73,7 +72,6 @@ public:
 	void SpawnCargo(const TArray<FCargoRequirement>& Requirements);
 
 private:	
-	FGameplayTag CurrentQuestTag;
 	
 	FGuid CurrentMissionId;
 };

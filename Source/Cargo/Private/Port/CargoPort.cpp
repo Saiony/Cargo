@@ -107,10 +107,8 @@ void UCargoPortComponent::HandlePlaceableAddedToGrid(APlaceable* Placeable)
 		return;
 	}
 	
-	if (CurrentQuestTag.IsValid())
-		ACargoGameMode::Get(this)->RegisterCargoDelivery(CurrentQuestTag, Container->PlaceableTag);
-	else if (CurrentMissionId.IsValid())
-		ACargoGameMode::Get(this)->MissionsService->RegisterCargoDelivery(CurrentMissionId, Container->PlaceableTag);
+	if (CurrentMissionId.IsValid())
+		ACargoGameMode::Get(this)->QuestService->RegisterCargoDelivery(CurrentMissionId, Container->PlaceableTag);
 }
 
 void UCargoPortComponent::HandlePlaceableRemovedFromGrid(APlaceable* Placeable)
@@ -130,10 +128,8 @@ void UCargoPortComponent::HandlePlaceableRemovedFromGrid(APlaceable* Placeable)
 		return;
 	}
 	
-	if (CurrentQuestTag.IsValid())
-		ACargoGameMode::Get(this)->RemoveCargoDelivery(CurrentQuestTag, Container->PlaceableTag);
-	else if (CurrentMissionId.IsValid())
-		ACargoGameMode::Get(this)->MissionsService->RemoveCargoDelivery(CurrentMissionId, Container->PlaceableTag);
+	if (CurrentMissionId.IsValid())
+		ACargoGameMode::Get(this)->QuestService->RemoveCargoDelivery(CurrentMissionId, Container->PlaceableTag);
 }
 
 void UCargoPortComponent::SpawnSingleContainer(FGameplayTag CargoType)
@@ -188,18 +184,9 @@ void UCargoPortComponent::SpawnSingleContainer(FGameplayTag CargoType)
 	NewContainer->Destroy();
 }
 
-void UCargoPortComponent::StartQuestDelivery(FGameplayTag QuestTag)
-{
-	IsOpen = true;
-	CurrentMissionId = FGuid();
-	
-	CurrentQuestTag = QuestTag;	
-}
-				
 void UCargoPortComponent::StartMissionDelivery(const FGuid MissionId)
 {
 	IsOpen = true;
-	CurrentQuestTag = FGameplayTag::EmptyTag;
 	
 	CurrentMissionId = MissionId;
 }
@@ -217,25 +204,15 @@ void UCargoPortComponent::OnBellClicked()
 		return;
 	}
 
-	if (CurrentQuestTag.IsValid())
+	if (CurrentMissionId.IsValid() && CargoGameMode->QuestService)
 	{
-		if (UQuestStatus* QuestStatus = CargoGameMode->GetQuestStatus(CurrentQuestTag))
-		{
-			CargoGameMode->CheckIfQuestEnded(QuestStatus);
-		}
-		return;
-	}
-
-	if (CurrentMissionId.IsValid() && CargoGameMode->MissionsService)
-	{
-		CargoGameMode->MissionsService->CompleteMission(CurrentMissionId);
+		CargoGameMode->QuestService->CompleteMission(CurrentMissionId, GetOwner());
 	}
 }
 
 void UCargoPortComponent::Clear()
 {
 	IsOpen = false;
-	CurrentQuestTag = FGameplayTag();
 	CurrentMissionId.Invalidate();
 
 	ClearGrid();

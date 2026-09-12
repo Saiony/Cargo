@@ -48,7 +48,7 @@ class CARGO_API UCargoInputTextWidget : public UFrogsmithActivatableWidget
 	TScriptInterface<ICargoInputTextListener> Listener;
 	
 protected:
-	virtual void NativeConstruct() override;
+	virtual void NativeOnInitialized() override;
 	
 	virtual void NativeOnActivated() override;
 	

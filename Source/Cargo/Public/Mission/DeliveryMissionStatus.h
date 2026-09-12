@@ -3,11 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "BaseMissionStatus.h"
 #include "GameplayTagContainer.h"
-#include "MissionData.h"
+#include "DeliveryMissionData.h"
 #include "UObject/Object.h"
 #include "../Quest/QuestStatus.h"
-#include "MissionStatus.generated.h"
+#include "DeliveryMissionStatus.generated.h"
 
 struct FMissionReward;
 
@@ -15,7 +16,7 @@ struct FMissionReward;
  * 
  */
 UCLASS()
-class CARGO_API UMissionStatus : public UObject
+class CARGO_API UDeliveryMissionStatus : public UBaseMissionStatus
 {
 	GENERATED_BODY()
 	
@@ -32,7 +33,7 @@ class CARGO_API UMissionStatus : public UObject
 	FGameplayTag DestinationTag;
 	
 	UPROPERTY(VisibleAnywhere)
-	TObjectPtr<UMissionData> OriginalMissionData;	
+	TObjectPtr<UDeliveryMissionData> OriginalMissionData;	
 	
 	int32 NumShipCollisions_Light = -1;
 	
@@ -43,7 +44,7 @@ class CARGO_API UMissionStatus : public UObject
 	bool IsCompleted = false;
 
 public:
-	void Initialize(TObjectPtr<UMissionData> MissionData, FGameplayTag InStartIslandTag);
+	void Initialize(TObjectPtr<UDeliveryMissionData> MissionData, FGameplayTag InStartIslandTag, FGuid InstanceId = FGuid());
 	
 	void AddCargo(FGameplayTag CargoType, int32 Quantity);
 	
@@ -53,7 +54,7 @@ public:
 	
 	FGameplayTag GetDestinationTag() const { return DestinationTag; }
 	
-	TObjectPtr<UMissionData> GetOriginalMissionData() const { return OriginalMissionData; }
+	TObjectPtr<UDeliveryMissionData> GetOriginalMissionData() const { return OriginalMissionData; }
 	
 	FGuid GetId() const { return Id; }
 	

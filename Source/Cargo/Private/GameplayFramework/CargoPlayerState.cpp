@@ -8,7 +8,7 @@ void ACargoPlayerState::CalculateShipSpeedMultiplier()
 	const auto Percent = CurrentWeight / MaxWeight;
 	if (Percent >= 0.99f)
 	{
-		ShipSpeedMultiplier = 0.1f;
+		ShipSpeedMultiplier = 0.25f;
 	}
 	else if (Percent >= 0.75f)
 	{

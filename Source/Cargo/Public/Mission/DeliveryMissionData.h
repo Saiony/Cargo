@@ -3,10 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "BaseMissionData.h"
 #include "GameplayTagContainer.h"
 #include "Engine/DataAsset.h"
 #include "../Quest/QuestData.h"
-#include "MissionData.generated.h"
+#include "DeliveryMissionData.generated.h"
 
 UENUM(BlueprintType)
 enum class EMissionDifficulty : uint8
@@ -21,7 +22,7 @@ struct FCargoRequirement;
  * 
  */
 UCLASS()
-class CARGO_API UMissionData : public UPrimaryDataAsset
+class CARGO_API UDeliveryMissionData : public UBaseMissionData
 {
 	GENERATED_BODY()
 	
@@ -50,7 +51,7 @@ public:
 	UFUNCTION(CallInEditor, meta = (DisplayName = "CalculateSuggestion", ToolTip = "Replace Reward Money with the calculated suggestion."))
 	void CalculateSuggestion();
 	
-	UMissionData();
+	UDeliveryMissionData();
 	
 	FGuid GetId() const { return Id; }
 	

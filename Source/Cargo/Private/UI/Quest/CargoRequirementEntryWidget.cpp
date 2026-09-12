@@ -3,7 +3,7 @@
 
 #include "UI/Quest/CargoRequirementEntryWidget.h"
 #include "CommonTextBlock.h"
-#include "Mission/MissionStatus.h"
+#include "Mission/DeliveryMissionStatus.h"
 
 void UCargoRequirementEntryWidget::Init(FGameplayTag CargoType, int32 DeliveredQuantity, int32 RequiredQuantity)
 {

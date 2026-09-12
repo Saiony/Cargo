@@ -5,12 +5,11 @@
 #include "CoreMinimal.h"
 #include "FrogsmithActivatableWidget.h"
 #include "Components/Button.h"
-#include "GameplayFramework/CargoPlayerState.h"
 #include "Mission/MissionReward.h"
 #include "BOLWidget.generated.h"
 
 class USimpleWidget;
-class UMissionStatus;
+class UDeliveryMissionStatus;
 class UVerticalBox;
 class UCargoRequirementEntryWidget;
 class UCommonTextBlock;
@@ -108,7 +107,9 @@ protected:
 	UFUNCTION()
 	void OnFinishAnimationFinished();
 public:
-	void Init(TObjectPtr<UMissionStatus> MissionStatus);
+	FSimpleMulticastDelegate OnFinished;
+
+	void Init(TObjectPtr<UDeliveryMissionStatus> MissionStatus);
 
 	void Show();	
 	void Hide();

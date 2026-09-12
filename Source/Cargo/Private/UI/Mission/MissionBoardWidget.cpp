@@ -53,8 +53,8 @@ void UMissionBoardWidget::ShowAvailableMissions(FMissions* MissionsData)
 
 void UMissionBoardWidget::ShowActiveMissions()
 {
-	const auto MissionsService = ACargoGameMode::Get(this)->MissionsService;
-	auto ActiveMissions = MissionsService->GetActiveMissionsForDestination(InstigatorIsland->GetLocationTag());
+	const auto QuestService = ACargoGameMode::Get(this)->QuestService;
+	auto ActiveMissions = QuestService->GetActiveMissionsForDestination(InstigatorIsland->GetLocationTag());
 	
 	for (auto ActiveMission : ActiveMissions)
 	{
@@ -96,7 +96,7 @@ void UMissionBoardWidget::OnMissionEntryClicked(UMissionEntryWidget* MissionEntr
 void UMissionBoardWidget::OnAcceptMissionButtonClicked()
 {
 	const auto AcceptedMission = SelectedWidget->MissionData;
-	ACargoGameMode::Get(this)->MissionsService->AcceptMission(AcceptedMission, InstigatorIsland->GetLocationTag());
+	ACargoGameMode::Get(this)->QuestService->AcceptMission(AcceptedMission, InstigatorIsland->GetLocationTag());
 	
 	CloseWidget();
 }

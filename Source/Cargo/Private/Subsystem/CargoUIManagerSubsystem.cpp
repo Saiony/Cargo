@@ -5,66 +5,22 @@
 
 #include "Blueprint/UserWidget.h"
 #include "DeveloperSettings/CargoSettings.h"
+#include "Mission/DeliveryMissionStatus.h"
 #include "PrimaryGameLayout.h"
-#include "Services/MissionsService.h"
 #include "TagDeclaration/UITypes.h"
 #include "UI/BillOfLading/BOLWidget.h"
 
-void UCargoUIManagerSubsystem::Deinitialize()
+void UCargoUIManagerSubsystem::ShowMissionResult(UDeliveryMissionStatus* MissionStatus, FSimpleDelegate OnFinished)
 {
-	if (BoundMissionsService.IsValid())
-	{
-		BoundMissionsService->MissionCompletedDelegate.RemoveAll(this);
-	}
-	BoundMissionsService.Reset();
-
-	Super::Deinitialize();
-}
-
-void UCargoUIManagerSubsystem::BindToMissionsService(UMissionsService* MissionsService)
-{
-	if (BoundMissionsService.Get() == MissionsService)
-	{
-		return;
-	}
-
-	if (BoundMissionsService.IsValid())
-	{
-		BoundMissionsService->MissionCompletedDelegate.RemoveAll(this);
-	}
-
-	BoundMissionsService = MissionsService;
-	if (MissionsService)
-	{
-		MissionsService->MissionCompletedDelegate.AddUObject(this, &ThisClass::HandleMissionCompleted);
-	}
-}
-
-void UCargoUIManagerSubsystem::HandleMissionCompleted(TObjectPtr<UMissionStatus> MissionStatus)
-{
-	if (!IsValid(MissionStatus))
-	{
-		return;
-	}
-
-	const TSoftClassPtr<UBOLWidget> BOLWidgetClass = GetDefault<UCargoSettings>()->BOLWidgetClass;
-	if (BOLWidgetClass.IsNull())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("CargoUIManagerSubsystem: BOLWidgetClass is not configured"));
-		return;
-	}
-
-	UPrimaryGameLayout* Layout = UPrimaryGameLayout::GetPrimaryGameLayoutForPrimaryPlayer(this);
-	if (!Layout)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("CargoUIManagerSubsystem: PrimaryGameLayout is unavailable"));
-		return;
-	}
-
-	if (UBOLWidget* BOLWidget = Layout->PushWidgetToLayerStack<UBOLWidget>(TAG_UI_Layer_Prompt, BOLWidgetClass.LoadSynchronous()))
-	{
-		BOLWidget->Init(MissionStatus);
-	}
+	check(IsValid(MissionStatus));
+	const auto WidgetClass = GetDefault<UCargoSettings>()->BOLWidgetClass.LoadSynchronous();
+	check(WidgetClass);
+	auto* Layout = UPrimaryGameLayout::GetPrimaryGameLayoutForPrimaryPlayer(this);
+	check(Layout);
+	auto* Widget = Layout->PushWidgetToLayerStack<UBOLWidget>(TAG_UI_Layer_Prompt, WidgetClass);
+	check(Widget);
+	Widget->OnFinished.Add(OnFinished);
+	Widget->Init(MissionStatus);
 }
 
 void UCargoUIManagerSubsystem::ToggleMap()

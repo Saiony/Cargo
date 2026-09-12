@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "MissionData.h"
+#include "DeliveryMissionData.h"
 #include "Engine/DataAsset.h"
 #include "MissionsDatabase.generated.h"
 
@@ -13,7 +13,7 @@ struct FMissions
 	GENERATED_BODY()
 	
 	UPROPERTY(EditDefaultsOnly)
-	TArray<TObjectPtr<UMissionData>> Missions;
+	TArray<TObjectPtr<UDeliveryMissionData>> Missions;
 };
 
 /**

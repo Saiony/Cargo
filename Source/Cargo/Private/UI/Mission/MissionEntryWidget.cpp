@@ -14,7 +14,7 @@ void UMissionEntryWidget::NativeOnInitialized()
 	DefaultBorderColor = Button->GetBackgroundColor();
 }
 
-void UMissionEntryWidget::Initialize(const TObjectPtr<UMissionData> InMissionData, IMissionEntryListener* InListener, bool InIsActiveQuest)
+void UMissionEntryWidget::Initialize(const TObjectPtr<UDeliveryMissionData> InMissionData, IMissionEntryListener* InListener, bool InIsActiveQuest)
 {
 	IsActiveMission = InIsActiveQuest;
 	Listener = InListener;

@@ -9,7 +9,7 @@
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
-#include "Mission/MissionData.h"
+#include "Mission/DeliveryMissionData.h"
 #include "MissionEntryWidget.generated.h"
 
 
@@ -75,7 +75,7 @@ class CARGO_API UMissionEntryWidget : public UFrogsmithActivatableWidget
 	
 public:
 	UPROPERTY()
-	TObjectPtr<UMissionData> MissionData;
+	TObjectPtr<UDeliveryMissionData> MissionData;
 	
 	bool IsActiveMission;
 	
@@ -85,5 +85,5 @@ public:
 
 	virtual void NativeOnInitialized() override;
 	
-	void Initialize(TObjectPtr<UMissionData> InMissionData, IMissionEntryListener* InListener, bool InIsActiveQuest);	
+	void Initialize(TObjectPtr<UDeliveryMissionData> InMissionData, IMissionEntryListener* InListener, bool InIsActiveQuest);	
 };

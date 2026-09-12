@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "Dialogue/DialogueData.h"
+#include "Mission/BaseMissionStatus.h"
 #include "Quest/QuestData.h"
 #include "QuestStatus.generated.h"
 
@@ -49,9 +50,6 @@ public:
 	void Initialize(UQuestData* QuestData);
 
 	UPROPERTY(BlueprintReadOnly, Category = "Cargo")
-	TMap<FGameplayTag, FCargoStatus> DeliveredQuantities = TMap<FGameplayTag, FCargoStatus>();
-
-	UPROPERTY(BlueprintReadOnly, Category = "Cargo")
 	FGameplayTag QuestTag;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Cargo")
@@ -59,9 +57,6 @@ public:
 	
 	UPROPERTY(BlueprintReadOnly, Category = "Cargo")
 	FGameplayTag StartIslandTag;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Cargo")
-	FGameplayTag DestinationTag;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Cargo")
 	TSoftObjectPtr<UDialogueData> StartDeliveryDialogue;
@@ -76,11 +71,14 @@ public:
 	FDialogueWithCondition AlternativeEndDeliveryDialogue;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo")
-	TSoftObjectPtr<UQuestData> NextQuest; //TODO: turn this into FGameplayTag?
+	TSoftObjectPtr<UQuestData> NextQuest;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Cargo")
 	TObjectPtr<UQuestData> OriginalQuestData;
 	
 	UPROPERTY(BlueprintReadOnly, Category="Cargo")
 	FReward Reward;
+	
+	UPROPERTY(BlueprintReadOnly, Category="Cargo")
+	TObjectPtr<UBaseMissionStatus> MissionStatus;
 };
