@@ -3,7 +3,9 @@
 
 #include "UI/Quest/QuestEntryWidget.h"
 #include "Components/VerticalBox.h"
+#include "DeveloperSettings/CargoSettings.h"
 #include "Mission/DeliveryMissionData.h"
+#include "Mission/TravelMissionData.h"
 #include "UI/Quest/CargoRequirementEntryWidget.h"
 
 void UQuestEntryWidget::Init(FGameplayTag QuestTag, UQuestData* QuestData)
@@ -15,23 +17,33 @@ void UQuestEntryWidget::Init(FGameplayTag QuestTag, UQuestData* QuestData)
 
 	QuestTitleText->SetText(QuestData->Title);
 
-
 	RequirementsContainer->ClearChildren();
 	RequirementWidgets.Empty();
-
-	const auto* Delivery = Cast<UDeliveryMissionData>(QuestData->MissionData);
-	DestinationText->SetText(Delivery ? FText::FromName(Delivery->DestinationTag.GetTagName()) : FText::GetEmpty());
-	if (!Delivery)
-		return;
-
-	for (const FCargoRequirement& Requirement : Delivery->CargoRequirements)
+	
+	if (const auto Delivery = Cast<UDeliveryMissionData>(QuestData->MissionData))
 	{
-		UCargoRequirementEntryWidget* ReqWidget = CreateWidget<UCargoRequirementEntryWidget>(this, RequirementWidgetClass);
+		const auto DestinationName = GetDefault<UCargoSettings>()->IslandsMap.Find(Delivery->DestinationTag)->LoadSynchronous();
+		DestinationText->SetText(DestinationName->DisplayName);
 
-		ReqWidget->Init(Requirement.CargoType, 0, Requirement.Quantity);
-		RequirementsContainer->AddChild(ReqWidget);
-		RequirementWidgets.Add(Requirement.CargoType, ReqWidget);
+		for (const auto Requirement : Delivery->CargoRequirements)
+		{
+			UCargoRequirementEntryWidget* ReqWidget = CreateWidget<UCargoRequirementEntryWidget>(this, RequirementWidgetClass);
+
+			ReqWidget->Init(Requirement.CargoType, 0, Requirement.Quantity);
+			RequirementsContainer->AddChild(ReqWidget);
+			RequirementWidgets.Add(Requirement.CargoType, ReqWidget);
+		}
+		
+		return;
 	}
+	
+	if (const auto TravelMission = Cast<UTravelMissionData>(QuestData->MissionData))
+	{
+		const auto DestinationName = GetDefault<UCargoSettings>()->IslandsMap.Find(TravelMission->DestinationTag)->LoadSynchronous();
+		DestinationText->SetText(DestinationName->DisplayName);
+		
+		return;
+	}	
 }
 
 void UQuestEntryWidget::UpdateRequirement(FGameplayTag CargoType, int32 DeliveredAmount)

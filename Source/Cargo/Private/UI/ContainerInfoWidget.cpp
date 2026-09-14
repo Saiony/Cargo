@@ -3,9 +3,9 @@
 
 #include "UI/ContainerInfoWidget.h"
 
-void UContainerInfoWidget::Show(FString Cargo, float Weight)
+void UContainerInfoWidget::Show(const FText& Cargo, float Weight)
 {	
-	CargoText->SetText(FText::FromString(Cargo));
+	CargoText->SetText(Cargo);
 	WeightText->SetText(FText::AsNumber(Weight));
 }
 

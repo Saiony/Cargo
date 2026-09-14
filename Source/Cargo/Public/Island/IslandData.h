@@ -15,7 +15,10 @@ UCLASS()
 class CARGO_API UIslandData : public UDataAsset
 {
 	GENERATED_BODY()
-	
-	UPROPERTY(EditDefaultsOnly, Category = "Location")
+public:
+	UPROPERTY(EditDefaultsOnly, meta = (Categories = "Location"))
 	FGameplayTag LocationTag;
+	
+	UPROPERTY(EditDefaultsOnly)
+	FText DisplayName;
 };

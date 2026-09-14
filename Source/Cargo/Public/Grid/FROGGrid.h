@@ -16,7 +16,7 @@ class UFROGGrid
 
 public:
 	UFROGGrid(const int32 CellSize, const FIntVector Origin, const FIntVector GridSize,
-	          const TArray<FIntVector>& InvalidSlots) :
+			  const TArray<FIntVector>& InvalidSlots) :
 		OccupiedSlots(TMap<FIntVector, T>()),
 		CellSize(CellSize),
 		GridOrigin(Origin),
@@ -203,5 +203,10 @@ public:
 		OccupiedSlots.GetKeys(OccupiedKeys);
 
 		return AllCells.Difference(InvalidSlots).Difference(OccupiedKeys);
+	}
+
+	bool IsEmpty()
+	{
+		return OccupiedSlots.IsEmpty();
 	}
 };

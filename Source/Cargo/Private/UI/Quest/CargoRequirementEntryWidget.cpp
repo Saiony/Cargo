@@ -3,11 +3,17 @@
 
 #include "UI/Quest/CargoRequirementEntryWidget.h"
 #include "CommonTextBlock.h"
+#include "DeveloperSettings/CargoSettings.h"
 #include "Mission/DeliveryMissionStatus.h"
 
 void UCargoRequirementEntryWidget::Init(FGameplayTag CargoType, int32 DeliveredQuantity, int32 RequiredQuantity)
 {
-	RequirementNameText->SetText(FText::FromName(CargoType.GetTagName()));
+	const auto CargoData = GetDefault<UCargoSettings>()->ContainersMap.Find(CargoType)->LoadSynchronous();
+	check(CargoData);
+	
+	const auto CargoDisplayName = CargoData->DisplayName;
+	
+	RequirementNameText->SetText(CargoDisplayName);
 	RequiredQuantityText->SetText(FText::AsNumber(RequiredQuantity));
 	UpdateDelivered(DeliveredQuantity);
 }

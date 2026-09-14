@@ -166,5 +166,4 @@ public:
 	FOnSwitchEditMode OnEditModeChanged;
 
 	void StartDragging(class APlaceable* InPlaceable);
-	bool IsDragging() const { return bIsDragging; }
 };

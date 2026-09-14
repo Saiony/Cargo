@@ -22,8 +22,6 @@ public:
 	UCargoPortComponent();
 
 protected:  
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Cargo")
-	TObjectPtr<UGridComponent> GridComp;	
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
 	TSubclassOf<AContainer> ContainerClass;	
@@ -56,14 +54,16 @@ protected:
 public:
 	UPROPERTY(VisibleAnywhere, Category="Cargo|Port")
 	bool IsOpen = false;
+	
+	bool IsPickup = false;
     
 	void DebugDrawSpawnGrid(float Duration) const;
 	
 	void AttachPlaceable(APlaceable* Placeable, FVector WorldPos);
 
 	void AddPlaceable(APlaceable* Placeable, FVector WorldPos, float Rotation);
+	
 	void AddPlaceableIndex(APlaceable* Placeable, FIntVector Index, float Rotation);
-
 	
 	void StartMissionDelivery(FGuid MissionId);
 
@@ -71,7 +71,12 @@ public:
 	
 	void SpawnCargo(const TArray<FCargoRequirement>& Requirements);
 
-private:	
+	void OpenPort();
 	
+	void OpenPortForPickup();
+
+	void ClosePort();
+private:		
 	FGuid CurrentMissionId;
+	
 };

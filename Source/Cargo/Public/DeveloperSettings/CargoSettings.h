@@ -6,6 +6,7 @@
 #include "DataAssets/ContainerDA.h"
 #include "Engine/DeveloperSettings.h"
 #include "GameplayTagContainer.h"
+#include "Island/IslandData.h"
 #include "Mission/MissionsDatabase.h"
 #include "UI/MapWidget.h"
 #include "UI/Generic/CargoInputTextWidget.h"
@@ -63,7 +64,10 @@ public:
 	FLinearColor DialoguePlayerDataColor = FLinearColor(1.0f, 0.65f, 0.1f, 1.0f);
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo|Island")
-	TSubclassOf<AContainer> ContainerClass;
+	TSubclassOf<AContainer> ContainerClass;	
+	
+	UPROPERTY(EditAnywhere, Config, Category = "Cargo|Island", meta = (Categories = "Location"))
+	TMap<FGameplayTag, TSoftObjectPtr<UIslandData>> IslandsMap;
 	
 	UPROPERTY(EditAnywhere, Config, Category = "Debug")
 	TSoftObjectPtr<UStaticMesh> SimpleCube;

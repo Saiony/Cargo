@@ -60,34 +60,32 @@ void ACargoIsland::Unfocus()
 
 void ACargoIsland::OnMissionAccepted(TObjectPtr<UDeliveryMissionStatus> MissionStatus, FGameplayTag InstigatorIslandTag)
 {
-	if (InstigatorIslandTag != LocationTag)
+	if (InstigatorIslandTag != GetLocationTag())
 		return;
 	
 	if (!PortComponent)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Island %s: Mission accepted but PortComponent is missing!"), *LocationTag.ToString());
+		UE_LOG(LogTemp, Warning, TEXT("Island %s: Mission accepted but PortComponent is missing!"), *GetLocationTag().ToString());
 		return;
 	}	
 
-	UE_LOG(LogTemp, Log, TEXT("Island %s: Mission accepted! Spawning containers at PortComponent..."), *LocationTag.ToString());
-	
-	PortComponent->IsOpen = true;
+	UE_LOG(LogTemp, Log, TEXT("Island %s: Mission accepted! Spawning containers at PortComponent..."), *GetLocationTag().ToString());
 	
 	PortComponent->SpawnCargo(MissionStatus->GetOriginalMissionData()->CargoRequirements);
 }
 
 void ACargoIsland::OnMissionCompleted(TObjectPtr<UDeliveryMissionStatus> MissionStatus)
 {
-	if (MissionStatus->GetDestinationTag() != LocationTag)
+	if (MissionStatus->GetDestinationTag() != GetLocationTag())
 		return;
 	
 	if (!PortComponent)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Island %s: Mission accepted but PortComponent is missing!"), *LocationTag.ToString());
+		UE_LOG(LogTemp, Warning, TEXT("Island %s: Mission accepted but PortComponent is missing!"), *GetLocationTag().ToString());
 		return;
 	}	
 
-	UE_LOG(LogTemp, Log, TEXT("Island %s: Mission completed!"), *LocationTag.ToString());
+	UE_LOG(LogTemp, Log, TEXT("Island %s: Mission completed!"), *GetLocationTag().ToString());
 	
 	PortComponent->Clear();
 }

@@ -28,8 +28,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USceneComponent> Root;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Island", meta = (Categories = "Location"))
-	FGameplayTag LocationTag;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Island")
+	TObjectPtr<UIslandData> Data;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Island", meta = (Categories = "Dialogue"))
 	TSoftObjectPtr<UDialogueData> DefaultInteractionDialogue;
@@ -49,12 +49,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Island")
 	TObjectPtr<USoundBase> InteractionSound;
 	
-	UPROPERTY(EditAnywhere, Category="Cargo|Island")
-	FText IslandName;
-	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Island")
-	TSoftClassPtr<UIslandWidget> IslandWidgetClass;
-	
+	TSoftClassPtr<UIslandWidget> IslandWidgetClass;	
 	
 	void OnMissionAccepted(TObjectPtr<UDeliveryMissionStatus> MissionStatus, FGameplayTag InstigatorIslandTag);
 	
@@ -68,11 +64,10 @@ public:
 	
 	virtual void Unfocus() override;
 
-
 	UFUNCTION(BlueprintPure, Category="Cargo|Island")
-	FGameplayTag GetLocationTag() const { return LocationTag; }
+	FGameplayTag GetLocationTag() const { return Data->LocationTag; }
 	
-	FText GetIslandName() const { return IslandName; }
+	FText GetIslandName() const { return Data->DisplayName; }
 	
 	TObjectPtr<UCargoPortComponent> GetPort() { return PortComponent; }
 	

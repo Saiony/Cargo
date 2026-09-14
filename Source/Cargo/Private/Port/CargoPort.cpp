@@ -6,6 +6,7 @@
 #include "Grid/Container.h"
 #include "Grid/Placeable.h"
 #include "CargoGameMode.h"
+#include "Components/InstancedStaticMeshComponent.h"
 #include "Interaction/PortBellInteractable.h"
 
 UCargoPortComponent::UCargoPortComponent()
@@ -38,6 +39,8 @@ void UCargoPortComponent::BeginPlay()
 
 	PortBell->AttachToComponent(this, FAttachmentTransformRules::KeepWorldTransform);
 	PortBell->OnBellRung.AddDynamic(this, &ThisClass::OnBellClicked);
+	
+	ClosePort();
 }
 
 void UCargoPortComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -130,6 +133,9 @@ void UCargoPortComponent::HandlePlaceableRemovedFromGrid(APlaceable* Placeable)
 	
 	if (CurrentMissionId.IsValid())
 		ACargoGameMode::Get(this)->QuestService->RemoveCargoDelivery(CurrentMissionId, Container->PlaceableTag);
+	
+	if (PlaceableGrid.IsEmpty() && IsPickup)
+		ClosePort();		
 }
 
 void UCargoPortComponent::SpawnSingleContainer(FGameplayTag CargoType)
@@ -186,7 +192,7 @@ void UCargoPortComponent::SpawnSingleContainer(FGameplayTag CargoType)
 
 void UCargoPortComponent::StartMissionDelivery(const FGuid MissionId)
 {
-	IsOpen = true;
+	OpenPort();
 	
 	CurrentMissionId = MissionId;
 }
@@ -212,7 +218,7 @@ void UCargoPortComponent::OnBellClicked()
 
 void UCargoPortComponent::Clear()
 {
-	IsOpen = false;
+	ClosePort();
 	CurrentMissionId.Invalidate();
 
 	ClearGrid();
@@ -220,6 +226,8 @@ void UCargoPortComponent::Clear()
 
 void UCargoPortComponent::SpawnCargo(const TArray<FCargoRequirement>& Requirements)
 {
+	OpenPortForPickup();	
+	
 	for (const FCargoRequirement& Req : Requirements)
 	{
 		for (int32 i = 0; i < Req.Quantity; ++i)
@@ -227,4 +235,22 @@ void UCargoPortComponent::SpawnCargo(const TArray<FCargoRequirement>& Requiremen
 			SpawnSingleContainer(Req.CargoType);
 		}
 	}
+}
+
+void UCargoPortComponent::OpenPort()
+{	
+	IsOpen = true;
+	InstancedMeshComp->SetVisibility(true);
+}
+
+void UCargoPortComponent::OpenPortForPickup()
+{
+	OpenPort();
+	IsPickup = true;
+}
+
+void UCargoPortComponent::ClosePort()
+{	
+	IsOpen = false;
+	InstancedMeshComp->SetVisibility(false);
 }

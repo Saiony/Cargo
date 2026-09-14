@@ -7,6 +7,7 @@
 #include "Components/VerticalBox.h"
 #include "Mission/DeliveryMissionStatus.h"
 #include "PrimaryGameLayout.h"
+#include "DeveloperSettings/CargoSettings.h"
 #include "GameplayFramework/CargoPlayerState.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/SimpleWidget.h"
@@ -50,8 +51,15 @@ void UBOLWidget::Init(const TObjectPtr<UDeliveryMissionStatus> MissionStatus)
 	ShipNameText->SetText(FText::FromString(PlayerState->GetShipName()));
 	CaptainNameText->SetText(FText::FromString(PlayerState->GetCaptainName()));
 	
-	OriginLocationText->SetText(FText::FromName(MissionReward.StartIslandTag.GetTagName()));
-	DestinationLocationText->SetText(FText::FromName(MissionReward.DestinationTag.GetTagName()));
+	/*islands names*/
+	const auto StartIsland = GetDefault<UCargoSettings>()->IslandsMap.Find(MissionReward.StartIslandTag);
+	const auto DestinationIsland = GetDefault<UCargoSettings>()->IslandsMap.Find(MissionReward.DestinationTag);	
+	check(StartIsland && DestinationIsland);	
+	
+	OriginLocationText->SetText(StartIsland->LoadSynchronous()->DisplayName);
+	DestinationLocationText->SetText(DestinationIsland->LoadSynchronous()->DisplayName);
+	/**/
+	
 	
 	DeliveryTimeText->SetText(FText::FromString("-"));
 	MissingCargoDiscount->SetText(FText::AsNumber(-MissionReward.MissingCargoDiscount));

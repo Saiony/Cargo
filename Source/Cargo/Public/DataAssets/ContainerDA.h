@@ -22,7 +22,7 @@ public:
 	FGameplayTag CargoTag;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FString Name = "Debug";
+	FText DisplayName = FText::FromString("Debug");
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TObjectPtr<UMaterialInterface> Material;

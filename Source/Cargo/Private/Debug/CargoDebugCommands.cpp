@@ -223,7 +223,7 @@ void UCargoDebugCommands::LoadShip(UObject* WorldContextObject, const FString& C
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Cargo.LoadShip: Placed %d '%s' containers on level %d"), PlacedCount, *ContainerDA->Name, TargetZ);
+	UE_LOG(LogTemp, Log, TEXT("Cargo.LoadShip: Placed %d '%s' containers on level %d"), PlacedCount, *ContainerDA->DisplayName.ToString(), TargetZ);
 }
 
 void UCargoDebugCommands::GetContainer(UObject* WorldContextObject, const FString& CargoType)
@@ -271,7 +271,7 @@ void UCargoDebugCommands::GetContainer(UObject* WorldContextObject, const FStrin
 	NewContainer->Init(ContainerDA);
 	CargoPC->StartDragging(NewContainer);
 
-	UE_LOG(LogTemp, Log, TEXT("Cargo.GetContainer: Grabbed '%s' container"), *ContainerDA->Name);
+	UE_LOG(LogTemp, Log, TEXT("Cargo.GetContainer: Grabbed '%s' container"), *ContainerDA->DisplayName.ToString());
 }
 
 void UCargoDebugCommands::LoadShipConsole(const TArray<FString>& Args, UWorld* World)
