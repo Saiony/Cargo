@@ -5,8 +5,6 @@
 
 #include "PrimaryGameLayout.h"
 #include "Components/WidgetComponent.h"
-#include "Quest/QuestStatus.h"
-#include "Subsystem/FROGDialogueSubsystem.h"
 #include "TagDeclaration/UITypes.h"
 #include "UI/Island/IslandWidget.h"
 
@@ -32,12 +30,10 @@ void ACargoIsland::BeginPlay()
 	Super::BeginPlay();
 
 	const auto GM = ACargoGameMode::Get(this);
-	GM->QuestAcceptedDelegate.AddUObject(this, &ACargoIsland::OnQuestAccepted);
-	GM->QuestCompletedDelegate.AddUObject(this, &ACargoIsland::OnQuestCompleted);
 	
-	const auto MissionsService = GM->MissionsService;
-	MissionsService->MissionAcceptedDelegate.AddUObject(this, &ThisClass::OnMissionAccepted);
-	MissionsService->MissionCompletedDelegate.AddUObject(this, &ThisClass::OnMissionCompleted);
+	const auto QuestService = GM->QuestService;
+	QuestService->MissionAcceptedDelegate.AddUObject(this, &ThisClass::OnMissionAccepted);
+	QuestService->MissionCompletedDelegate.AddUObject(this, &ThisClass::OnMissionCompleted);
 	
 	Unfocus();
 }
@@ -62,82 +58,34 @@ void ACargoIsland::Unfocus()
 	InteractableWidgetComp->SetVisibility(false);	
 }
 
-void ACargoIsland::OnQuestAccepted(TObjectPtr<UQuestData> QuestData, AActor* QuestInstigator)
+void ACargoIsland::OnMissionAccepted(TObjectPtr<UDeliveryMissionStatus> MissionStatus, FGameplayTag InstigatorIslandTag)
 {
-	if (QuestInstigator != this)
-		return;
-
-	if (!PortComponent)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Island %s: Quest accepted but PortComponent is missing!"), *LocationTag.ToString());
-		return;
-	}	
-
-	UE_LOG(LogTemp, Log, TEXT("Island %s: Quest accepted! Spawning containers at PortComponent..."), *LocationTag.ToString());
-	
-	PortComponent->IsOpen = true;
-	
-	if (QuestData->IsDeliveryOnly)
-		return;
-	
-	PortComponent->SpawnCargo(QuestData->CargoRequirements);
-}
-
-void ACargoIsland::OnQuestCompleted(TObjectPtr<UQuestStatus> QuestStatus)
-{
-	if (QuestStatus->DestinationTag != LocationTag)
-		return;
-	
-	UFROGDialogueSubsystem* DialogueSubsystem = GetGameInstance()->GetSubsystem<UFROGDialogueSubsystem>();
-
-	bool ShouldPlayAlternative = false;
-	for (FGameplayTag RequiredChoiceTag : QuestStatus->AlternativeEndDeliveryDialogue.RequiredChoiceTags)
-	{	
-		if (ACargoGameMode::Get(this)->HasTag(RequiredChoiceTag))
-		{
-			ShouldPlayAlternative = true;	
-			break;
-		}
-	}
-	
-	if (ShouldPlayAlternative)
-		DialogueSubsystem->PlayDialogue(QuestStatus->AlternativeEndDeliveryDialogue.AlternativeDialogue.LoadSynchronous(), this);
-	else
-		DialogueSubsystem->PlayDialogue(QuestStatus->EndDeliveryDialogue.LoadSynchronous(), this);
-	
-	PortComponent->Clear();
-}
-
-void ACargoIsland::OnMissionAccepted(TObjectPtr<UMissionStatus> MissionStatus, FGameplayTag InstigatorIslandTag)
-{
-	if (InstigatorIslandTag != LocationTag)
+	if (InstigatorIslandTag != GetLocationTag())
 		return;
 	
 	if (!PortComponent)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Island %s: Mission accepted but PortComponent is missing!"), *LocationTag.ToString());
+		UE_LOG(LogTemp, Warning, TEXT("Island %s: Mission accepted but PortComponent is missing!"), *GetLocationTag().ToString());
 		return;
 	}	
 
-	UE_LOG(LogTemp, Log, TEXT("Island %s: Mission accepted! Spawning containers at PortComponent..."), *LocationTag.ToString());
-	
-	PortComponent->IsOpen = true;
+	UE_LOG(LogTemp, Log, TEXT("Island %s: Mission accepted! Spawning containers at PortComponent..."), *GetLocationTag().ToString());
 	
 	PortComponent->SpawnCargo(MissionStatus->GetOriginalMissionData()->CargoRequirements);
 }
 
-void ACargoIsland::OnMissionCompleted(TObjectPtr<UMissionStatus> MissionStatus)
+void ACargoIsland::OnMissionCompleted(TObjectPtr<UDeliveryMissionStatus> MissionStatus)
 {
-	if (MissionStatus->GetDestinationTag() != LocationTag)
+	if (MissionStatus->GetDestinationTag() != GetLocationTag())
 		return;
 	
 	if (!PortComponent)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Island %s: Mission accepted but PortComponent is missing!"), *LocationTag.ToString());
+		UE_LOG(LogTemp, Warning, TEXT("Island %s: Mission accepted but PortComponent is missing!"), *GetLocationTag().ToString());
 		return;
 	}	
 
-	UE_LOG(LogTemp, Log, TEXT("Island %s: Mission completed!"), *LocationTag.ToString());
+	UE_LOG(LogTemp, Log, TEXT("Island %s: Mission completed!"), *GetLocationTag().ToString());
 	
 	PortComponent->Clear();
 }

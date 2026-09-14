@@ -3,10 +3,11 @@
 #include "Port/CargoPort.h"
 
 #include "GameplayTagContainer.h"
-#include "Components/StaticMeshComponent.h"
 #include "Grid/Container.h"
 #include "Grid/Placeable.h"
 #include "CargoGameMode.h"
+#include "Components/InstancedStaticMeshComponent.h"
+#include "Interaction/PortBellInteractable.h"
 
 UCargoPortComponent::UCargoPortComponent()
 {
@@ -19,6 +20,39 @@ void UCargoPortComponent::BeginPlay()
 
 	OnPlaceableAddedToGrid.AddDynamic(this, &UCargoPortComponent::HandlePlaceableAddedToGrid);
 	OnPlaceableRemovedFromGrid.AddDynamic(this, &UCargoPortComponent::HandlePlaceableRemovedFromGrid);
+
+	if (PortBellClass)
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = GetOwner();
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		const FTransform BellWorldTransform = PortBellRelativeTransform * GetComponentTransform();
+		PortBell = GetWorld()->SpawnActor<APortBellInteractable>(PortBellClass, BellWorldTransform, SpawnParams);
+	}
+
+	if (!PortBell)
+	{
+		UE_LOG(LogTemp, Error, TEXT("CargoPortComponent '%s': PortBellClass must be configured with a PortBellInteractable Blueprint"), *GetName());
+		return;
+	}
+
+	PortBell->AttachToComponent(this, FAttachmentTransformRules::KeepWorldTransform);
+	PortBell->OnBellRung.AddDynamic(this, &ThisClass::OnBellClicked);
+	
+	ClosePort();
+}
+
+void UCargoPortComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (PortBell)
+	{
+		PortBell->OnBellRung.RemoveDynamic(this, &ThisClass::OnBellClicked);
+		PortBell->Destroy();
+		PortBell = nullptr;
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void UCargoPortComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -76,10 +110,8 @@ void UCargoPortComponent::HandlePlaceableAddedToGrid(APlaceable* Placeable)
 		return;
 	}
 	
-	if (CurrentQuestTag.IsValid())
-		ACargoGameMode::Get(this)->RegisterCargoDelivery(CurrentQuestTag, Container->PlaceableTag);
-	else if (CurrentMissionId.IsValid())
-		ACargoGameMode::Get(this)->MissionsService->RegisterCargoDelivery(CurrentMissionId, Container->PlaceableTag);
+	if (CurrentMissionId.IsValid())
+		ACargoGameMode::Get(this)->QuestService->RegisterCargoDelivery(CurrentMissionId, Container->PlaceableTag);
 }
 
 void UCargoPortComponent::HandlePlaceableRemovedFromGrid(APlaceable* Placeable)
@@ -99,10 +131,11 @@ void UCargoPortComponent::HandlePlaceableRemovedFromGrid(APlaceable* Placeable)
 		return;
 	}
 	
-	if (CurrentQuestTag.IsValid())
-		ACargoGameMode::Get(this)->RemoveCargoDelivery(CurrentQuestTag, Container->PlaceableTag);
-	else if (CurrentMissionId.IsValid())
-		ACargoGameMode::Get(this)->MissionsService->RemoveCargoDelivery(CurrentMissionId, Container->PlaceableTag);
+	if (CurrentMissionId.IsValid())
+		ACargoGameMode::Get(this)->QuestService->RemoveCargoDelivery(CurrentMissionId, Container->PlaceableTag);
+	
+	if (PlaceableGrid.IsEmpty() && IsPickup)
+		ClosePort();		
 }
 
 void UCargoPortComponent::SpawnSingleContainer(FGameplayTag CargoType)
@@ -157,32 +190,44 @@ void UCargoPortComponent::SpawnSingleContainer(FGameplayTag CargoType)
 	NewContainer->Destroy();
 }
 
-void UCargoPortComponent::StartQuestDelivery(FGameplayTag QuestTag)
-{
-	IsOpen = true;
-	CurrentMissionId = FGuid();
-	
-	CurrentQuestTag = QuestTag;	
-}
-
 void UCargoPortComponent::StartMissionDelivery(const FGuid MissionId)
 {
-	IsOpen = true;
-	CurrentQuestTag = FGameplayTag::EmptyTag;
+	OpenPort();
 	
 	CurrentMissionId = MissionId;
 }
 
+void UCargoPortComponent::OnBellClicked()
+{
+	if (!IsOpen)
+	{
+		return;
+	}
+
+	ACargoGameMode* CargoGameMode = ACargoGameMode::Get(this);
+	if (!CargoGameMode)
+	{
+		return;
+	}
+
+	if (CurrentMissionId.IsValid() && CargoGameMode->QuestService)
+	{
+		CargoGameMode->QuestService->CompleteMission(CurrentMissionId, GetOwner());
+	}
+}
+
 void UCargoPortComponent::Clear()
 {
-	IsOpen = false;
-	CurrentQuestTag = FGameplayTag();
+	ClosePort();
+	CurrentMissionId.Invalidate();
 
 	ClearGrid();
 }
 
 void UCargoPortComponent::SpawnCargo(const TArray<FCargoRequirement>& Requirements)
 {
+	OpenPortForPickup();	
+	
 	for (const FCargoRequirement& Req : Requirements)
 	{
 		for (int32 i = 0; i < Req.Quantity; ++i)
@@ -190,4 +235,22 @@ void UCargoPortComponent::SpawnCargo(const TArray<FCargoRequirement>& Requiremen
 			SpawnSingleContainer(Req.CargoType);
 		}
 	}
+}
+
+void UCargoPortComponent::OpenPort()
+{	
+	IsOpen = true;
+	InstancedMeshComp->SetVisibility(true);
+}
+
+void UCargoPortComponent::OpenPortForPickup()
+{
+	OpenPort();
+	IsPickup = true;
+}
+
+void UCargoPortComponent::ClosePort()
+{	
+	IsOpen = false;
+	InstancedMeshComp->SetVisibility(false);
 }

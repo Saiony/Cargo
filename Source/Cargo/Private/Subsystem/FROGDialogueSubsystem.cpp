@@ -1,6 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Subsystem/FROGDialogueSubsystem.h"
 
 #include "PrimaryGameLayout.h"
@@ -11,16 +8,12 @@
 
 UFROGDialogueSubsystem::UFROGDialogueSubsystem()
 {
-	// Default dialogue widget – no config dependency
 	DialogueWidgetClass = TSoftClassPtr<UDIalogueWidget>(FSoftObjectPath(TEXT("/Game/Cargo/Blueprints/UI/WBP_Dialogue.WBP_Dialogue_C")));
 }
 
 void UFROGDialogueSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
-	// UGameplayMessageSubsystem::Get(this).RegisterListener<FARCGameplayEvent_DialogueStartPayload>(
-	// 	TAG_GameplayEvent_StartDialogue,
-	// 	this, &UARCDialogueSubsystem::OnReceivedStartDialogueMessage);
 
 	const UAssetManager* Manager = UAssetManager::GetIfInitialized();
 	if (!Manager)
@@ -53,9 +46,6 @@ void UFROGDialogueSubsystem::LoadDialogueDefinitions()
 		bDialoguesReady = true;
 		return;
 	}
-
-	// Synchronous load — dialogue definitions are small data assets and must be
-	// available immediately because dialogue requests can arrive on the same frame.
 	TArray<FSoftObjectPath> AssetsToLoad;
 	for (const FPrimaryAssetId& Id : CachedDialogueIds)
 	{
@@ -101,8 +91,6 @@ void UFROGDialogueSubsystem::OnDialoguesLoaded()
 		UE_LOG(LogTemp, Log, TEXT("  -> [%s] = %s"), *Pair.Key.ToString(), *Pair.Value->GetName());
 	}
 	bDialoguesReady = true;
-
-	// Flush any dialogue requests that came in before loading finished
 	if (PendingDialogueQueue.Num() > 0)
 	{
 		UE_LOG(LogTemp, Log, TEXT("ARCDialogueSubsystem: Flushing %d queued dialogue requests"), PendingDialogueQueue.Num());
@@ -125,7 +113,13 @@ void UFROGDialogueSubsystem::PlayDialogue(UDialogueData* DialogueData, AActor* I
 	}
 
 	CurrentInstigator = Instigator;
-	
+	CurrentDialogue = DialogueData;
+	NextDialogue = DialogueData->NextDialogue;
+	PushDialogueWidget(DialogueData);
+}
+
+void UFROGDialogueSubsystem::PushDialogueWidget(UDialogueData* DialogueData)
+{
 	if (DialogueWidgetClass.IsNull())
 	{
 		UE_LOG(LogTemp, Error, TEXT("ARCDialogueSubsystem::PlayDialogue - DialogueWidgetClass is null! Path: '%s'"), *DialogueWidgetClass.ToString());
@@ -153,8 +147,8 @@ void UFROGDialogueSubsystem::PlayDialogue(UDialogueData* DialogueData, AActor* I
 			}
 			DialogueWidget = Widget;
 			DialogueWidget->SetInstigator(CurrentInstigator.Get());
-			DialogueWidget->InitializeDialogue(DialogueData);
 			DialogueWidget->OnDialogueFinishedDelegate.AddUObject(this, &ThisClass::OnDialogueFinished);
+			ExecuteCallbacks(DialogueData->PreDialogueCallbacks, FSimpleDelegate::CreateUObject(this, &ThisClass::StartDialogueWidget));
 		} 
 		else if (State == EAsyncWidgetLayerState::Canceled)
 		{
@@ -185,26 +179,34 @@ void UFROGDialogueSubsystem::PlayDialogue(const FGameplayTag DialogueID, AActor*
 	PlayDialogue(DialogueData, Instigator);
 }
 
-void UFROGDialogueSubsystem::NotifyDialogueStarted(UDialogueData* DialogueData, AActor* Instigator)
+void UFROGDialogueSubsystem::SetNextDialogue(TSoftObjectPtr<UDialogueData> DialogueData)
 {
-	if (Instigator)
-	{
-		CurrentInstigator = Instigator;
-	}
+	NextDialogue = DialogueData;
+}
 
-	if (DialogueData)
-	{
-		HandlePreCallbacks(DialogueData);
-	}
+void UFROGDialogueSubsystem::StartDialogueWidget()
+{
+	DialogueWidget->InitializeDialogue(CurrentDialogue);
 }
 
 void UFROGDialogueSubsystem::OnDialogueFinished(UDialogueData* DialogueData)
 {
 	DialogueWidget = nullptr;
+	ExecuteCallbacks(DialogueData->PostDialogueCallbacks, FSimpleDelegate::CreateUObject(this, &ThisClass::FinishDialogue));
+}
+
+void UFROGDialogueSubsystem::FinishDialogue()
+{
+	const auto Continuation = NextDialogue;
+	const auto Instigator = CurrentInstigator;
+	CurrentDialogue = nullptr;
+	NextDialogue.Reset();
+	CurrentInstigator.Reset();
 	bIsPlayingDialogue = false;
-	
-	HandlePostCallbacks(DialogueData);
-	CurrentInstigator = nullptr;
+	if (!Continuation.IsNull())
+	{
+		PlayDialogue(Continuation.LoadSynchronous(), Instigator.Get());
+	}
 	PlayNextQueuedDialogue();
 }
 
@@ -212,43 +214,44 @@ void UFROGDialogueSubsystem::PlayNextQueuedDialogue()
 {
 	while (PendingDialogueQueue.Num() > 0 && !bIsPlayingDialogue)
 	{
-		const FPendingDialogue NextDialogue = PendingDialogueQueue[0];
+		const FPendingDialogue PendingDialogue = PendingDialogueQueue[0];
 		PendingDialogueQueue.RemoveAt(0);
 
-		if (DialogueRegistry.Contains(NextDialogue.DialogueID))
+		if (DialogueRegistry.Contains(PendingDialogue.DialogueID))
 		{
-			PlayDialogue(NextDialogue.DialogueID, NextDialogue.Instigator.Get());
+			PlayDialogue(PendingDialogue.DialogueID, PendingDialogue.Instigator.Get());
 			return;
 		}
-		// Tag not found in registry — skip and try the next one
-		UE_LOG(LogTemp, Warning, TEXT("ARCDialogueSubsystem: Queued dialogue '%s' not found in registry, skipping"), *NextDialogue.DialogueID.ToString());
+		UE_LOG(LogTemp, Warning, TEXT("ARCDialogueSubsystem: Queued dialogue '%s' not found in registry, skipping"), *PendingDialogue.DialogueID.ToString());
 	}
 }
 
-void UFROGDialogueSubsystem::HandlePreCallbacks(UDialogueData* Definition)
+void UFROGDialogueSubsystem::ExecuteCallbacks(const TArray<UARCDialogueCallbackBase*>& Callbacks, FSimpleDelegate Completion)
 {
-	if (Definition->PreDialogueCallbacks.Num() > 0)
+	ActiveCallbacks.Reset();
+	CallbackIndex = 0;
+	OnCallbacksCompleted = MoveTemp(Completion);
+	for (auto Callback : Callbacks)
 	{
-		for (UARCDialogueCallbackBase* Callback : Definition->PreDialogueCallbacks)
+		if (Callback)
 		{
-			if (Callback)
-			{
-				Callback->ExecuteCallback(Definition, ACargoGameMode::Get(this), CurrentInstigator.Get());
-			}
-		}
-	}	
-}
-
-void UFROGDialogueSubsystem::HandlePostCallbacks(UDialogueData* Definition)
-{
-	if (Definition->PostDialogueCallbacks.Num() > 0)
-	{
-		for (UARCDialogueCallbackBase* Callback : Definition->PostDialogueCallbacks)
-		{
-			if (Callback)
-			{
-				Callback->ExecuteCallback(Definition, ACargoGameMode::Get(this), CurrentInstigator.Get());
-			}
+			ActiveCallbacks.Add(DuplicateObject<UARCDialogueCallbackBase>(Callback, this));
 		}
 	}
+	ExecuteNextCallback();
+}
+
+void UFROGDialogueSubsystem::ExecuteNextCallback()
+{
+	if (ActiveCallbacks.IsValidIndex(CallbackIndex))
+	{
+		auto Callback = ActiveCallbacks[CallbackIndex++];
+		Callback->OnCompleted.BindUObject(this, &ThisClass::ExecuteNextCallback);
+		Callback->ExecuteCallback(CurrentDialogue, ACargoGameMode::Get(this), CurrentInstigator.Get());
+		return;
+	}
+	const FSimpleDelegate Completion = MoveTemp(OnCallbacksCompleted);
+	OnCallbacksCompleted.Unbind();
+	ActiveCallbacks.Reset();
+	Completion.ExecuteIfBound();
 }

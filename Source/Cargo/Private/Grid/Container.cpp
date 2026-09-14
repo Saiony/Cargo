@@ -23,7 +23,7 @@ void AContainer::Init()
 	Cast<APlaceableVisual>(PlaceableVisualComp->GetChildActor())->Initialize(PlaceableDA);
 	
 	Weight = PlaceableDA->Weight;
-	Name = PlaceableDA->Name;	
+	Name = PlaceableDA->DisplayName;	
 	GridShapeDefinition = PlaceableDA->Shape;
 	PlaceableTag = PlaceableDA->CargoTag;
 	

@@ -3,12 +3,23 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "GameFramework/PlayerState.h"
 #include "CargoPlayerState.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnWeightChanged, float, NewCurrentWeight, float, MaxWeight);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBaseSpeedChanged, float, NewBaseSpeed);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBalanceChanged, float, NewBalance);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnShipNameChanged, FString, NewShipName);
+
+enum class ShipCollisionType
+{
+	Unknown = 0,
+	Light,
+	Heavy
+};
+
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnShipCollision, AActor*, ShipCollisionType);
 
 /**
  * 
@@ -34,6 +45,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cargo")
 	float ShipSpeedMultiplier = 1;
 	
+	TMap<FGameplayTag, FString> PlayerDataTags;
+	
 	void CalculateShipSpeedMultiplier();
 	
 public:	
@@ -47,6 +60,10 @@ public:
 	
 	UPROPERTY(BlueprintAssignable, Category = "Cargo")
 	FOnBalanceChanged OnBalanceChanged;
+
+	FOnShipCollision OnShipCollisionEvent;
+	
+	FOnShipNameChanged OnShipNameChanged;
 	
 	// --- Getters ---
 
@@ -63,7 +80,15 @@ public:
 	
 	float GetShipBalanceWeight() const { return ShipBalanceWeight; }
 	
-	float GetShipBalanceRotation() const { return ShipBalanceRotation; }
+	float GetShipBalanceRotation() const { return ShipBalanceRotation; }	
+	
+	FString GetShipName() const { return PlayerDataTags.FindRef(FGameplayTag::RequestGameplayTag(TEXT("PlayerData.ShipName"))); }
+	
+	FString GetCaptainName() const { return PlayerDataTags.FindRef(FGameplayTag::RequestGameplayTag(TEXT("PlayerData.CaptainName"))); }
+	
+	FString GetPlayerInputText(FGameplayTag Tag) const;
+
+	const FString* FindPlayerDataTag(FGameplayTag Tag) const { return PlayerDataTags.Find(Tag); }
 
 	// --- Setters ---
 
@@ -81,4 +106,8 @@ public:
 	
 	UFUNCTION(Category = "Cargo")
 	void SetShipBalanceRotation(float NewBalance);
+
+	void NotifyShipCollision(AActor* OtherActor, ShipCollisionType CollisionType);
+	
+	void AddPlayerDataTag(FGameplayTag Tag, FString Text);
 };

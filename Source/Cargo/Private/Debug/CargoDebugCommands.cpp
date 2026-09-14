@@ -2,6 +2,7 @@
 
 #include "Debug/CargoDebugCommands.h"
 #include "CargoCharacter.h"
+#include "CargoGameMode.h"
 #include "CargoPlayerController.h"
 #include "DeveloperSettings/CargoSettings.h"
 #include "DataAssets/ContainerDA.h"
@@ -21,6 +22,14 @@ static FAutoConsoleCommandWithWorldAndArgs CmdCargoGetContainer(
 	TEXT("Spawns a container in hand (dragging mode). Usage: Cargo.GetContainer [CargoType]"),
 	FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(&UCargoDebugCommands::GetContainerConsole)
 );
+
+#if WITH_EDITOR
+static FAutoConsoleCommandWithWorldAndArgs CmdCargoAddTag(
+	TEXT("Cargo.AddTag"),
+	TEXT("Adds an exact gameplay tag to CargoGameMode. Usage: Cargo.AddTag Tag.Exact.Name"),
+	FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(&UCargoDebugCommands::AddTagConsole)
+);
+#endif
 
 UContainerDA* UCargoDebugCommands::ResolveContainerDataAsset(const FString& InCargoTypeStr, FGameplayTag* OutTag)
 {
@@ -214,7 +223,7 @@ void UCargoDebugCommands::LoadShip(UObject* WorldContextObject, const FString& C
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Cargo.LoadShip: Placed %d '%s' containers on level %d"), PlacedCount, *ContainerDA->Name, TargetZ);
+	UE_LOG(LogTemp, Log, TEXT("Cargo.LoadShip: Placed %d '%s' containers on level %d"), PlacedCount, *ContainerDA->DisplayName.ToString(), TargetZ);
 }
 
 void UCargoDebugCommands::GetContainer(UObject* WorldContextObject, const FString& CargoType)
@@ -262,7 +271,7 @@ void UCargoDebugCommands::GetContainer(UObject* WorldContextObject, const FStrin
 	NewContainer->Init(ContainerDA);
 	CargoPC->StartDragging(NewContainer);
 
-	UE_LOG(LogTemp, Log, TEXT("Cargo.GetContainer: Grabbed '%s' container"), *ContainerDA->Name);
+	UE_LOG(LogTemp, Log, TEXT("Cargo.GetContainer: Grabbed '%s' container"), *ContainerDA->DisplayName.ToString());
 }
 
 void UCargoDebugCommands::LoadShipConsole(const TArray<FString>& Args, UWorld* World)
@@ -276,3 +285,31 @@ void UCargoDebugCommands::GetContainerConsole(const TArray<FString>& Args, UWorl
 	const FString CargoType = Args.Num() > 0 ? Args[0] : FString();
 	GetContainer(World, CargoType);
 }
+
+#if WITH_EDITOR
+void UCargoDebugCommands::AddTagConsole(const TArray<FString>& Args, UWorld* World)
+{
+	if (Args.Num() != 1)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cargo.AddTag: Usage: Cargo.AddTag Tag.Exact.Name"));
+		return;
+	}
+
+	const FGameplayTag Tag = FGameplayTag::RequestGameplayTag(FName(*Args[0]), false);
+	if (!Tag.IsValid() || !Tag.ToString().Equals(Args[0], ESearchCase::CaseSensitive))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cargo.AddTag: '%s' is not an exact registered gameplay tag"), *Args[0]);
+		return;
+	}
+
+	ACargoGameMode* GameMode = ACargoGameMode::Get(World);
+	if (!GameMode)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cargo.AddTag: CargoGameMode not found"));
+		return;
+	}
+
+	GameMode->AddTag(Tag);
+	UE_LOG(LogTemp, Log, TEXT("Cargo.AddTag: Added '%s'"), *Tag.ToString());
+}
+#endif

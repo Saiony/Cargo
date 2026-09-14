@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "MissionData.h"
+#include "DeliveryMissionData.h"
 #include "Engine/DataAsset.h"
 #include "MissionsDatabase.generated.h"
 
@@ -13,7 +13,7 @@ struct FMissions
 	GENERATED_BODY()
 	
 	UPROPERTY(EditDefaultsOnly)
-	TArray<TObjectPtr<UMissionData>> Missions;
+	TArray<TObjectPtr<UDeliveryMissionData>> Missions;
 };
 
 /**
@@ -28,5 +28,8 @@ class CARGO_API UMissionsDatabase : public UDataAsset
 	TMap<FGameplayTag, FMissions> Database;
 	
 public:
+	UFUNCTION(CallInEditor, Category = "Missions", meta = (DisplayName = "Apply Locations To Mission Origins", ToolTip = "Copy each database location to the OriginTag of all missions in that group."))
+	void ApplyLocationsToMissionOrigins();
+
 	FMissions* GetMissionsForLocation(FGameplayTag LocationTag);
 };

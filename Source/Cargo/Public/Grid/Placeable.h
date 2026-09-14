@@ -50,7 +50,7 @@ public:
     float Weight;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cargo")
-    FString Name;
+    FText Name;
     
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cargo")
     FGameplayTag PlaceableTag;

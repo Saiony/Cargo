@@ -22,13 +22,16 @@ public:
 	FGameplayTag CargoTag;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FString Name = "Debug";
+	FText DisplayName = FText::FromString("Debug");
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TObjectPtr<UMaterialInterface> Material;
  
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	float Weight = 1.0f;	
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 BasePrice = 10;
 	
 	UPROPERTY(EditAnywhere)
 	FFROGGridShapeDefinition Shape;

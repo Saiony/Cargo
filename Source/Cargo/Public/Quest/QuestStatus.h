@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "Dialogue/DialogueData.h"
+#include "Mission/BaseMissionStatus.h"
 #include "Quest/QuestData.h"
 #include "QuestStatus.generated.h"
 
@@ -22,11 +23,13 @@ struct FCargoStatus
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1"))
 	int32 TotalQuantity = 0;
 	
-	void Initialize(FGameplayTag InCargoType, int32 InDeliveredQuantity, int32 InTotalQuantity)
+	bool IsDamaged = false;
+	
+	void Initialize(FGameplayTag InCargoType, int32 InDeliveredQuantity, int32 InTotalQuantity, int32 InBasePrice)
 	{
-		this->CargoType = InCargoType;
-		this->DeliveredQuantity = InDeliveredQuantity;
-		this->TotalQuantity = InTotalQuantity;
+		CargoType = InCargoType;
+		DeliveredQuantity = InDeliveredQuantity;
+		TotalQuantity = InTotalQuantity;
 	}
 	
 	bool IsComplete()
@@ -47,9 +50,6 @@ public:
 	void Initialize(UQuestData* QuestData);
 
 	UPROPERTY(BlueprintReadOnly, Category = "Cargo")
-	TMap<FGameplayTag, FCargoStatus> DeliveredQuantities = TMap<FGameplayTag, FCargoStatus>();
-
-	UPROPERTY(BlueprintReadOnly, Category = "Cargo")
 	FGameplayTag QuestTag;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Cargo")
@@ -57,9 +57,6 @@ public:
 	
 	UPROPERTY(BlueprintReadOnly, Category = "Cargo")
 	FGameplayTag StartIslandTag;
-
-	UPROPERTY(BlueprintReadOnly, Category = "Cargo")
-	FGameplayTag DestinationTag;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Cargo")
 	TSoftObjectPtr<UDialogueData> StartDeliveryDialogue;
@@ -74,11 +71,14 @@ public:
 	FDialogueWithCondition AlternativeEndDeliveryDialogue;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo")
-	TSoftObjectPtr<UQuestData> NextQuest; //TODO: turn this into FGameplayTag?
+	TSoftObjectPtr<UQuestData> NextQuest;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Cargo")
 	TObjectPtr<UQuestData> OriginalQuestData;
 	
 	UPROPERTY(BlueprintReadOnly, Category="Cargo")
 	FReward Reward;
+	
+	UPROPERTY(BlueprintReadOnly, Category="Cargo")
+	TObjectPtr<UBaseMissionStatus> MissionStatus;
 };

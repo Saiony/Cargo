@@ -7,6 +7,7 @@
 #include "CargoUIManagerSubsystem.generated.h"
 
 class UUserWidget;
+class UDeliveryMissionStatus;
 
 /**
  * 
@@ -18,8 +19,10 @@ class CARGO_API UCargoUIManagerSubsystem : public UGameUIManagerSubsystem
 
 	UPROPERTY()
 	UUserWidget* MapWidgetInstance;
-	
+
 public:
+	void ShowMissionResult(UDeliveryMissionStatus* MissionStatus, FSimpleDelegate OnFinished);
+
 	void ToggleMap();
 	
 	void ShowMap();

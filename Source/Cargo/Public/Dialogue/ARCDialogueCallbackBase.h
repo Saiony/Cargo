@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -8,19 +6,16 @@
 #include "UObject/Object.h"
 #include "ARCDialogueCallbackBase.generated.h"
 
-/**
- * 
- */
 UCLASS(EditInlineNew, Abstract)
 class CARGO_API UARCDialogueCallbackBase : public UObject
 {
 	GENERATED_BODY()
 	
 public:
+	FSimpleDelegate OnCompleted;
+
 	virtual void ExecuteCallback(UDialogueData* DialogueDefinition, ACargoGameMode* GameMode, AActor* Instigator = nullptr);
-	
-private:
-	/** Cached world context set before ExecuteTask is invoked. */
-	UPROPERTY(Transient)
-	TObjectPtr<ACargoGameMode> CachedGameMode;
+
+protected:
+	void CompleteCallback();
 };

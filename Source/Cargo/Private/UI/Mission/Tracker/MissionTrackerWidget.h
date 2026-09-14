@@ -4,8 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "FrogsmithActivatableWidget.h"
-#include "Mission/MissionStatus.h"
-#include "Services/MissionsService.h"
+#include "Mission/DeliveryMissionStatus.h"
+#include "Services/QuestService.h"
 #include "UI/Mission/MissionEntryWidget.h"
 #include "UI/Mission/Tracker/MissionTrackerEntryWidget.h"
 #include "MissionTrackerWidget.generated.h"
@@ -32,9 +32,9 @@ class CARGO_API UMissionTrackerWidget : public UFrogsmithActivatableWidget
 
 	virtual void NativeConstruct() override;
 	
-	void OnActiveMissionsChanged(const TMap<FGuid, TObjectPtr<UMissionStatus>>& ActiveMissions);	
-	void OnMissionProgressUpdated(TObjectPtr<UMissionStatus> MissionStatus, FGameplayTag CargoType);
-	void OnMissionCompleted(TObjectPtr<UMissionStatus> MissionStatus);
+	void OnActiveMissionsChanged(const TMap<FGuid, TObjectPtr<UDeliveryMissionStatus>>& ActiveMissions);	
+	void OnMissionProgressUpdated(TObjectPtr<UDeliveryMissionStatus> MissionStatus, FGameplayTag CargoType);
+	void OnMissionCompleted(TObjectPtr<UDeliveryMissionStatus> MissionStatus);
 
 	UFUNCTION()
 	void OnQuestEntryAnimationFinished(UMissionTrackerEntryWidget* Widget);

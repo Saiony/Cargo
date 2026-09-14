@@ -24,6 +24,10 @@ public:
 	static void LoadShipConsole(const TArray<FString>& Args, UWorld* World);
 	static void GetContainerConsole(const TArray<FString>& Args, UWorld* World);
 
+#if WITH_EDITOR
+	static void AddTagConsole(const TArray<FString>& Args, UWorld* World);
+#endif
+
 private:
 	static UContainerDA* ResolveContainerDataAsset(const FString& CargoTypeStr, FGameplayTag* OutTag = nullptr);
 };

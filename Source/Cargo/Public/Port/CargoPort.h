@@ -10,8 +10,8 @@
 
 struct FCargoRequirement;
 class AContainer;
+class APortBellInteractable;
 struct FGameplayTag;
-class UStaticMeshComponent;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class CARGO_API UCargoPortComponent : public UGridComponent
@@ -22,13 +22,18 @@ public:
 	UCargoPortComponent();
 
 protected:  
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Cargo")
-	TObjectPtr<UGridComponent> GridComp;	
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo|Island")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
 	TSubclassOf<AContainer> ContainerClass;	
-    
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Port|Interaction")
+	TSubclassOf<APortBellInteractable> PortBellClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Port|Interaction")
+	FTransform PortBellRelativeTransform;
+	
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
     
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
@@ -40,18 +45,25 @@ protected:
 	
 	void SpawnSingleContainer(FGameplayTag CargoType);
 
+	UFUNCTION()
+	void OnBellClicked();
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Transient, Category="Cargo|Port|Interaction")
+	TObjectPtr<APortBellInteractable> PortBell;
+
 public:
 	UPROPERTY(VisibleAnywhere, Category="Cargo|Port")
 	bool IsOpen = false;
+	
+	bool IsPickup = false;
     
 	void DebugDrawSpawnGrid(float Duration) const;
 	
 	void AttachPlaceable(APlaceable* Placeable, FVector WorldPos);
 
 	void AddPlaceable(APlaceable* Placeable, FVector WorldPos, float Rotation);
+	
 	void AddPlaceableIndex(APlaceable* Placeable, FIntVector Index, float Rotation);
-
-	void StartQuestDelivery(FGameplayTag QuestTag);
 	
 	void StartMissionDelivery(FGuid MissionId);
 
@@ -59,8 +71,12 @@ public:
 	
 	void SpawnCargo(const TArray<FCargoRequirement>& Requirements);
 
-private:	
-	FGameplayTag CurrentQuestTag;
+	void OpenPort();
 	
+	void OpenPortForPickup();
+
+	void ClosePort();
+private:		
 	FGuid CurrentMissionId;
+	
 };

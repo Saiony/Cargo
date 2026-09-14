@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "CommonUserWidget.h"
 #include "GameplayTagContainer.h"
+#include "Quest/QuestStatus.h"
 #include "CargoRequirementEntryWidget.generated.h"
 
 class UCommonTextBlock;
@@ -26,6 +27,7 @@ class CARGO_API UCargoRequirementEntryWidget : public UCommonUserWidget
 	TObjectPtr<UCommonTextBlock> RequiredQuantityText;
 
 public:
-	void Init(FGameplayTag CargoType, int32 RequiredQuantity);
+	void Init(FGameplayTag CargoType, int32 DeliveredQuantity, int32 RequiredQuantity);
+	void Init(const FCargoStatus& CargoStatus);
 	void UpdateDelivered(int32 DeliveredQuantity);
 };

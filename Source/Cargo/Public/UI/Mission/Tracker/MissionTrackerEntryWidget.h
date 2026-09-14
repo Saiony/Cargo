@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "CommonUserWidget.h"
-#include "Mission/MissionData.h"
+#include "Mission/DeliveryMissionData.h"
 #include "MissionTrackerEntryWidget.generated.h"
 
 struct FGameplayTag;
@@ -38,7 +38,7 @@ protected:
 	virtual void OnAnimationFinished_Implementation(const UWidgetAnimation* Animation) override;
 	
 public:
-	void Init(TObjectPtr<UMissionData> MissionData);
+	void Init(TObjectPtr<UDeliveryMissionData> MissionData);
 	void UpdateRequirement(FGameplayTag CargoType, int32 DeliveredAmount);
 	void Complete();
 	

@@ -1,11 +1,11 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "UI/DIalogueWidget.h"
 
 #include "CargoGameMode.h"
 #include "Subsystem/FROGDialogueSubsystem.h"
-#include "CommonTextBlock.h"
+#include "Components/RichTextBlock.h"
+#include "DeveloperSettings/CargoSettings.h"
+#include "GameplayFramework/CargoPlayerState.h"
+#include "GameFramework/PlayerController.h"
 #include "CommonUIExtensions.h"
 #include "PrimaryGameLayout.h"
 #include "Animation/WidgetAnimation.h"
@@ -61,7 +61,7 @@ void UDIalogueWidget::OnAnimationFinished_Implementation(const UWidgetAnimation*
 	if(Animation == HideAnimation)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("HideAnimation finished, popping widget"));
-		UCommonUIExtensions::PopContentFromLayer(this);
+		FinishHide();
 	}
 }
 
@@ -98,22 +98,16 @@ void UDIalogueWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 
 	if(CharsToShow >= FullStr.Len())
 	{
-		TextDialogue->SetText(FullLineText);
+		TextDialogue->SetText(FormattedLine.ToRichText(FormattedLine.PlainText.Len()));
 		bIsTyping = false;
 		return;
 	}
-
-	// só atualiza texto/som se algum caractere novo foi revelado neste frame
 	if (CharsToShow > LastCharsShown)
 	{
-		TextDialogue->SetText(FText::FromString(FullStr.Left(CharsToShow)));
-
-		// percorre só os caracteres novos revelados desde o último frame
+		TextDialogue->SetText(FormattedLine.ToRichText(CharsToShow));
 		for (int32 i = LastCharsShown; i < CharsToShow; ++i)
 		{
 			const TCHAR Ch = FullStr[i];
-
-			// pula espaços e toca o som só a cada CharsPerSound caracteres
 			const bool bShouldPlaySound = !FChar::IsWhitespace(Ch) && (i % FMath::Max(1, CharsPerSound) == 0);
 
 			if (bShouldPlaySound && DialogueAudio)
@@ -151,7 +145,7 @@ void UDIalogueWidget::ShowNextLine()
 	UE_LOG(LogTemp, Warning, TEXT("ShowNextLine: Getting line at index %d"), CurrentLineIndex);
 	const FARCDialogueLine& Line = CurrentDialogueData->DialogueLines[CurrentLineIndex];
 
-	FullLineText = Line.Text;
+	PrepareLineText(Line.Text);
 	TextDialogue->SetText(FText::GetEmpty());
 	CurrentCharCount = 0.0f;
 	LastCharsShown = 0;
@@ -204,8 +198,6 @@ void UDIalogueWidget::UpdateVisualsForLine(const FARCDialogueLine& Line)
 
 void UDIalogueWidget::OnDialogueFinished()
 {
-	OnDialogueFinishedDelegate.Broadcast(CurrentDialogueData);
-	
 	if (CurrentDialogueData->Choices.IsEmpty())
 	{		
 		Hide();
@@ -232,17 +224,10 @@ void UDIalogueWidget::OnChoiceSelected(int buttonIndex)
 {
 	OptionsVerticalBox->ClearChildren();
 	
-	auto SelectedChoice = CurrentDialogueData->Choices[buttonIndex];
-	
-	if (!SelectedChoice.DialogueData.IsNull())
-	{
-		UE_LOG(LogTemp, Log, TEXT("New Dialogue started"));
-		InitializeDialogue(SelectedChoice.DialogueData.Get());
-		
-		ACargoGameMode::Get(this)->AddTag(SelectedChoice.ChoiceTag);
-		return;
-	}
-	
+	const auto& SelectedChoice = CurrentDialogueData->Choices[buttonIndex];
+	ACargoGameMode::Get(this)->AddTag(SelectedChoice.ChoiceTag);
+	GetGameInstance()->GetSubsystem<UFROGDialogueSubsystem>()->SetNextDialogue(SelectedChoice.DialogueData);
+
 	Hide();
 }
 
@@ -257,17 +242,6 @@ void UDIalogueWidget::InitializeDialogue(UDialogueData* InDialogueDefinition)
 	CurrentDialogueData = InDialogueDefinition;
 	UE_LOG(LogTemp, Log, TEXT("InitializeDialogue called with definition: %s"), InDialogueDefinition ? *InDialogueDefinition->GetName() : TEXT("nullptr"));
 
-	if (const UWorld* World = GetWorld())
-	{
-		if (UGameInstance* GI = World->GetGameInstance())
-		{
-			if (UFROGDialogueSubsystem* DialogueSubsystem = GI->GetSubsystem<UFROGDialogueSubsystem>())
-			{
-				DialogueSubsystem->NotifyDialogueStarted(InDialogueDefinition, CurrentInstigator.Get());
-			}
-		}
-	}
-	
 	if(ShowAnimation)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("ShowAnimation exists, playing it. Animation pointer: %p, Duration: %f"), 
@@ -296,9 +270,14 @@ void UDIalogueWidget::InitializeDialogue(UDialogueData* InDialogueDefinition)
 
 void UDIalogueWidget::OnInputActionContinue()
 {
+	if (!CurrentDialogueData || OptionsVerticalBox->GetChildrenCount() > 0 || CurrentLineIndex >= CurrentDialogueData->DialogueLines.Num())
+	{
+		return;
+	}
+
 	if(bIsTyping)
 	{
-		TextDialogue->SetText(FullLineText);
+		TextDialogue->SetText(FormattedLine.ToRichText(FormattedLine.PlainText.Len()));
 		bIsTyping = false;
 		return;
 	}
@@ -314,5 +293,39 @@ void UDIalogueWidget::Hide()
 		return;
 	}
 
-	UPrimaryGameLayout::GetPrimaryGameLayoutForPrimaryPlayer(this)->FindAndRemoveWidgetFromLayer(this);
+	FinishHide();
+}
+
+void UDIalogueWidget::FinishHide()
+{
+	const auto Definition = CurrentDialogueData;
+	const auto Completion = OnDialogueFinishedDelegate;
+	OnDialogueFinishedDelegate.Clear();
+	UCommonUIExtensions::PopContentFromLayer(this);
+	Completion.Broadcast(Definition);
+}
+
+void UDIalogueWidget::PrepareLineText(const FText& Text)
+{
+	const auto PlayerState = GetOwningPlayer()->GetPlayerState<ACargoPlayerState>();
+	FormattedLine.Parse(Text.ToString(), [PlayerState](const FString& TagName) -> TOptional<FString>
+	{
+		const auto Tag = FGameplayTag::RequestGameplayTag(FName(*TagName), false);
+		const auto Value = PlayerState ? PlayerState->FindPlayerDataTag(Tag) : nullptr;
+		return Value ? TOptional<FString>(*Value) : TOptional<FString>();
+	});
+	FullLineText = FText::FromString(FormattedLine.PlainText);
+	UpdatePlayerDataStyle();
+}
+
+void UDIalogueWidget::UpdatePlayerDataStyle()
+{
+	auto Styles = NewObject<UDataTable>(TextDialogue);
+	Styles->RowStruct = FRichTextStyleRow::StaticStruct();
+	FRichTextStyleRow Row;
+	Row.TextStyle = TextDialogue->GetCurrentDefaultTextStyle();
+	Styles->AddRow(TEXT("Default"), Row);
+	Row.TextStyle.SetColorAndOpacity(GetDefault<UCargoSettings>()->DialoguePlayerDataColor);
+	Styles->AddRow(TEXT("PlayerData"), Row);
+	TextDialogue->SetTextStyleSet(Styles);
 }

@@ -10,14 +10,14 @@ void UMissionTrackerWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 	
-	const auto MissionsService = ACargoGameMode::Get(this)->MissionsService;
+	const auto QuestService = ACargoGameMode::Get(this)->QuestService;
 	
-	MissionsService->ActiveMissionsUpdatedDelegate.AddUObject(this, &ThisClass::OnActiveMissionsChanged);
-	MissionsService->MissionProgressUpdatedDelegate.AddUObject(this, &ThisClass::OnMissionProgressUpdated);
-	MissionsService->MissionCompletedDelegate.AddUObject(this, &ThisClass::OnMissionCompleted);
+	QuestService->ActiveMissionsUpdatedDelegate.AddUObject(this, &ThisClass::OnActiveMissionsChanged);
+	QuestService->MissionProgressUpdatedDelegate.AddUObject(this, &ThisClass::OnMissionProgressUpdated);
+	QuestService->MissionCompletedDelegate.AddUObject(this, &ThisClass::OnMissionCompleted);
 }
 
-void UMissionTrackerWidget::OnActiveMissionsChanged(const TMap<FGuid, TObjectPtr<UMissionStatus>>& ActiveMissions)
+void UMissionTrackerWidget::OnActiveMissionsChanged(const TMap<FGuid, TObjectPtr<UDeliveryMissionStatus>>& ActiveMissions)
 {
 	MissionsContainer->ClearChildren();
 	MissionsEntryWidgets.Empty();
@@ -33,34 +33,29 @@ void UMissionTrackerWidget::OnActiveMissionsChanged(const TMap<FGuid, TObjectPtr
 	}
 }
 
-void UMissionTrackerWidget::OnMissionProgressUpdated(TObjectPtr<UMissionStatus> MissionStatus, FGameplayTag CargoType)
+void UMissionTrackerWidget::OnMissionProgressUpdated(TObjectPtr<UDeliveryMissionStatus> MissionStatus, FGameplayTag CargoType)
 {
-	UE_LOG(LogTemp, Warning, TEXT("MissionsService: Mission progress updated"));	
+	UE_LOG(LogTemp, Warning, TEXT("QuestService: Mission progress updated"));	
 	
 	const auto CorrespondingWidget = MissionsEntryWidgets[MissionStatus->GetId()];
 	
 	if (!CorrespondingWidget)
 	{
-		UE_LOG(LogTemp, Error, TEXT("MissionsService: No widget found for mission %s"), *MissionStatus->GetId().ToString());
+		UE_LOG(LogTemp, Error, TEXT("QuestService: No widget found for mission %s"), *MissionStatus->GetId().ToString());
 		return;
 	}
 	
 	CorrespondingWidget->UpdateRequirement(CargoType, MissionStatus->GetDeliveredQuantities()[CargoType].DeliveredQuantity);
 }
 
-void UMissionTrackerWidget::OnMissionCompleted(TObjectPtr<UMissionStatus> MissionStatus)
+void UMissionTrackerWidget::OnMissionCompleted(TObjectPtr<UDeliveryMissionStatus> MissionStatus)
 {
-	UE_LOG(LogTemp, Warning, TEXT("MissionsService: Mission completed"));
-	
-	const auto CorrespondingWidget = MissionsEntryWidgets[MissionStatus->GetId()];
-	
-	if (!CorrespondingWidget)
-	{
-		UE_LOG(LogTemp, Error, TEXT("MissionsService: No widget found for mission %s"), *MissionStatus->GetId().ToString());
+	const auto* Widget = MissionsEntryWidgets.Find(MissionStatus->GetId());
+	if (!Widget || !IsValid(*Widget))
 		return;
-	}
-	
-	CorrespondingWidget->RemoveFromParent();
+
+	(*Widget)->RemoveFromParent();
+	MissionsEntryWidgets.Remove(MissionStatus->GetId());
 }
 
 void UMissionTrackerWidget::OnQuestEntryAnimationFinished(UMissionTrackerEntryWidget* Widget)

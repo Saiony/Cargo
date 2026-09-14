@@ -28,6 +28,9 @@ UCLASS(abstract)
 class ACargoPlayerController : public APlayerController
 {
 	GENERATED_BODY()
+
+public:
+	ACargoPlayerController();
 	
 protected:
 
