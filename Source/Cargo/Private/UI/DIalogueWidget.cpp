@@ -212,19 +212,18 @@ void UDIalogueWidget::DisplayChoices()
 	for (auto i = 0; i < CurrentDialogueData->Choices.Num(); i++)
 	{
 		const auto OptionButton = CreateWidget<UDialogueOptionButton>(this, DialogueOptionButtonClass);
-		OptionButton->Init(CurrentDialogueData->Choices[i]);
-		OptionButton->OnClicked().AddUObject(this, &ThisClass::OnChoiceSelected, i);
+		OptionButton->Init(CurrentDialogueData->Choices[i].Text, i, this);
 		
 		const auto ChildrenSlot = OptionsVerticalBox->AddChildToVerticalBox(OptionButton);
 		ChildrenSlot->SetPadding(FMargin(0.f, 0.f, 0.f, ChildrenPadding)); 
 	}
 }
 
-void UDIalogueWidget::OnChoiceSelected(int buttonIndex)
+void UDIalogueWidget::OnDialogueOptionClicked(UDialogueOptionButton* Button, const int8 Id)
 {
 	OptionsVerticalBox->ClearChildren();
 	
-	const auto& SelectedChoice = CurrentDialogueData->Choices[buttonIndex];
+	const auto& SelectedChoice = CurrentDialogueData->Choices[Id];
 	ACargoGameMode::Get(this)->AddTag(SelectedChoice.ChoiceTag);
 	GetGameInstance()->GetSubsystem<UFROGDialogueSubsystem>()->SetNextDialogue(SelectedChoice.DialogueData);
 

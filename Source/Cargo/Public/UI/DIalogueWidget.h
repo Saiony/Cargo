@@ -15,26 +15,30 @@ class URichTextBlock;
 class UImage;
 
 UCLASS()
-class CARGO_API UDIalogueWidget : public UFrogsmithActivatableWidget
+class CARGO_API UDIalogueWidget : public UFrogsmithActivatableWidget, public IDialogueOptionListener
 {
 	GENERATED_BODY()
 	
 public:
 	FOnDialoguefinished OnDialogueFinishedDelegate;
 	
-	virtual void NativeOnActivated() override;
-	virtual void NativeOnDeactivated() override;
-	
 	UFUNCTION(BlueprintCallable, Category="Arcade")
 	void InitializeDialogue(UDialogueData* InDialogueDefinition);
 
 	void SetInstigator(AActor* InInstigator) { CurrentInstigator = InInstigator; }
 
-	virtual void OnAnimationFinished_Implementation(const UWidgetAnimation* Animation) override;
+	
 	void SetupAndPlayDialogue();
+	
+	virtual void OnDialogueOptionClicked(UDialogueOptionButton* Button, const int8 Id) override;
 
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;	
 protected:
-	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+	virtual void OnAnimationFinished_Implementation(const UWidgetAnimation* Animation) override;
+	
+	virtual void NativeOnActivated() override;
+	
+	virtual void NativeOnDeactivated() override;
 
 	UFUNCTION(BlueprintCallable)
 	void OnInputActionContinue();
@@ -44,15 +48,16 @@ private:
 	void UpdateVisualsForLine(const FARCDialogueLine& Line);
 	void OnDialogueFinished();
 	void DisplayChoices();
-	void OnChoiceSelected(int buttonIndex);
 	void Hide();
 	void FinishHide();
 	void PrepareLineText(const FText& Text);
 	void UpdatePlayerDataStyle();
+	
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Arcade", meta=(AllowPrivateAccess))
 	FDataTableRowHandle SkipDialogueInputActionData;
+	
 	FUIActionBindingHandle SkipDialogueInputHandle;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Arcade", meta=(AllowPrivateAccess))

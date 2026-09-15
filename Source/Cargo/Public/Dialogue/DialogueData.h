@@ -72,6 +72,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Arcade")
 	FSlateBrush DefaultPortrait;
+	
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Arcade")
 	TArray<FARCDialogueLine> DialogueLines;

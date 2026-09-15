@@ -203,7 +203,8 @@ void UQuestService::ActivateQuest(UQuestData* QuestData, AActor* QuestInstigator
 
 void UQuestService::CompleteTravelQuest(FGameplayTag QuestTag, AActor* InstigatorIsland)
 {
-	auto Quest = GetQuestStatus(QuestTag);
+	const auto Quests = GetQuestStatus(QuestTag);
+	const auto Quest = Quests.IsEmpty() ? nullptr : Quests[0];
 	const auto* Island = Cast<ACargoIsland>(InstigatorIsland);
 	const auto* Travel = Quest ? Cast<UTravelMissionStatus>(Quest->MissionStatus) : nullptr;
 	if (!Travel || !Island || !Travel->GetDestinationTag().IsValid()
@@ -243,41 +244,50 @@ void UQuestService::AddAvailableQuest(TObjectPtr<UQuestData> Quest)
 		AvailableQuests.AddUnique(Quest);
 }
 
-TObjectPtr<UQuestStatus> UQuestService::GetQuestStatus(FGameplayTag QuestTag)
+TArray<TObjectPtr<UQuestStatus>> UQuestService::GetQuestStatus(FGameplayTag QuestTag)
 {
-	const auto* Quest = ActiveQuests.Find(QuestTag);
-	return Quest ? *Quest : nullptr;
+	TArray<TObjectPtr<UQuestStatus>> Quests;
+	if (const auto* Quest = ActiveQuests.Find(QuestTag))
+		Quests.Add(*Quest);
+	return Quests;
 }
 
-TObjectPtr<UQuestStatus> UQuestService::GetQuestStatusByDestination(FGameplayTag Destination)
+TArray<TObjectPtr<UQuestStatus>> UQuestService::GetQuestStatusByDestination(FGameplayTag Destination)
 {
+	TArray<TObjectPtr<UQuestStatus>> Quests;
 	for (const auto& Entry : ActiveQuests)
 	{
 		const auto* Delivery = Cast<UDeliveryMissionStatus>(Entry.Value->MissionStatus);
 		if (Delivery && Delivery->GetDestinationTag() == Destination)
-			return Entry.Value;
+			Quests.Add(Entry.Value);
 		const auto* Travel = Cast<UTravelMissionStatus>(Entry.Value->MissionStatus);
 		if (Travel && Travel->GetDestinationTag().IsValid() && Travel->GetDestinationTag() == Destination)
-			return Entry.Value;
+			Quests.Add(Entry.Value);
 	}
-	return nullptr;
+	return Quests;
 }
 
-TObjectPtr<UQuestStatus> UQuestService::GetQuestStatusByOrigin(FGameplayTag OriginIsland)
+TArray<TObjectPtr<UQuestStatus>> UQuestService::GetQuestsStatusByOrigin(FGameplayTag OriginIsland)
 {
+	TArray<TObjectPtr<UQuestStatus>> Quests;
 	for (const auto& Entry : ActiveQuests)
 	{
 		if (Entry.Value->StartIslandTag == OriginIsland)
-			return Entry.Value;
+			Quests.Add(Entry.Value);
 	}
-	return nullptr;
+	
+	return Quests;
 }
 
-TObjectPtr<UQuestData> UQuestService::GetAvailableQuestByStartLocation(FGameplayTag StartLocation)
+TArray<TObjectPtr<UQuestData>> UQuestService::GetAvailableQuestsByStartLocation(FGameplayTag StartLocation)
 {
-	const auto* Quest = AvailableQuests.FindByPredicate([StartLocation](const auto& Data)
+	TArray<TObjectPtr<UQuestData>> Quests;
+	
+	for (const auto Entry : AvailableQuests)
 	{
-		return Data->StartLocationTag == StartLocation;
-	});
-	return Quest ? *Quest : nullptr;
+		if (Entry->StartLocationTag == StartLocation)
+			Quests.Add(Entry);
+	}
+	
+	return Quests;
 }
