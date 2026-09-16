@@ -309,7 +309,7 @@ void UCargoDebugCommands::AddTagConsole(const TArray<FString>& Args, UWorld* Wor
 		return;
 	}
 
-	GameMode->AddTag(Tag);
+	GameMode->AddInGameEventTag(Tag);
 	UE_LOG(LogTemp, Log, TEXT("Cargo.AddTag: Added '%s'"), *Tag.ToString());
 }
 #endif

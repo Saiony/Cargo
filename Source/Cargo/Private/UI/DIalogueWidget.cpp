@@ -224,7 +224,7 @@ void UDIalogueWidget::OnDialogueOptionClicked(UDialogueOptionButton* Button, con
 	OptionsVerticalBox->ClearChildren();
 	
 	const auto& SelectedChoice = CurrentDialogueData->Choices[Id];
-	ACargoGameMode::Get(this)->AddTag(SelectedChoice.ChoiceTag);
+	ACargoGameMode::Get(this)->AddInGameEventTag(SelectedChoice.ChoiceTag);
 	GetGameInstance()->GetSubsystem<UFROGDialogueSubsystem>()->SetNextDialogue(SelectedChoice.DialogueData);
 
 	Hide();

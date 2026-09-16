@@ -24,5 +24,6 @@ void UDialogueOptionButton::NativeOnClicked()
 	Super::NativeOnClicked();
 	if (Dialogue)
 		GetGameInstance()->GetSubsystem<UFROGDialogueSubsystem>()->PlayDialogue(Dialogue, Instigator);
+	
 	Listener->OnDialogueOptionClicked(this, Id);
 }

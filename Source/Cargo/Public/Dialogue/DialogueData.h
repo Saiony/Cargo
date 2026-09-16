@@ -23,7 +23,7 @@ struct FCargoDialogueChoice
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(MultiLine=true), Category="Cargo")
 	FText Text;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo", meta = (Categories = "Choice"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo", meta = (Categories = "InGameEvent"))
 	FGameplayTag ChoiceTag;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo")
@@ -53,7 +53,7 @@ struct FDialogueWithCondition
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo", meta=(Categories="Choice"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo", meta=(Categories="InGameEvent"))
 	FGameplayTagContainer RequiredChoiceTags;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo")
@@ -66,13 +66,17 @@ class CARGO_API UDialogueData : public UPrimaryDataAsset
 	GENERATED_BODY()
 
 public:
-
+	UPROPERTY(VisibleAnywhere)
+	FGuid Id;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Arcade", meta = (Categories = "Dialogue"))
 	FGameplayTag DialogueTag;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Arcade")
-	FSlateBrush DefaultPortrait;
+	FSlateBrush DefaultPortrait;	
 	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Arcade")
+	FText Title;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Arcade")
 	TArray<FARCDialogueLine> DialogueLines;
@@ -95,4 +99,8 @@ public:
 	{
 		return FPrimaryAssetId(CollectionType, GetFName());
 	}
+	
+	UDialogueData();
+	
+	virtual void PostDuplicate(EDuplicateMode::Type DuplicateMode) override;
 };

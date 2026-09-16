@@ -122,7 +122,7 @@ void UQuestService::CompleteMission(FGuid MissionId, AActor* InstigatorIsland)
 		EndDialogue = Quest->EndDeliveryDialogue;
 		for (const FGameplayTag Tag : Quest->AlternativeEndDeliveryDialogue.RequiredChoiceTags)
 		{
-			if (GameMode->HasTag(Tag))
+			if (GameMode->HasInGameEventTag(Tag))
 			{
 				EndDialogue = Quest->AlternativeEndDeliveryDialogue.AlternativeDialogue;
 				break;
@@ -130,7 +130,7 @@ void UQuestService::CompleteMission(FGuid MissionId, AActor* InstigatorIsland)
 		}
 		ActiveQuests.Remove(Quest->QuestTag);
 		if (Quest->Reward.RewardTag.IsValid())
-			GameMode->AddTag(Quest->Reward.RewardTag);
+			GameMode->AddInGameEventTag(Quest->Reward.RewardTag);
 		GameMode->EconomyService->AddMoney(Quest->Reward.Money);
 		AddAvailableQuest(Quest->NextQuest.LoadSynchronous());
 	}
@@ -215,7 +215,7 @@ void UQuestService::CompleteTravelQuest(FGameplayTag QuestTag, AActor* Instigato
 	auto EndDialogue = Quest->EndDeliveryDialogue;
 	for (const FGameplayTag Tag : Quest->AlternativeEndDeliveryDialogue.RequiredChoiceTags)
 	{
-		if (GameMode->HasTag(Tag))
+		if (GameMode->HasInGameEventTag(Tag))
 		{
 			EndDialogue = Quest->AlternativeEndDeliveryDialogue.AlternativeDialogue;
 			break;
@@ -225,7 +225,7 @@ void UQuestService::CompleteTravelQuest(FGameplayTag QuestTag, AActor* Instigato
 	// Remove before rewards and callbacks so repeated interactions cannot complete it twice.
 	ActiveQuests.Remove(QuestTag);
 	if (Quest->Reward.RewardTag.IsValid())
-		GameMode->AddTag(Quest->Reward.RewardTag);
+		GameMode->AddInGameEventTag(Quest->Reward.RewardTag);
 	GameMode->EconomyService->AddMoney(Quest->Reward.Money);
 	AddAvailableQuest(Quest->NextQuest.LoadSynchronous());
 	QuestCompletedDelegate.Broadcast(Quest);

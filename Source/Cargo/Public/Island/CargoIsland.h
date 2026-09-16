@@ -30,9 +30,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Island")
 	TObjectPtr<UIslandData> Data;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Island", meta = (Categories = "Dialogue"))
-	TSoftObjectPtr<UDialogueData> DefaultInteractionDialogue;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Island")
 	TObjectPtr<UStaticMeshComponent> IslandMeshComp;
@@ -71,5 +68,5 @@ public:
 	
 	TObjectPtr<UCargoPortComponent> GetPort() { return PortComponent; }
 	
-	TSoftObjectPtr<UDialogueData> GetDefaultInteractionDialogue() { return DefaultInteractionDialogue; }
+	TObjectPtr<UIslandData> GetIslandData() const { return Data; }
 };

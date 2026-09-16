@@ -116,6 +116,8 @@ void UFROGDialogueSubsystem::PlayDialogue(UDialogueData* DialogueData, AActor* I
 	CurrentDialogue = DialogueData;
 	NextDialogue = DialogueData->NextDialogue;
 	PushDialogueWidget(DialogueData);
+	
+	ACargoGameMode::Get(this)->AlreadyPlayedDialogues.Add(DialogueData->Id);
 }
 
 void UFROGDialogueSubsystem::PushDialogueWidget(UDialogueData* DialogueData)

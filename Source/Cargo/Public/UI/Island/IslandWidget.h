@@ -32,6 +32,9 @@ class CARGO_API UIslandWidget : public UFrogsmithActivatableWidget, public IDial
 	TSubclassOf<UQuestDialogueOptionButton> QuestDialogueOptionButtonClass;	
 
 	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UDialogueOptionButton> DefaultDialogueButton;
+	
+	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> MissionBoardButton;
 
 	UPROPERTY(meta = (BindWidget))
@@ -47,7 +50,7 @@ class CARGO_API UIslandWidget : public UFrogsmithActivatableWidget, public IDial
 	TSubclassOf<UMissionBoardWidget> MissionBoardWidgetClass;
 
 	virtual void NativeOnInitialized() override;
-
+	
 	UFUNCTION()
 	void OnMissionBoardButtonClicked();
 
@@ -63,5 +66,6 @@ public:
 	void Initialize(TObjectPtr<ACargoIsland> IslandRef);
 	
 	virtual void OnQuestDialogueOptionClicked(UQuestDialogueOptionButton* Button) override;
+	
 	virtual void OnDialogueOptionClicked(UDialogueOptionButton* Button, const int8 Id) override;
 };

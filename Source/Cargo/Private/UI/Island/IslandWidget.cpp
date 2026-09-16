@@ -17,15 +17,16 @@ void UIslandWidget::NativeOnInitialized()
 	MissionBoardButton->OnClicked.AddDynamic(this, &ThisClass::OnMissionBoardButtonClicked);
 	CloseButton->OnClicked.AddDynamic(this, &ThisClass::OnCloseButtonClicked);
 }
-
 void UIslandWidget::Initialize(TObjectPtr<ACargoIsland> IslandRef)
 {
 	Island = IslandRef;
 
-	MissionBoardButton->SetVisibility(!ACargoGameMode::Get(this)->HasTag(TAG_InGameEvent_MissionBoardUnlocked) ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
+	MissionBoardButton->SetVisibility(!ACargoGameMode::Get(this)->HasInGameEventTag(TAG_InGameEvent_MissionBoardUnlocked) ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 
 	OptionsContainer->ClearChildren();
 	DrawDialogueButtons();
+	
+	DefaultDialogueButton->Init(FText::FromString("Conversar"), IslandRef->GetIslandData()->DefaultInteractionDialogue.LoadSynchronous(), IslandRef, this);
 }
 
 void UIslandWidget::DrawDialogueButtons()
@@ -54,10 +55,21 @@ void UIslandWidget::DrawDialogueButtons()
 		if (!ActiveQuests.Contains(OriginQuest))
 			CreateQuestDialogueOptionButton(OriginQuest->OriginalQuestData, EQuestDialogueOptionType::QuestInProgress);
 	}
-
-	// const auto Dialogue = Island->GetDefaultInteractionDialogue().LoadSynchronous();
-	// if (Dialogue)
-	// 	CreateDialogueOptionButton(NSLOCTEXT("IslandWidget", "Talk", "Talk"), Dialogue);
+	
+	//Simple dialogues based on in-game events
+	for (const auto DialogueByInGameEvent : Island->GetIslandData()->DialoguesByRequiredEvent)
+	{
+		if (!ACargoGameMode::Get(this)->HasInGameEventTag(DialogueByInGameEvent.Key))
+			continue;
+		
+		for (const auto Dialogue : DialogueByInGameEvent.Value.Dialogues)
+		{
+			if (ACargoGameMode::Get(this)->AlreadyPlayedDialogues.Contains(Dialogue->Id))
+				continue;
+			
+			CreateDialogueOptionButton(Dialogue->Title, Dialogue);			
+		}
+	}
 }
 
 void UIslandWidget::CreateQuestDialogueOptionButton(TObjectPtr<UQuestData> Quest, EQuestDialogueOptionType Type)
@@ -78,13 +90,14 @@ void UIslandWidget::CreateDialogueOptionButton(const FText& Title, UDialogueData
 	ChildrenSlot->SetPadding(FMargin(0.f, 0.f, 0.f, DialogueOptionsContainerPadding)); 
 }
 
-void UIslandWidget::OnDialogueOptionClicked(UDialogueOptionButton* Button, const int8 Id)
-{
-	
-}
-
 void UIslandWidget::OnQuestDialogueOptionClicked(UQuestDialogueOptionButton* Button)
 {
+}
+
+void UIslandWidget::OnDialogueOptionClicked(UDialogueOptionButton* Button, const int8 Id)
+{
+	if (Button != DefaultDialogueButton)
+		Button->SetIsEnabled(false);
 }
 
 void UIslandWidget::OnMissionBoardButtonClicked()

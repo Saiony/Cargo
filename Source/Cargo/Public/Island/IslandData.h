@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "Engine/DataAsset.h"
-#include "Mission/DeliveryMissionData.h"
+#include "Dialogue/DialogueCollection.h"
 #include "IslandData.generated.h"
 
 /**
@@ -20,5 +20,12 @@ public:
 	FGameplayTag LocationTag;
 	
 	UPROPERTY(EditDefaultsOnly)
-	FText DisplayName;
+	FText DisplayName;	
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Dialogue")
+	TSoftObjectPtr<UDialogueData> DefaultInteractionDialogue;
+	
+	// Dialogues available after the event identified by the key has occurred.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Dialogue", meta=(Categories="InGameEvent"))
+	TMap<FGameplayTag, FDialogueCollection> DialoguesByRequiredEvent;
 };
