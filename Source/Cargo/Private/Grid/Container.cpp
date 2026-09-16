@@ -1,12 +1,15 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Grid/Container.h"
+#include "Engine/World.h"
+#include "Subsystem/CargoTweenSubsystem.h"
 
 // Sets default values
 AContainer::AContainer()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	PlaceableVisualComp->ComponentTags.AddUnique(UCargoTweenSubsystem::ShakeTargetTag);
 }
 
 void AContainer::Init()
@@ -52,4 +55,9 @@ void AContainer::OnConstruction(const FTransform& Transform)
 void AContainer::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+}
+
+void AContainer::DoShake(float Intensity, float Duration)
+{
+	GetWorld()->GetSubsystem<UCargoTweenSubsystem>()->DoShake(this, Intensity, Duration);
 }

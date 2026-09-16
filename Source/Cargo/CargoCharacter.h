@@ -143,6 +143,13 @@ protected:
 	
 	UPROPERTY(EditDefaultsOnly, Category="Cargo")
 	float KnockbackSpeed = 3.f;
+
+	/** Shake displacement per unit of impact speed. */
+	UPROPERTY(EditDefaultsOnly, Category="Cargo|Shake", meta=(ClampMin="0.0"))
+	float ContainerShakeIntensity = 0.04f;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Cargo|Shake", meta=(ClampMin="0.0"))
+	float ContainerShakeDuration = 0.3f;
 	
 	UPROPERTY(EditDefaultsOnly, Category="Cargo")
 	float ShipInclinationMultiplier = 0.5f;

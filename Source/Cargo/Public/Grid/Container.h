@@ -18,6 +18,10 @@ public:
 	AContainer();
 
 	void Init(TObjectPtr<UContainerDA> InContainerDA);
+
+	/** Intensity is displacement in centimeters; Duration is in seconds. */
+	UFUNCTION(BlueprintCallable, Category="Cargo|Shake")
+	void DoShake(float Intensity, float Duration);
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

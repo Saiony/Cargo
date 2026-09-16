@@ -15,6 +15,8 @@
 #include "GameFramework/FloatingPawnMovement.h"
 #include "GameplayFramework/CargoPlayerState.h"
 #include "Grid/Placeable.h"
+#include "Grid/Container.h"
+#include "Subsystem/CargoTweenSubsystem.h"
 
 static TAutoConsoleVariable<bool> CVarBoostMovement(TEXT("Cargo.Haste"), false, TEXT("Increases boat speed"),ECVF_Default);
 
@@ -27,6 +29,7 @@ ACargoCharacter::ACargoCharacter()
 	
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
 	MeshComponent->SetupAttachment(RootComponent);
+	MeshComponent->ComponentTags.AddUnique(UCargoTweenSubsystem::ShakeTargetTag);
 
 	FloatingMovement = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("FloatingMovement"));
 	FloatingMovement->MaxSpeed = 600.f;
@@ -327,6 +330,21 @@ void ACargoCharacter::OnShipHit(UPrimitiveComponent* HitComponent, AActor* Other
 	LastKnockbackTime = Now;
 		
 	const float HitVelocity = FloatingMovement->Velocity.Size();
+	const float ShakeIntensity = HitVelocity * ContainerShakeIntensity;
+	
+	GetWorld()->GetSubsystem<UCargoTweenSubsystem>()->DoShake(this, ShakeIntensity, ContainerShakeDuration);
+	
+	TSet<AContainer*> ShakenContainers;
+	for (const auto& Slot : GridComp->GetOccupiedSlots())
+	{
+		AContainer* Container = Cast<AContainer>(Slot.Value);
+		if (IsValid(Container) && !ShakenContainers.Contains(Container))
+		{
+			ShakenContainers.Add(Container);
+			Container->DoShake(ShakeIntensity, ContainerShakeDuration);
+		}
+	}
+
 	KnockbackVelocity = Hit.ImpactNormal.GetSafeNormal() * KnockbackStrength * 100.f;
 	const ShipCollisionType CollisionType = HitVelocity > OriginalMaxSpeed * MaxSpeedContainerFalloff ? ShipCollisionType::Heavy : ShipCollisionType::Light;	
 	
