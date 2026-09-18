@@ -34,15 +34,28 @@ protected:
 	void InitializeGrid();
 
 	FVector WorldToLocal(const FVector& WorldLocation);
+
+	float CurrentStackRoll = 0.f;
+	void DropOverTiltedContainers();
+
+	/** Extra roll per grid floor, relative to the ship's roll. */
+	UPROPERTY(EditAnywhere, Category="Cargo|Stack", meta=(ClampMin="0.0"))
+	float StackLeanMultiplier = 0.15f;
 	
 	virtual void OnRegister() override;
 
 public:
 	UGridComponent();
+
+	/** Maximum container tilt from world vertical, in degrees. Zero disables automatic falling. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo|Stack", meta=(ClampMin="0", ClampMax="180", Units="deg"))
+	int32 ContainerFallAngle = 0;
     
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
     
 	void ClearGrid();
+
+	void UpdateStackLean(float ShipRoll);
 
 	bool CanAddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const FVector WorldLocation, float Rotation);
 	

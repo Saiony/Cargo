@@ -42,6 +42,7 @@ ACargoCharacter::ACargoCharacter()
 	
 	GridComp = CreateDefaultSubobject<UGridComponent>(TEXT("GridComp"));
 	GridComp->SetupAttachment(MeshComponent);
+	GridComp->ContainerFallAngle = 30;
 	
 	MovementAudioComp = CreateDefaultSubobject<UAudioComponent>(TEXT("MovementAudioComp"));	
 	
@@ -174,48 +175,6 @@ void ACargoCharacter::AttachPlaceable(APlaceable* Placeable, FVector WorldPos)
 	Placeable->AttachToActor(this, AttachmentRules);
 }
 
-void ACargoCharacter::OnShipBalanceChanged(float NewBalance)
-{
-	const auto BalanceAbs = fabs(NewBalance);
-	
-	if (BalanceAbs < 29)
-		return;
-	
-	int32 MaxLevelToPop = -1;
-	
-	if (BalanceAbs < 30)
-	{
-		MaxLevelToPop = 5;
-	}
-	else if (BalanceAbs < 35)
-	{
-		MaxLevelToPop = 4;
-	}
-	else if (BalanceAbs < 40)
-	{
-		MaxLevelToPop = 3;
-	}
-	else if (BalanceAbs < 50)
-	{
-		MaxLevelToPop = 2;
-	}
-	else if (BalanceAbs < 60)
-	{
-		MaxLevelToPop = 1;
-	}
-	else if (BalanceAbs > 70)
-	{
-		MaxLevelToPop = 0;
-	}
-	
-	const int32 HighestOccupiedZ = GridComp->GetHighestOccupiedZ();	
-	
-	for (auto Z = HighestOccupiedZ; Z >= MaxLevelToPop; --Z)
-	{
-		PopContainersFromZ(Z);
-	}
-}
-
 void ACargoCharacter::OnPlaceableAdded(APlaceable* Placeable)
 {
 	GetPlayerState<ACargoPlayerState>()->AddWeight(Placeable->Weight);
@@ -260,7 +219,7 @@ void ACargoCharacter::BeginPlay()
 	}
 	
 	CargoPlayerState = GetPlayerState<ACargoPlayerState>();
-	CargoPlayerState->OnBalanceChanged.AddDynamic(this, &ACargoCharacter::OnShipBalanceChanged);
+	GridComp->AddTickPrerequisiteComponent(RotateTimelineComp);
 	
 	//Timeline component
 	UpdateFunctionFloat.BindDynamic(this, &ACargoCharacter::UpdateTimelineComp);
@@ -367,6 +326,7 @@ void ACargoCharacter::PopRandomContainerFromTop(const FVector& HitDir)
 	}
 	
 	UE_LOG(LogTemp, Log, TEXT("Popping random container"));
+	const FVector ShipVelocity = FloatingMovement->Velocity;
 	
 	const auto RandomIndex = FMath::RandRange(0, PositionsTop.Num() - 1);
 	const auto RandomPosition = PositionsTop[RandomIndex];	
@@ -374,7 +334,7 @@ void ACargoCharacter::PopRandomContainerFromTop(const FVector& HitDir)
 	auto Placeable = GridComp->GetPlaceableAt(RandomPosition);		
 	GridComp->RemovePlaceableFromGrid(Placeable);
 	
-	Placeable->FallIntoSea(HitDir);
+	Placeable->FallIntoSea(HitDir, ShipVelocity);
 }
 
 void ACargoCharacter::PopContainersFromZ(int32 Z)
@@ -399,7 +359,7 @@ void ACargoCharacter::PopContainersFromZ(int32 Z)
 		GridComp->RemovePlaceableFromGrid(Placeable);
 	
 		const FVector RandomDirection = FMath::VRandCone(FVector::UpVector,FMath::DegreesToRadians(25.0f));
-		Placeable->FallIntoSea(RandomDirection);
+		Placeable->FallIntoSea(RandomDirection, FloatingMovement->Velocity);
 	}		
 }
 
@@ -470,4 +430,5 @@ void ACargoCharacter::UpdateTimelineComp(float Output)
 	Rotation.Roll = CurrentYaw;
 
 	MeshComponent->SetRelativeRotation(Rotation);
+	GridComp->UpdateStackLean(Rotation.Roll);
 }

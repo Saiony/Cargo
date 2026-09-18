@@ -14,8 +14,11 @@ APlaceable::APlaceable()
     BoxComp->SetCollisionProfileName(TEXT("PhysicsActor"));
     BoxComp->SetSimulatePhysics(false);
 
+    StackLeanPivot = CreateDefaultSubobject<USceneComponent>(TEXT("StackLeanPivot"));
+    StackLeanPivot->SetupAttachment(RootComponent);
+
     PivotComp = CreateDefaultSubobject<USceneComponent>(TEXT("PivotComp"));
-    PivotComp->SetupAttachment(RootComponent);
+    PivotComp->SetupAttachment(StackLeanPivot);
 
     BuoyancyComp = CreateDefaultSubobject<UBuoyancyComponent>(TEXT("BuoyancyComp"));	
 	
@@ -26,6 +29,10 @@ APlaceable::APlaceable()
 void APlaceable::BeginPlay()
 {
     Super::BeginPlay();
+
+    // Existing Blueprints may retain the old attachment directly to the root.
+    if (PivotComp->GetAttachParent() != StackLeanPivot)
+        PivotComp->AttachToComponent(StackLeanPivot, FAttachmentTransformRules::KeepRelativeTransform);
 }
 
 void APlaceable::Tick(float DeltaTime)
@@ -49,15 +56,15 @@ void APlaceable::Grab()
     
     BuoyancyComp->SetComponentTickEnabled(false);
 
-    SetActorRotation(FRotator(0.f, LocalYaw, 0.f));
-    
     OwningGridActor->RemovePlaceableFromGrid(this);
+    SetActorRotation(FRotator(0.f, LocalYaw, 0.f));
     
     UGameplayStatics::PlaySoundAtLocation(this, GrabSound, GetActorLocation());
 }
 
 void APlaceable::Place(TObjectPtr<UGridComponent> GridActor, int32 GridPosX, int32 GridPosY, int32 GridPosZ)
 {
+	StackLeanPivot->SetRelativeTransform(FTransform::Identity);
 	BoxComp->SetSimulatePhysics(false);
 	BoxComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
  
@@ -150,19 +157,17 @@ bool APlaceable::IsPlaceableBlocked(TObjectPtr<APlaceable> Placeable)
     return OwningGridActor->IsPlaceableBlocked(Placeable);
 }
 
-void APlaceable::FallIntoSea(const FVector& Direction)
+void APlaceable::FallIntoSea(const FVector& Direction, const FVector& InheritedVelocity)
 {
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 
 	BoxComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	BoxComp->SetSimulatePhysics(true);
 
-	const FVector UpImpulse = FVector::UpVector * 1000.0f;
-	const FVector SideImpulse = -Direction.GetSafeNormal() * 5000.0f;
-
-	BoxComp->AddImpulse(UpImpulse + SideImpulse, NAME_None, true);
+	BoxComp->SetPhysicsLinearVelocity(InheritedVelocity, false, NAME_None);
+	BoxComp->AddImpulse(Direction.GetSafeNormal() * 150.0f, NAME_None, true);
 	BoxComp->AddAngularImpulseInDegrees(
-		FMath::VRand() * 500.0f,
+		FMath::VRand() * 35.0f,
 		NAME_None,
 		true
 	);
@@ -187,4 +192,21 @@ void APlaceable::UpdateMesh()
 	//
 	// 	InstanceMeshComp->AddInstance(FTransform(LocalLocation));
 	// }
+}
+
+void APlaceable::SetStackLean(const FTransform& GridDeformation, const FTransform& GridWorldTransform)
+{
+	const FVector GridPosition = GridWorldTransform.InverseTransformPosition(GetActorLocation());
+	const FVector Location = GridWorldTransform.TransformPosition(GridDeformation.TransformPosition(GridPosition));
+	const FQuat Rotation = GridWorldTransform.GetRotation() * GridDeformation.GetRotation() *
+		GridWorldTransform.GetRotation().Inverse() * GetActorQuat();
+	StackLeanPivot->SetWorldLocationAndRotation(Location, Rotation);
+}
+
+void APlaceable::BakeStackLean()
+{
+	// Once cargo leaves the grid, its physics root takes over the visible pose.
+	const FTransform VisualPose = StackLeanPivot->GetComponentTransform();
+	StackLeanPivot->SetRelativeTransform(FTransform::Identity);
+	SetActorTransform(VisualPose, false, nullptr, ETeleportType::TeleportPhysics);
 }

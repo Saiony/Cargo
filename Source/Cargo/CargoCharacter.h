@@ -226,9 +226,6 @@ public:
 	void AttachPlaceable(APlaceable* Placeable, FVector WorldPos);
 
 	UFUNCTION()
-	void OnShipBalanceChanged(float NewBalance);
-
-	UFUNCTION()
 	void OnShipNameChanged(FString NewShipName);
 	
 	virtual void BeginPlay() override;

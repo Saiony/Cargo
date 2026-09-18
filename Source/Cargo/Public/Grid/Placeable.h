@@ -32,6 +32,9 @@ protected:
     UPROPERTY(VisibleAnywhere, Category = "Visual")
     TObjectPtr<UChildActorComponent> PlaceableVisualComp;
 
+    UPROPERTY(VisibleAnywhere, Category = "Visual")
+    TObjectPtr<USceneComponent> StackLeanPivot;
+
 public:    
     
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cargo")
@@ -64,6 +67,10 @@ public:
     TObjectPtr<UGridComponent> OwningGridActor;    
     
     TObjectPtr<APlaceableVisual> GetVisual() { return Cast<APlaceableVisual>(PlaceableVisualComp->GetChildActor()); }
+
+    void SetStackLean(const FTransform& GridDeformation, const FTransform& GridWorldTransform);
+    void BakeStackLean();
+	FTransform GetStackWorldTransform() const { return StackLeanPivot->GetComponentTransform(); }
 
 protected:
 
@@ -106,7 +113,7 @@ public:
     UFUNCTION(BlueprintImplementableEvent, Category = "Placeable")
     void LaunchPlaceable(const FVector& Direction);    
     
-    void FallIntoSea(const FVector& Direction);
+    void FallIntoSea(const FVector& Direction, const FVector& InheritedVelocity = FVector::ZeroVector);
 
     bool IsPlaceableBlocked(TObjectPtr<APlaceable> Placeable);
     
