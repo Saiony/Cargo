@@ -16,5 +16,5 @@ void UMoneyWidget::NativeOnInitialized()
 
 void UMoneyWidget::OnMoneyChanged(int32 Amount)
 {
-	MoneyText->SetText(FText::AsNumber((Amount)));	
+	MoneyText->SetText(FText::AsNumber(Amount));	
 }

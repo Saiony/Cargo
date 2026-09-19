@@ -29,6 +29,12 @@ static FAutoConsoleCommandWithWorldAndArgs CmdCargoAddTag(
 	TEXT("Adds an exact gameplay tag to CargoGameMode. Usage: Cargo.AddTag Tag.Exact.Name"),
 	FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(&UCargoDebugCommands::AddTagConsole)
 );
+
+static FAutoConsoleCommandWithWorldAndArgs CmdCargoKlapaucius(
+	TEXT("Cargo.Klapaucius"),
+	TEXT("Adds 1000 money to the economy service. Usage: Cargo.Klapaucius"),
+	FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(&UCargoDebugCommands::KlapauciusConsole)
+);
 #endif
 
 UContainerDA* UCargoDebugCommands::ResolveContainerDataAsset(const FString& InCargoTypeStr, FGameplayTag* OutTag)
@@ -287,6 +293,26 @@ void UCargoDebugCommands::GetContainerConsole(const TArray<FString>& Args, UWorl
 }
 
 #if WITH_EDITOR
+void UCargoDebugCommands::KlapauciusConsole(const TArray<FString>& Args, UWorld* World)
+{
+	ACargoGameMode* GameMode = World ? ACargoGameMode::Get(World) : nullptr;
+	if (!GameMode || !IsValid(GameMode->EconomyService))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cargo.Klapaucius: EconomyService not found"));
+		return;
+	}
+
+	constexpr int32 Amount = 1000;
+	if (GameMode->EconomyService->GetMoney() > MAX_int32 - Amount)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cargo.Klapaucius: Balance would exceed the supported maximum"));
+		return;
+	}
+
+	GameMode->EconomyService->AddMoney(Amount);
+	UE_LOG(LogTemp, Log, TEXT("Cargo.Klapaucius: Added %d money. Balance: %d"), Amount, GameMode->EconomyService->GetMoney());
+}
+
 void UCargoDebugCommands::AddTagConsole(const TArray<FString>& Args, UWorld* World)
 {
 	if (Args.Num() != 1)
