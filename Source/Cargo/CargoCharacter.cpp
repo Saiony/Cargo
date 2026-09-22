@@ -1,6 +1,9 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "CargoCharacter.h"
+#include "CargoGameMode.h"
+#include "DeveloperSettings/CargoSettings.h"
+#include "Private/UI/Prompt/SimplePrompt.h"
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/Controller.h"
 #include "EnhancedInputComponent.h"
@@ -107,6 +110,12 @@ void ACargoCharacter::DoMove(float Right, float Forward)
 	FloatingMovement->Acceleration = IsMovingBack ? OriginalAcceleration * ReverseGearMultiplier : OriginalAcceleration;	
 	
 	AddMovementInput(ForwardDirection, Forward);
+	
+	//fuel
+	if (ForwardDirection.Size() > 0.0f)
+	{
+		CargoPlayerState->GetFuelDomain()->RemoveFuel(FuelConsumptionPerTick);
+	}
 	
 	// Rotation
 	if (Right != 0.f)
@@ -219,6 +228,8 @@ void ACargoCharacter::BeginPlay()
 	}
 	
 	CargoPlayerState = GetPlayerState<ACargoPlayerState>();
+	CargoPlayerState->GetFuelDomain()->OnFuelDepleted.AddUObject(
+		this, &ThisClass::OnFuelDepleted);
 	GridComp->AddTickPrerequisiteComponent(RotateTimelineComp);
 	
 	//Timeline component
@@ -232,6 +243,27 @@ void ACargoCharacter::BeginPlay()
 	CargoPlayerState->OnShipNameChanged.AddDynamic(this, &ThisClass::OnShipNameChanged);
 	
 	InitializeShipName();
+}
+
+void ACargoCharacter::OnFuelDepleted()
+{
+	const auto PromptClass = GetDefault<UCargoSettings>()->FuelDepletedPromptClass.LoadSynchronous();
+	const auto GameMode = ACargoGameMode::Get(this);
+	const auto Prompt = GameMode->UIService->ShowWidget<USimplePrompt>(PromptClass);
+
+	Prompt->Initialize(FText::FromString(TEXT("Combustivel acabou, uma unidade de abastecimento sera acionada")), FText::FromString(TEXT("OK")),
+	[GameMode, this]()
+			{
+				GameMode->UIService->FadeIn(1.f, [GameMode, this]()
+				{
+					const auto FuelDomain = CargoPlayerState->GetFuelDomain();
+					FuelDomain->AddFuel(FuelDomain->GetMaxFuel());
+			
+					GameMode->EconomyService->IncrementFuelDebt();
+					
+					GameMode->UIService->FadeOut(3.f, []() {});
+				});		
+			});
 }
 
 void ACargoCharacter::BalanceShip()
@@ -420,7 +452,6 @@ void ACargoCharacter::DrawShipName(UCanvas* Canvas, int Width, int Height)
 		FLinearColor::Black
 	);
 }
-
 
 void ACargoCharacter::UpdateTimelineComp(float Output)
 {

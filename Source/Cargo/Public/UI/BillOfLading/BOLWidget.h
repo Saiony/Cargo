@@ -40,6 +40,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, meta = (BindWidget))
 	TObjectPtr<UCommonTextBlock> DeliveryTimeText;
 	
+	/*discounts*/
 	UPROPERTY(EditDefaultsOnly, meta = (BindWidget))
 	TObjectPtr<UCommonTextBlock> RecklessNavigationDiscount;
 	
@@ -48,6 +49,9 @@ protected:
 	
 	UPROPERTY(EditDefaultsOnly, meta = (BindWidget))
 	TObjectPtr<UCommonTextBlock> DamagedCargoDiscount;	
+	
+	UPROPERTY(EditDefaultsOnly, meta = (BindWidget))
+	TObjectPtr<UCommonTextBlock> FuelDiscount;
 	
 	UPROPERTY(EditDefaultsOnly, meta = (BindWidget))
 	TObjectPtr<UCommonTextBlock> BaseRewardText;

@@ -38,3 +38,13 @@ void UEconomyService::AddMoney(int32 Amount)
 	Money += Amount;	
 	OnMoneyChanged.Broadcast(Money);
 }
+
+void UEconomyService::IncrementFuelDebt()
+{
+	FuelDebt += FuelDebtPrice;
+}
+
+void UEconomyService::PayFuelDebts()
+{
+	FuelDebt = 0;
+}

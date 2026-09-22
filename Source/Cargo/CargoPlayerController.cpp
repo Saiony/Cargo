@@ -11,6 +11,7 @@
 #include "Blueprint/UserWidget.h"
 #include "CommonLocalPlayer.h"
 #include "ConsoleVariables.h"
+#include "CharacterComponents/CoalChimney.h"
 #include "Engine/OverlapResult.h"
 #include "Grid/Container.h"
 #include "Interaction/CargoInteractable.h"
@@ -125,15 +126,24 @@ void ACargoPlayerController::PlayerTick(float DeltaTime)
 		return;
 	
 	GetHitResultUnderCursor(DropSurfaceChannel, false, HitResult);
-	const auto HitComponent = HitResult.GetComponent();
+	const auto HitComponent = HitResult.GetComponent();	
 	
     if (!HitComponent)
     {     
         PlaceablePreview->SetActorHiddenInGame(true);
     	CurrentHoveredGrid = nullptr;
         return;
-    }
-
+    }		
+	
+	/*chimney*/
+	const auto Chimney = Cast<ACoalChimney>(HitResult.GetActor());
+	if (Chimney && bIsDragging)
+	{
+		Chimney->OnHover(DraggingObject);		
+		return;
+	}		
+	
+	/*grid*/
     UGridComponent* GridComponent = Cast<UGridComponent>(HitComponent);
 	CurrentHoveredGrid = GridComponent;
 	
@@ -175,7 +185,7 @@ void ACargoPlayerController::PlayerTick(float DeltaTime)
 	//attach preview to grid and update transform
     FVector WorldLocation = CurrentHoveredGrid->GridToLocalPos(ImpactPointGrid);
 
-    const float GridSize = GetDefault<UCargoSettings>()->GridCellSize;
+    //const float GridSize = GetDefault<UCargoSettings>()->GridCellSize;
 
     // WorldLocation.X = FMath::GridSnap(WorldLocation.X, GridSize);
     // WorldLocation.Y = FMath::GridSnap(WorldLocation.Y, GridSize);
@@ -267,6 +277,9 @@ void ACargoPlayerController::OnLeftClickEnd(const FInputActionValue& InputAction
 	if (!bIsDragging || !DraggingObject)
 		return;	
 	
+	//chimney
+	if ()//TODO: cod
+	
 	//if no grid below, just drop with physics
 	if (!CurrentHoveredGrid)
 	{		
@@ -281,10 +294,9 @@ void ACargoPlayerController::OnLeftClickEnd(const FInputActionValue& InputAction
 	}
 	
 	if (!CurrentHoveredGrid->CanAddPlaceableToGrid(DraggingObject, PlaceablePreview->GetActorLocation(), DraggingObject->GetLocalYaw()))
-	{		
 		return;
-	}
-
+	
+	//add to grid
 	CurrentHoveredGrid->AddPlaceableToGrid(DraggingObject, PlaceablePreview->GetActorLocation(), DraggingObject->GetLocalYaw());
 	
 	PlaceablePreview->SetActorHiddenInGame(true);

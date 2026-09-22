@@ -18,11 +18,9 @@ struct FMissionReward
 
 	FGameplayTag DestinationTag;
 		
-	int32 MissingCargoDiscount = 0;
-	
-	int32 DamagedCargoDiscount = 0;
-	
-	int32 RecklessNavigationDiscount = 0;
+	int32 MissingCargoDiscount = 0;	
+	int32 DamagedCargoDiscount = 0;	
+	int32 RecklessNavigationDiscount = 0;	
 	
 	FReward BaseReward;
 	
@@ -31,9 +29,9 @@ struct FMissionReward
 	int8 Stars = 0;
 	
 	TMap<FGameplayTag, FCargoStatus> DeliveredQuantities;
-	
+
 	FMissionReward() = default;
-	
+
 	FMissionReward(TObjectPtr<UDeliveryMissionStatus> MissionStatus);
 
 	FReward CalculateFinalReward(TObjectPtr<UDeliveryMissionStatus> MissionStatus) const;

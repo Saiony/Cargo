@@ -14,17 +14,22 @@ class CARGO_API UEconomyService : public UFORGServiceBase
 	GENERATED_BODY()
 	
 	int32 Money = 0.0f;
-
-public:
+	int32 FuelDebt = 0;	
+	int32 FuelDebtPrice = 25;
+	
+public:	
 	FOnMoneyChanged OnMoneyChanged;
 	
 	UEconomyService();
 	
-	int32 GetMoney() const { return Money; }
+	/*money*/
+	int32 GetMoney() const { return Money; }	
+	bool HasMoney(int32 Amount);	
+	bool RemoveMoney(int32 Amount);	
+	void AddMoney(int32 Amount);	
 	
-	bool HasMoney(int32 Amount);
-	
-	bool RemoveMoney(int32 Amount);
-	
-	void AddMoney(int32 Amount);
+	/*fuel*/
+	int32 GetFuelDebt() const { return FuelDebt; };
+	void IncrementFuelDebt();
+	void PayFuelDebts();
 };

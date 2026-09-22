@@ -140,6 +140,8 @@ void UQuestService::CompleteMission(FGuid MissionId, AActor* InstigatorIsland)
 	
 	const FMissionReward Result = Mission->CompleteMission();
 	GameMode->EconomyService->AddMoney(Result.FinalReward.Money);
+	GameMode->EconomyService->PayFuelDebts();
+	
 	MissionCompletedDelegate.Broadcast(Mission);
 	
 	if (Quest)

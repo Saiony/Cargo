@@ -3,6 +3,7 @@
 
 #include "UI/BillOfLading/BOLWidget.h"
 
+#include "CargoGameMode.h"
 #include "CommonTextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Mission/DeliveryMissionStatus.h"
@@ -65,6 +66,7 @@ void UBOLWidget::Init(const TObjectPtr<UDeliveryMissionStatus> MissionStatus)
 	MissingCargoDiscount->SetText(FText::AsNumber(-MissionReward.MissingCargoDiscount));
 	DamagedCargoDiscount->SetText(FText::AsNumber(-MissionReward.DamagedCargoDiscount));
 	RecklessNavigationDiscount->SetText(FText::AsNumber(-MissionReward.RecklessNavigationDiscount));
+	FuelDiscount->SetText(FText::AsNumber(-ACargoGameMode::Get(this)->EconomyService->GetFuelDebt()));
 	
 	BaseRewardText->SetText(FText::AsNumber(MissionReward.BaseReward.Money));
 	FinalRewardText->SetText(FText::AsNumber(MissionReward.FinalReward.Money));		

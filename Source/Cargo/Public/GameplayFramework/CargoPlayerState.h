@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "GameFramework/PlayerState.h"
+#include "GameplayFramework/Domains/FuelDomain.h"
 #include "CargoPlayerState.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnWeightChanged, float, NewCurrentWeight, float, MaxWeight);
@@ -45,6 +46,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cargo")
 	float ShipSpeedMultiplier = 1;
 	
+	FFuelDomain FuelDomain{50.f, 100.f};
+
 	TMap<FGameplayTag, FString> PlayerDataTags;
 	
 	void CalculateShipSpeedMultiplier();
@@ -66,6 +69,8 @@ public:
 	FOnShipNameChanged OnShipNameChanged;
 	
 	// --- Getters ---
+
+	FFuelDomain* GetFuelDomain() { return &FuelDomain; }
 
 	UFUNCTION(BlueprintPure, Category = "Cargo")
 	float GetCurrentWeight() const { return CurrentWeight; }

@@ -11,9 +11,6 @@
 UGridComponent::UGridComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
-	
-	// InstancedMeshComp = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("InstancedMeshComp"));
-	// InstancedMeshComp->AttachToComponent(this, FAttachmentTransformRules::KeepRelativeTransform);
 }
 
 // Called when the game starts

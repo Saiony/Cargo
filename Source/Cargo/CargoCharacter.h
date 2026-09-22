@@ -125,6 +125,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cargo")
 	float MaxSpeedContainerFalloff = 0.5f;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cargo")
+	float FuelConsumptionPerTick = 1;
+	
 	FDelegateHandle HasteCVarDelegateHandle;
 	
 	float FR = 0;	
@@ -190,6 +193,8 @@ protected:
 	void UpdateEngineSoundIntensity();
 
 	void UpdateSpeed();
+
+	void OnFuelDepleted();
 	
 	UFUNCTION()
 	void OnPlaceableAdded(APlaceable* Placeable);
