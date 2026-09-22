@@ -7,6 +7,7 @@
 #include "DataAssets/GridComponentDA.h"
 #include "DeveloperSettings/CargoSettings.h"
 #include "Grid/FROGGrid.h"
+#include "Interaction/CargoDropTarget.h"
 #include "GridComponent.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlaceableAddedToGrid, APlaceable*, Placeable);
@@ -15,7 +16,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlaceableRemovedFromGrid, APlacea
 class APlaceable;
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
-class CARGO_API UGridComponent : public UBoxComponent
+class CARGO_API UGridComponent : public UBoxComponent, public ICargoDropTarget
 {
 	GENERATED_BODY()
 protected:  
@@ -46,6 +47,9 @@ protected:
 
 public:
 	UGridComponent();
+
+	virtual void UpdateDropHover(APlaceable* Placeable, const FVector& ImpactPoint, APlaceablePreview* Preview) override;
+	virtual bool TryAcceptDrop(APlaceable* Placeable, APlaceablePreview* Preview) override;
 
 	/** Maximum container tilt from world vertical, in degrees. Zero disables automatic falling. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo|Stack", meta=(ClampMin="0", ClampMax="180", Units="deg"))

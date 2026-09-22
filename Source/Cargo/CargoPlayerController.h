@@ -8,6 +8,7 @@
 #include "Grid/GridComponent.h"
 #include "Grid/PlaceablePreview.h"
 #include "Interaction/CargoInteractable.h"
+#include "Interaction/CargoDropTarget.h"
 #include "CargoPlayerController.generated.h"
 
 class AContainer;
@@ -111,7 +112,10 @@ protected:
 	TScriptInterface<ICargoInteractable> CurrentInteractable = nullptr;
 	
 	UPROPERTY()
-	TObjectPtr<UGridComponent> CurrentHoveredGrid = nullptr;
+	TScriptInterface<ICargoDropTarget> CurrentHovered;
+
+	TScriptInterface<ICargoDropTarget> ResolveDropTarget(const FHitResult& HitResult) const;
+	void SetCurrentHovered(TScriptInterface<ICargoDropTarget> NewHovered);
 	
 	UPROPERTY()
 	TObjectPtr<APlaceablePreview> PlaceablePreview;

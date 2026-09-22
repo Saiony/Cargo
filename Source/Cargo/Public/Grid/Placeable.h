@@ -7,12 +7,13 @@
 #include "PlaceableVisual.h"
 #include "GameFramework/Actor.h"
 #include "Components/BoxComponent.h"
+#include "Interaction/CargoDropTarget.h"
 #include "Placeable.generated.h"
 
 class UTimelineComponent;
 
 UCLASS()
-class CARGO_API APlaceable : public AActor
+class CARGO_API APlaceable : public AActor, public ICargoDropTarget
 {
     GENERATED_BODY()
     
@@ -85,6 +86,9 @@ protected:
 public:
 
     virtual void Tick(float DeltaTime) override;
+
+    virtual void UpdateDropHover(APlaceable* Placeable, const FVector& ImpactPoint, APlaceablePreview* Preview) override;
+    virtual bool TryAcceptDrop(APlaceable* Placeable, APlaceablePreview* Preview) override;
     
     virtual void OnConstruction(const FTransform& Transform) override;
 

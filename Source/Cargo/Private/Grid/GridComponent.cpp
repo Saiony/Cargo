@@ -7,6 +7,31 @@
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Grid/Placeable.h"
 #include "Grid/Container.h"
+#include "Grid/PlaceablePreview.h"
+
+void UGridComponent::UpdateDropHover(APlaceable* Placeable, const FVector& ImpactPoint, APlaceablePreview* Preview)
+{
+	const FIntVector GridPosition = GetNextFreeZPositionGrid(ImpactPoint);
+	if (CanAddPlaceableToGridIndex(Placeable, GridPosition, Placeable->GetLocalYaw()))
+		Preview->SetValid();
+	else
+		Preview->SetInvalid();
+
+	Preview->SetActorHiddenInGame(false);
+	Preview->AttachToComponent(this, FAttachmentTransformRules::SnapToTargetIncludingScale);
+	Preview->SetActorRelativeLocation(GridToLocalPos(GridPosition));
+	Preview->SetActorRelativeRotation(FRotator::ZeroRotator);
+	Preview->MimicPlaceableYaw(Placeable);
+}
+
+bool UGridComponent::TryAcceptDrop(APlaceable* Placeable, APlaceablePreview* Preview)
+{
+	if (!CanAddPlaceableToGrid(Placeable, Preview->GetActorLocation(), Placeable->GetLocalYaw()))
+		return false;
+
+	AddPlaceableToGrid(Placeable, Preview->GetActorLocation(), Placeable->GetLocalYaw());
+	return true;
+}
 
 UGridComponent::UGridComponent()
 {

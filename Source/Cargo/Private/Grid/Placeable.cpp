@@ -4,6 +4,25 @@
 
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Grid/PlaceablePreview.h"
+
+void APlaceable::UpdateDropHover(APlaceable* Placeable, const FVector& ImpactPoint, APlaceablePreview* Preview)
+{
+    // Stacking on a placeable uses the same placement rules as its grid.
+    if (IsValid(OwningGridActor))
+        OwningGridActor->UpdateDropHover(Placeable, ImpactPoint, Preview);
+    else
+        Preview->SetActorHiddenInGame(true);
+}
+
+bool APlaceable::TryAcceptDrop(APlaceable* Placeable, APlaceablePreview* Preview)
+{
+    if (IsValid(OwningGridActor))
+        return OwningGridActor->TryAcceptDrop(Placeable, Preview);
+
+    Placeable->Release();
+    return true;
+}
 
 APlaceable::APlaceable()
 {

@@ -30,7 +30,7 @@ public class Cargo : ModuleRules
 
 		PrivateDependencyModuleNames.AddRange(new string[]
 		{
-			"UMG", "DUETween"
+			"UMG", "DUETween", "Niagara"
 		});
 
 		PublicIncludePaths.AddRange(new string[] {
