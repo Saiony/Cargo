@@ -67,6 +67,8 @@ void ACargoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	{		
 		// Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ACargoCharacter::Move);
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &ACargoCharacter::StopMovementInput);
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Canceled, this, &ACargoCharacter::StopMovementInput);
 		EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &ACargoCharacter::Look);
 
 		// Looking
@@ -110,6 +112,7 @@ void ACargoCharacter::DoMove(float Right, float Forward)
 	FloatingMovement->Acceleration = IsMovingBack ? OriginalAcceleration * ReverseGearMultiplier : OriginalAcceleration;	
 	
 	AddMovementInput(ForwardDirection, Forward);
+	UpdateMovementState(Forward);
 	
 	//fuel
 	if (ForwardDirection.Size() > 0.0f)
@@ -209,6 +212,24 @@ void ACargoCharacter::Tick(float DeltaSeconds)
 		AddActorWorldOffset(KnockbackVelocity * DeltaSeconds, true);
 		KnockbackVelocity = FMath::VInterpTo(KnockbackVelocity, FVector::ZeroVector, DeltaSeconds, KnockbackSpeed);
 	}
+}
+
+void ACargoCharacter::StopMovementInput()
+{
+	UpdateMovementState(0.f);
+}
+
+void ACargoCharacter::UpdateMovementState(float Forward)
+{
+	const bool bMovingNow = !FMath::IsNearlyZero(Forward);
+	if (bMovingNow == bShipMoving)
+		return;
+
+	bShipMoving = bMovingNow;
+	if (bShipMoving)
+		OnMovementStarted.Broadcast();
+	else
+		OnMovementStopped.Broadcast();
 }
 
 void ACargoCharacter::BeginPlay()
@@ -406,6 +427,9 @@ void ACargoCharacter::RotateShip(float TargetAngle, UCurveFloat* Curve)
 
 void ACargoCharacter::OnEditModeChanged(bool bEditMode)
 {
+	if (bEditMode)
+		StopMovementInput();
+
 	if (bEditMode)
 		GridComp->ShowIndicators();
 	else

@@ -43,6 +43,9 @@ void AContainer::Init(TObjectPtr<UContainerDA> InContainerDA)
 void AContainer::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	if (IsNetStartupActor()) //placed manually on editor, not instantiated by a grid
+		Init();
 }
 
 void AContainer::OnConstruction(const FTransform& Transform)

@@ -22,6 +22,7 @@ class UInputAction;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
+DECLARE_MULTICAST_DELEGATE(FOnShipMovementChanged);
 
 /**
  *  A simple player-controllable third-person character
@@ -176,7 +177,15 @@ public:
 	/** Constructor */
 	ACargoCharacter();	
 
+	FOnShipMovementChanged OnMovementStarted;
+	FOnShipMovementChanged OnMovementStopped;
+	bool IsShipMoving() const { return bShipMoving; }
+
 protected:
+	bool bShipMoving = false;
+	void UpdateMovementState(float Forward);
+	void StopMovementInput();
+
 	/** Initialize input action bindings */
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
