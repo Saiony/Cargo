@@ -137,7 +137,7 @@ void UFROGDialogueSubsystem::PushDialogueWidget(UDialogueData* DialogueData)
 
 	bIsPlayingDialogue = true;
 	UE_LOG(LogTemp, Warning, TEXT("ARCDialogueSubsystem::PlayDialogue - Pushing widget for dialogue: %s"), *DialogueData->DialogueTag.ToString());
-	Layout->PushWidgetToLayerStackAsync<UDIalogueWidget>(TAG_UI_Layer_Game, true, DialogueWidgetClass, [this, DialogueData](EAsyncWidgetLayerState State, UDIalogueWidget* Widget)
+	Layout->PushWidgetToLayerStackAsync<UDIalogueWidget>(TAG_UI_Layer_GameMenu, true, DialogueWidgetClass, [this, DialogueData](EAsyncWidgetLayerState State, UDIalogueWidget* Widget)
 	{
 		if (State == EAsyncWidgetLayerState::AfterPush)
 		{

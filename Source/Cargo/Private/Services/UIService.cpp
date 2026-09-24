@@ -78,7 +78,7 @@ UFrogsmithActivatableWidget* UUIService::ShowWidget(const TSubclassOf<UFrogsmith
 		return nullptr;
 	}
 	
-	const auto Widget = Layout->PushWidgetToLayerStack<UFrogsmithActivatableWidget>(TAG_UI_Layer_Menu, WidgetClass);
+	const auto Widget = Layout->PushWidgetToLayerStack<UFrogsmithActivatableWidget>(TAG_UI_Layer_GameMenu, WidgetClass);
 	if (!Widget)
 	{
 		UE_LOG(LogTemp, Error, TEXT("UI Service: Failed to push widget to layer stack"));

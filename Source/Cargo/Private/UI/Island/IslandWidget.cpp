@@ -6,9 +6,14 @@
 #include "CargoGameMode.h"
 #include "PrimaryGameLayout.h"
 #include "Components/VerticalBoxSlot.h"
+#include "DeveloperSettings/CargoSettings.h"
 #include "Island/CargoIsland.h"
+#include "Island/IslandStoreOptionData.h"
 #include "Quest/QuestStatus.h"
+#include "Services/UIService.h"
 #include "TagDeclaration/UITypes.h"
+#include "UI/Generic/GenericButton.h"
+#include "UI/Shop/StoreWidget.h"
 
 void UIslandWidget::NativeOnInitialized()
 {
@@ -25,8 +30,33 @@ void UIslandWidget::Initialize(TObjectPtr<ACargoIsland> IslandRef)
 
 	OptionsContainer->ClearChildren();
 	DrawDialogueButtons();
+	DrawIslandOptions();
 	
 	DefaultDialogueButton->Init(FText::FromString("Conversar"), IslandRef->GetIslandData()->DefaultInteractionDialogue.LoadSynchronous(), IslandRef, this);
+}
+
+void UIslandWidget::DrawIslandOptions()
+{
+	for (const auto& Option : Island->GetIslandData()->Options)
+	{
+		const auto StoreOption = Cast<UIslandStoreOptionData>(Option);
+		if (!StoreOption)
+			continue;
+
+		const auto GenericButtonClass = GetDefault<UCargoSettings>()->GenericButtonClass.LoadSynchronous();
+		const auto Button = CreateWidget<UGenericButton>(this, GenericButtonClass);
+		Button->SetText(StoreOption->GetButtonText());
+		Button->OnClicked().AddWeakLambda(this, [this, StoreOption]()
+		{
+			const auto UIService = ACargoGameMode::Get(this)->GetService<UUIService>();
+			const auto StoreWidgetClass = GetDefault<UCargoSettings>()->StoreWidgetClass.LoadSynchronous();
+			const auto Widget = UIService->ShowWidget<UStoreWidget>(StoreWidgetClass);
+			Widget->Init(StoreOption->StoreCatalog, Island);
+		});
+
+		const auto ChildrenSlot = OptionsContainer->AddChildToVerticalBox(Button);
+		ChildrenSlot->SetPadding(FMargin(0.f, 0.f, 0.f, DialogueOptionsContainerPadding));
+	}
 }
 
 void UIslandWidget::DrawDialogueButtons()
@@ -103,7 +133,7 @@ void UIslandWidget::OnDialogueOptionClicked(UDialogueOptionButton* Button, const
 void UIslandWidget::OnMissionBoardButtonClicked()
 {
 	const auto PrimaryGameLayout = UPrimaryGameLayout::GetPrimaryGameLayoutForPrimaryPlayer(this);
-	const auto MissionBoardWidget = PrimaryGameLayout->PushWidgetToLayerStack<UMissionBoardWidget>(TAG_UI_Layer_Game, MissionBoardWidgetClass);
+	const auto MissionBoardWidget = PrimaryGameLayout->PushWidgetToLayerStack<UMissionBoardWidget>(TAG_UI_Layer_GameMenu, MissionBoardWidgetClass);
 
 	const auto CargoSettings = GetDefault<UCargoSettings>();
 	const auto Missions = CargoSettings->GetMissionsDatabase()->GetMissionsForLocation(Island->GetLocationTag());

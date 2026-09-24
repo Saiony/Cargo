@@ -13,6 +13,8 @@
 
 class UDialogueOptionButton;
 class ACargoIsland;
+class UGenericButton;
+class UStoreWidget;
 
 /**
  *
@@ -58,6 +60,7 @@ class CARGO_API UIslandWidget : public UFrogsmithActivatableWidget, public IDial
 	void OnCloseButtonClicked();
 
 	void DrawDialogueButtons();
+	void DrawIslandOptions();
 	void CreateQuestDialogueOptionButton(TObjectPtr<UQuestData> Quest, EQuestDialogueOptionType Type);
 
 	void CreateDialogueOptionButton(const FText& Title, UDialogueData* Dialogue);

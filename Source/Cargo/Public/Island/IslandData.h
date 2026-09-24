@@ -6,6 +6,7 @@
 #include "GameplayTagContainer.h"
 #include "Engine/DataAsset.h"
 #include "Dialogue/DialogueCollection.h"
+#include "Island/IslandOptionData.h"
 #include "IslandData.generated.h"
 
 /**
@@ -16,6 +17,9 @@ class CARGO_API UIslandData : public UDataAsset
 {
 	GENERATED_BODY()
 public:
+	UPROPERTY(EditAnywhere, Instanced, Category="Interaction")
+	TArray<TObjectPtr<UIslandOptionData>> Options;
+
 	UPROPERTY(EditDefaultsOnly, meta = (Categories = "Location"))
 	FGameplayTag LocationTag;
 	

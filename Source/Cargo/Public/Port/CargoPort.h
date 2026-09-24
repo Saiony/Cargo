@@ -43,7 +43,6 @@ protected:
 	UFUNCTION()
 	void HandlePlaceableRemovedFromGrid(APlaceable* Placeable);
 	
-	void SpawnSingleContainer(FGameplayTag CargoType);
 
 	UFUNCTION()
 	void OnBellClicked();
@@ -70,6 +69,7 @@ public:
 	void Clear();
 	
 	void SpawnCargo(const TArray<FCargoRequirement>& Requirements);
+	void SpawnSingleContainer(FGameplayTag CargoType);
 
 	void OpenPort();
 	

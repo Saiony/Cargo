@@ -12,6 +12,8 @@
 #include "UI/Generic/CargoInputTextWidget.h"
 #include "CargoSettings.generated.h"
 
+class UGenericButton;
+class UStoreWidget;
 class AContainer;
 class APlaceablePreview;
 class UBOLWidget;
@@ -59,7 +61,14 @@ public:
 	TSoftClassPtr<UBOLWidget> BOLWidgetClass;
 	
 	UPROPERTY(EditAnywhere, Config, Category = "UI")
-	TSoftClassPtr<UCargoInputTextWidget> InputTextWidgetClass;
+	TSoftClassPtr<UCargoInputTextWidget> InputTextWidgetClass;	
+
+	UPROPERTY(EditAnywhere, Config, Category="UI")
+	TSoftClassPtr<UStoreWidget> StoreWidgetClass;
+
+	
+	UPROPERTY(EditAnywhere, Config, Category="UI")
+	TSoftClassPtr<UGenericButton> GenericButtonClass;
 
 	UPROPERTY(EditAnywhere, Config, Category = "UI")
 	TSoftClassPtr<USimplePrompt> FuelDepletedPromptClass;

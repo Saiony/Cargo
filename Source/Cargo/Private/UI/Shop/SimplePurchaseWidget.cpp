@@ -16,10 +16,11 @@ void USimplePurchaseWidget::NativeOnInitialized()
 
 void USimplePurchaseWidget::OnPurchaseButtonClicked()
 {
-	ACargoGameMode::Get(this)->EconomyService->RemoveMoney(Price);
-	
-	Listener->OnSimplePurchaseWidgetCallback(true);
-	Hide();
+	if (ACargoGameMode::Get(this)->EconomyService->RemoveMoney(Price))
+	{
+		Listener->OnSimplePurchaseWidgetCallback(true);
+		Hide();
+	}
 }
 
 void USimplePurchaseWidget::OnExitButtonClicked()
