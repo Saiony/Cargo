@@ -163,6 +163,9 @@ protected:
 	
 	float BoatInitialRoll;
 	float BoatTargetRoll;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UCurveFloat> ActiveRollCurve;
 	
 	UPROPERTY()
 	TObjectPtr<ACargoPlayerState> CargoPlayerState;

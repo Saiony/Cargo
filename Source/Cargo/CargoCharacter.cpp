@@ -221,6 +221,12 @@ void ACargoCharacter::Tick(float DeltaSeconds)
 void ACargoCharacter::StopMovementInput()
 {
 	UpdateMovementState(0.f);
+	if (ShouldResetRotation && IsValid(CargoPlayerState))
+	{
+		ShouldResetRotation = false;
+		CargoPlayerState->SetShipBalanceRotation(0.f);
+		RotateShip(CargoPlayerState->GetShipBalanceTotal(), Curve_RotateShipSteeringBack);
+	}
 }
 
 void ACargoCharacter::UpdateMovementState(float Forward)
@@ -425,8 +431,16 @@ void ACargoCharacter::PopContainersFromZ(int32 Z)
 
 void ACargoCharacter::RotateShip(float TargetAngle, UCurveFloat* Curve)
 {
-	BoatInitialRoll = MeshComponent->GetRelativeRotation().Roll;
 	BoatTargetRoll = TargetAngle;
+	if (RotateTimelineComp->IsPlaying() && ActiveRollCurve == Curve)
+		return;
+
+	const float CurrentRoll = MeshComponent->GetRelativeRotation().Roll;
+	if (!RotateTimelineComp->IsPlaying() && FMath::IsNearlyEqual(CurrentRoll, TargetAngle))
+		return;
+
+	BoatInitialRoll = CurrentRoll;
+	ActiveRollCurve = Curve;
 
 	RotateTimelineComp->SetFloatCurve(Curve, TEXT("Rotation"));
 	RotateTimelineComp->PlayFromStart();
