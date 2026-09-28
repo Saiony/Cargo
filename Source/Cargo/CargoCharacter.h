@@ -95,7 +95,7 @@ protected:
 	UInputAction* MouseLookAction;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo")
-	float RotationSpeed = 120;
+	float YawRotationSpeed = 120;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo")
 	float WeightImbalanceMultiplier_Movement = 250;
@@ -111,9 +111,6 @@ protected:
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
 	FVector2D ShipRotationMovementMinMax_HighSpeed = FVector2D(-20.0f, 20.0f);
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
-	float MovementRotationImbalanceMultiplier = 0.5f;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
 	FVector2D ShipAngleMinMax = FVector2D(-70.0f, 70.0f);

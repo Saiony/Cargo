@@ -132,8 +132,8 @@ void ACargoCharacter::DoMove(float Right, float Forward)
 		Right += ContainersSideTilt;
 		
 		const float DeltaTime = GetWorld()->GetDeltaSeconds();
-		auto SpeedRotationIncrement = ShipInclinationMultiplier * FloatingMovement->Velocity.Size() / FloatingMovement->MaxSpeed;
-		SpeedRotationIncrement *= Right > 0 ? SpeedRotationIncrement : -SpeedRotationIncrement;
+		auto SpeedRotationIncrement = DeltaTime * ShipInclinationMultiplier * FloatingMovement->Velocity.Size() / FloatingMovement->MaxSpeed;
+		SpeedRotationIncrement = Right > 0 ? SpeedRotationIncrement : -SpeedRotationIncrement;
 		
 		if (GEngine)
 		{
@@ -142,7 +142,7 @@ void ACargoCharacter::DoMove(float Right, float Forward)
 		}
 	
 		//rotate Yaw
-		FRotator Delta(0.f, Right * RotationSpeed * DeltaTime /*+ SpeedRotationIncrement*/, 0.f);
+		FRotator Delta(0.f, Right * YawRotationSpeed * DeltaTime, 0.f);
 		AddActorLocalRotation(Delta);
 		
 		//rotate Roll
