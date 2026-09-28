@@ -12,7 +12,6 @@
 #include "BuoyancyComponent.h"
 #include "Components/AudioComponent.h"
 #include "Components/DecalComponent.h"
-#include "Components/TimelineComponent.h"
 #include "Engine/Canvas.h"
 #include "Engine/CanvasRenderTarget2D.h"
 #include "GameFramework/FloatingPawnMovement.h"
@@ -26,6 +25,7 @@ static TAutoConsoleVariable<bool> CVarBoostMovement(TEXT("Cargo.Haste"), false, 
 
 ACargoCharacter::ACargoCharacter()
 {
+	PrimaryActorTick.bCanEverTick = true;
 	// Set size for collision capsule
 	RootMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RootMeshComp"));
 	SetRootComponent(RootMeshComponent);	
@@ -52,8 +52,6 @@ ACargoCharacter::ACargoCharacter()
 	CollisionAudioComp = CreateDefaultSubobject<UAudioComponent>(TEXT("CollisionAudioComp"));
 	CollisionAudioComp->SetupAttachment(RootComponent);
 	CollisionAudioComp->bAutoActivate = false;
-	
-	RotateTimelineComp = CreateDefaultSubobject<UTimelineComponent>(TEXT("RotateTimelineComp"));
 	
 	ShipNameDecalComp = CreateDefaultSubobject<UDecalComponent>(TEXT("ShipNameDecalComp"));
 	ShipNameDecalComp->SetupAttachment(MeshComponent);
@@ -159,7 +157,7 @@ void ACargoCharacter::DoMove(float Right, float Forward)
 		}
 			
 		GetPlayerState<ACargoPlayerState>()->SetShipBalanceRotation(FinalAngle);
-		RotateShip(CargoPlayerState->GetShipBalanceTotal(), Curve_RotateShipSteering);
+		RotateShip(CargoPlayerState->GetShipBalanceTotal());
 		
 		ShouldResetRotation = true;
 	}
@@ -170,7 +168,7 @@ void ACargoCharacter::DoMove(float Right, float Forward)
 			ShouldResetRotation = false;
 			GetPlayerState<ACargoPlayerState>()->SetShipBalanceRotation(0);
 			
-			RotateShip(CargoPlayerState->GetShipBalanceTotal(), Curve_RotateShipSteeringBack);
+			RotateShip(CargoPlayerState->GetShipBalanceTotal());
 		}			
 	}
 }
@@ -210,6 +208,11 @@ void ACargoCharacter::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 	
 	UpdateEngineSoundIntensity();
+
+	FRotator Rotation = MeshComponent->GetRelativeRotation();
+	Rotation.Roll = FMath::FInterpTo(Rotation.Roll, BoatTargetRoll, DeltaSeconds, RollInterpSpeed);
+	MeshComponent->SetRelativeRotation(Rotation);
+	GridComp->UpdateStackLean(Rotation.Roll);
 	
 	if (!KnockbackVelocity.IsNearlyZero())
 	{
@@ -225,7 +228,7 @@ void ACargoCharacter::StopMovementInput()
 	{
 		ShouldResetRotation = false;
 		CargoPlayerState->SetShipBalanceRotation(0.f);
-		RotateShip(CargoPlayerState->GetShipBalanceTotal(), Curve_RotateShipSteeringBack);
+		RotateShip(CargoPlayerState->GetShipBalanceTotal());
 	}
 }
 
@@ -261,11 +264,8 @@ void ACargoCharacter::BeginPlay()
 	CargoPlayerState = GetPlayerState<ACargoPlayerState>();
 	CargoPlayerState->GetFuelDomain()->OnFuelDepleted.AddUObject(
 		this, &ThisClass::OnFuelDepleted);
-	GridComp->AddTickPrerequisiteComponent(RotateTimelineComp);
-	
-	//Timeline component
-	UpdateFunctionFloat.BindDynamic(this, &ACargoCharacter::UpdateTimelineComp);
-	RotateTimelineComp->AddInterpFloat(Curve_RotateShipWeight, UpdateFunctionFloat, NAME_None, TEXT("Rotation"));
+	GridComp->AddTickPrerequisiteActor(this);
+	BoatTargetRoll = MeshComponent->GetRelativeRotation().Roll;
 	
 	//bind events
 	GetController<ACargoPlayerController>()->OnEditModeChanged.AddDynamic(this, &ACargoCharacter::OnEditModeChanged);
@@ -312,7 +312,7 @@ void ACargoCharacter::BalanceShip()
 	
 	const float FinalAngle = FMath::Clamp(FR * WeightImbalanceMultiplier_Roll, ShipAngleMinMax.X, ShipAngleMinMax.Y);
 	GetPlayerState<ACargoPlayerState>()->SetShipBalanceWeight(FinalAngle);
-	RotateShip(CargoPlayerState->GetShipBalanceTotal(), Curve_RotateShipWeight);
+	RotateShip(CargoPlayerState->GetShipBalanceTotal());
 }
 
 void ACargoCharacter::UpdateEngineSoundIntensity()
@@ -428,21 +428,9 @@ void ACargoCharacter::PopContainersFromZ(int32 Z)
 	}		
 }
 
-void ACargoCharacter::RotateShip(float TargetAngle, UCurveFloat* Curve)
+void ACargoCharacter::RotateShip(float TargetAngle)
 {
 	BoatTargetRoll = TargetAngle;
-	if (RotateTimelineComp->IsPlaying() && ActiveRollCurve == Curve)
-		return;
-
-	const float CurrentRoll = MeshComponent->GetRelativeRotation().Roll;
-	if (!RotateTimelineComp->IsPlaying() && FMath::IsNearlyEqual(CurrentRoll, TargetAngle))
-		return;
-
-	BoatInitialRoll = CurrentRoll;
-	ActiveRollCurve = Curve;
-
-	RotateTimelineComp->SetFloatCurve(Curve, TEXT("Rotation"));
-	RotateTimelineComp->PlayFromStart();
 }
 
 void ACargoCharacter::OnEditModeChanged(bool bEditMode)
@@ -497,13 +485,3 @@ void ACargoCharacter::DrawShipName(UCanvas* Canvas, int Width, int Height)
 	);
 }
 
-void ACargoCharacter::UpdateTimelineComp(float Output)
-{
-	const float CurrentYaw = FMath::Lerp(BoatInitialRoll,BoatTargetRoll,Output);
-
-	FRotator Rotation = MeshComponent->GetRelativeRotation();
-	Rotation.Roll = CurrentYaw;
-
-	MeshComponent->SetRelativeRotation(Rotation);
-	GridComp->UpdateStackLean(Rotation.Roll);
-}

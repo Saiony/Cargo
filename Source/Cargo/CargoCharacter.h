@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "CargoPlayerController.h"
-#include "Components/TimelineComponent.h"
 #include "GameplayFramework/CargoPlayerState.h"
 #include "Grid/GridComponent.h"
 #include "Logging/LogMacros.h"
@@ -56,9 +55,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Cargo|Audio")
 	TObjectPtr<UAudioComponent> CollisionAudioComp;
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	TObjectPtr<UTimelineComponent> RotateTimelineComp;
-	
 	/*decal*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UDecalComponent> ShipNameDecalComp;
@@ -73,15 +69,6 @@ protected:
 	TObjectPtr<UFont> ShipNameFont;	
 	/*decal*/
 	
-	UPROPERTY(EditAnywhere, Category="Cargo|Curves")
-	UCurveFloat* Curve_RotateShipWeight;
-	
-	UPROPERTY(EditAnywhere, Category="Cargo|Curves")
-	UCurveFloat* Curve_RotateShipSteering;
-	
-	UPROPERTY(EditAnywhere, Category="Cargo|Curves")
-	UCurveFloat* Curve_RotateShipSteeringBack;
-
 	/** Move Input Action */
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* MoveAction;
@@ -159,24 +146,18 @@ protected:
 	
 	FVector KnockbackVelocity;
 	
-	float BoatInitialRoll;
-	
-	float BoatTargetRoll;	
+	/** How quickly the visual roll follows its target. Zero applies the target immediately. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Roll", meta=(ClampMin="0.0"))
+	float RollInterpSpeed = 4.f;
+
+	float BoatTargetRoll = 0.f;
 
 	bool ShouldResetRotation = false;
 
-	UPROPERTY(Transient)
-	TObjectPtr<UCurveFloat> ActiveRollCurve;
-	
 	UPROPERTY()
 	TObjectPtr<ACargoPlayerState> CargoPlayerState;
 
 	void OnHasteCVarChanged(IConsoleVariable* ConsoleVariable);
-	
-	FOnTimelineFloat UpdateFunctionFloat;
- 
-	UFUNCTION()
-	void UpdateTimelineComp(float Output);
 	
 public:
 	/** Constructor */
@@ -224,7 +205,7 @@ protected:
 	UFUNCTION(Exec)
 	void PopContainersFromZ(int32 Z);
 
-	void RotateShip(float TargetAngle, UCurveFloat* Curve);
+	void RotateShip(float TargetAngle);
 
 	UFUNCTION()
 	void OnEditModeChanged(bool bEditMode);
