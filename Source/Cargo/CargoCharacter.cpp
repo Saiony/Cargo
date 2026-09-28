@@ -101,8 +101,6 @@ void ACargoCharacter::Move(const FInputActionValue& Value)
 	DoMove(MovementVector.X, MovementVector.Y);
 }
 
-bool ShouldResetRotation = false;
-
 void ACargoCharacter::DoMove(float Right, float Forward)
 {	
 	if (GetController<ACargoPlayerController>()->bEditMode)
@@ -310,10 +308,9 @@ void ACargoCharacter::BalanceShip()
 		FR += Momentum;
 	}
 	
-	FR *= WeightImbalanceMultiplier_Roll;
 	UE_LOG(LogTemp, Log, TEXT("FR: %f"), FR);
 	
-	const float FinalAngle = FMath::GetMappedRangeValueClamped(FRMinMax,ShipAngleMinMax, FR);	
+	const float FinalAngle = FMath::Clamp(FR * WeightImbalanceMultiplier_Roll, ShipAngleMinMax.X, ShipAngleMinMax.Y);
 	GetPlayerState<ACargoPlayerState>()->SetShipBalanceWeight(FinalAngle);
 	RotateShip(CargoPlayerState->GetShipBalanceTotal(), Curve_RotateShipWeight);
 }

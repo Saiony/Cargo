@@ -100,11 +100,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo")
 	float WeightImbalanceMultiplier_Movement = 250;
 	
+	/** Degrees of cargo roll per unit of weight one grid cell from the centerline. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo")
 	float WeightImbalanceMultiplier_Roll = 0.5f;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
-	FVector2D FRMinMax = FVector2D(-10.0f, 10.0f);
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
 	FVector2D ShipRotationMovementMinMax = FVector2D(-10.0f, 15.0f);
@@ -162,7 +160,10 @@ protected:
 	FVector KnockbackVelocity;
 	
 	float BoatInitialRoll;
-	float BoatTargetRoll;
+	
+	float BoatTargetRoll;	
+
+	bool ShouldResetRotation = false;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UCurveFloat> ActiveRollCurve;
