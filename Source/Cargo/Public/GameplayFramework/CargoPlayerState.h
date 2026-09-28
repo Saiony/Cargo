@@ -46,7 +46,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cargo")
 	float ShipSpeedMultiplier = 1;
 	
-	FFuelDomain FuelDomain{50.f, 100.f};
+	FFuelDomain FuelDomain{100.f, 100.f};
 
 	TMap<FGameplayTag, FString> PlayerDataTags;
 	

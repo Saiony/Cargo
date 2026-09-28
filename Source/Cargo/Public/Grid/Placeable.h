@@ -65,6 +65,12 @@ public:
     UPROPERTY(EditDefaultsOnly, Category="Cargo")
     TObjectPtr<USoundBase> PlaceSound;
 
+    UPROPERTY(EditDefaultsOnly, Category="Cargo|Audio")
+    TObjectPtr<USoundBase> DetachSound;
+
+    UPROPERTY(EditDefaultsOnly, Category="Cargo|Audio")
+    TObjectPtr<USoundBase> WaterImpactSound;
+
     TObjectPtr<UGridComponent> OwningGridActor;    
     
     TObjectPtr<APlaceableVisual> GetVisual() { return Cast<APlaceableVisual>(PlaceableVisualComp->GetChildActor()); }
@@ -83,6 +89,12 @@ protected:
     virtual void BeginPlay() override;    
     
     void UpdateMesh();
+
+    void SetPlacementCollisionEnabled(bool bEnabled);
+
+    UFUNCTION()
+    void OnEnteredWater(const FSphericalPontoon& Pontoon);
+
 public:
 
     virtual void Tick(float DeltaTime) override;

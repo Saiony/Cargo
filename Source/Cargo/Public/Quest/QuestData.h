@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "Dialogue/DialogueData.h"
+#include "Dialogue/DialogueCollection.h"
 #include "Engine/DataAsset.h"
 #include "Mission/BaseMissionData.h"
 #include "QuestData.generated.h"
@@ -53,6 +54,10 @@ public:
 	FGameplayTag StartLocationTag;
 	
 	/*dialogues*/
+	// One-time dialogue options available at each island while this quest is active.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Dialogue", meta=(Categories="Location"))
+	TMap<FGameplayTag, FDialogueCollection> Dialogues;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSoftObjectPtr<UDialogueData> StartDialogue;
 	

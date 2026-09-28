@@ -49,6 +49,8 @@ void APlaceable::BeginPlay()
 {
     Super::BeginPlay();
 
+    BuoyancyComp->OnEnteredWaterDelegate.AddDynamic(this, &ThisClass::OnEnteredWater);
+
     // Existing Blueprints may retain the old attachment directly to the root.
     if (PivotComp->GetAttachParent() != StackLeanPivot)
         PivotComp->AttachToComponent(StackLeanPivot, FAttachmentTransformRules::KeepRelativeTransform);
@@ -64,18 +66,32 @@ void APlaceable::OnConstruction(const FTransform& Transform)
 	Super::OnConstruction(Transform);
 }
 
+void APlaceable::SetPlacementCollisionEnabled(bool bEnabled)
+{
+    SetActorEnableCollision(bEnabled);
+
+    // Visual meshes belong to child actors, not to the placeable itself.
+    TArray<AActor*> ChildActors;
+    GetAllChildActors(ChildActors, true);
+    for (AActor* ChildActor : ChildActors)
+    {
+        ChildActor->SetActorEnableCollision(bEnabled);
+    }
+}
+
 void APlaceable::Grab()
-{   
-    if (OwningGridActor == nullptr)
-       return;
-    
-    BoxComp->SetSimulatePhysics(false);
+{
     BoxComp->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
     BoxComp->SetPhysicsLinearVelocity(FVector::ZeroVector);
+    BoxComp->SetSimulatePhysics(false);
+    BoxComp->SetCollisionProfileName(TEXT("NoCollision"));
+    SetPlacementCollisionEnabled(false);
     
     BuoyancyComp->SetComponentTickEnabled(false);
 
-    OwningGridActor->RemovePlaceableFromGrid(this);
+    if (IsValid(OwningGridActor))
+        OwningGridActor->RemovePlaceableFromGrid(this);
+    DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
     SetActorRotation(FRotator(0.f, LocalYaw, 0.f));
     
     UGameplayStatics::PlaySoundAtLocation(this, GrabSound, GetActorLocation());
@@ -84,8 +100,10 @@ void APlaceable::Grab()
 void APlaceable::Place(TObjectPtr<UGridComponent> GridActor, int32 GridPosX, int32 GridPosY, int32 GridPosZ)
 {
 	StackLeanPivot->SetRelativeTransform(FTransform::Identity);
+	BoxComp->SetCollisionProfileName(TEXT("PhysicsActor"));
 	BoxComp->SetSimulatePhysics(false);
 	BoxComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    SetPlacementCollisionEnabled(true);
  
 	BuoyancyComp->SetComponentTickEnabled(false);
     
@@ -98,8 +116,10 @@ void APlaceable::Place(TObjectPtr<UGridComponent> GridActor, int32 GridPosX, int
 
 void APlaceable::Release()
 {
-    BoxComp->SetSimulatePhysics(true);	
+	BoxComp->SetCollisionProfileName(TEXT("PhysicsActor"));
 	BoxComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    SetPlacementCollisionEnabled(true);
+    BoxComp->SetSimulatePhysics(true);
 
     BuoyancyComp->SetComponentTickEnabled(true);
     //BuoyancyComp->Activate();
@@ -179,8 +199,12 @@ bool APlaceable::IsPlaceableBlocked(TObjectPtr<APlaceable> Placeable)
 void APlaceable::FallIntoSea(const FVector& Direction, const FVector& InheritedVelocity)
 {
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	UGameplayStatics::PlaySoundAtLocation(this, DetachSound, GetActorLocation());
+	BuoyancyComp->SetComponentTickEnabled(true);
 
+	BoxComp->SetCollisionProfileName(TEXT("PhysicsActor"));
 	BoxComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    SetPlacementCollisionEnabled(true);
 	BoxComp->SetSimulatePhysics(true);
 
 	BoxComp->SetPhysicsLinearVelocity(InheritedVelocity, false, NAME_None);
@@ -192,6 +216,11 @@ void APlaceable::FallIntoSea(const FVector& Direction, const FVector& InheritedV
 	);
 	
 	OwningGridActor = nullptr;
+}
+
+void APlaceable::OnEnteredWater(const FSphericalPontoon& Pontoon)
+{
+	UGameplayStatics::PlaySoundAtLocation(this, WaterImpactSound, Pontoon.WaterSurfacePosition);
 }
 
 void APlaceable::UpdateMesh()

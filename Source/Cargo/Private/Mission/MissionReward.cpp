@@ -78,6 +78,10 @@ int32 FMissionReward::CalculateRecklessNavigationDiscount(TObjectPtr<UDeliveryMi
 {
 	const int32 LightCollisionDiscount = MissionStatus->GetNumShipCollisions_Light() * MissionStatus->GetBaseReward().Money * 0.02f;
 	const int32 HardCollisionDiscount = MissionStatus->GetNumShipCollisions_Hard() * MissionStatus->GetBaseReward().Money * 0.05f;
-
-	return LightCollisionDiscount + HardCollisionDiscount;
+	
+	int32 Discount = LightCollisionDiscount + HardCollisionDiscount;
+	if (Discount == 0 && (MissionStatus->GetNumShipCollisions_Light() > 0 || MissionStatus->GetNumShipCollisions_Hard() > 0))
+		Discount = 1;
+	
+	return Discount;
 }

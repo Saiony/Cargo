@@ -45,7 +45,10 @@ class CARGO_API UQuestDialogueOptionButton : public UCommonButtonBase
 
 	UPROPERTY()
 	TObjectPtr<ACargoIsland> Island;
-
+	
+	UPROPERTY(EditDefaultsOnly, Category="Cargo")
+	TSubclassOf<UCommonButtonStyle> QuestInProgressButtonStyle;
+	
 	IQuestDialogueOptionListener* Listener = nullptr;
 
 	void PlayDialogue(TSoftObjectPtr<UDialogueData> Dialogue);

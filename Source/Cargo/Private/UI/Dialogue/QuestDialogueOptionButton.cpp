@@ -14,6 +14,9 @@ void UQuestDialogueOptionButton::Init(UQuestData* InQuestData, EQuestDialogueOpt
 	Island = InIsland;
 	Listener = InListener;
 	Text->SetText(QuestData->Title);
+	
+	if (Type == EQuestDialogueOptionType::QuestInProgress)
+		SetStyle(QuestInProgressButtonStyle);
 }
 
 void UQuestDialogueOptionButton::NativeOnClicked()

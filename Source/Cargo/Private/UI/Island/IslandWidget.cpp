@@ -78,7 +78,7 @@ void UIslandWidget::DrawDialogueButtons()
 		CreateQuestDialogueOptionButton(ActiveQuest->OriginalQuestData, EQuestDialogueOptionType::EndQuest);
 	}
 
-	// Quests that start here, but are in progress
+	// Quests that start here, but are already in progress
 	const auto OriginQuests = QuestService->GetQuestsStatusByOrigin(LocationTag);
 	for (const auto& OriginQuest : OriginQuests)
 	{
@@ -86,6 +86,15 @@ void UIslandWidget::DrawDialogueButtons()
 			CreateQuestDialogueOptionButton(OriginQuest->OriginalQuestData, EQuestDialogueOptionType::QuestInProgress);
 	}
 	
+	// Dialogues from active quests for this island.
+	for (const auto& Dialogue : QuestService->GetActiveQuestDialoguesForIsland(LocationTag))
+	{
+		if (ACargoGameMode::Get(this)->AlreadyPlayedDialogues.Contains(Dialogue->Id))
+			continue;
+
+		CreateDialogueOptionButton(Dialogue->Title, Dialogue);
+	}
+
 	//Simple dialogues based on in-game events
 	for (const auto DialogueByInGameEvent : Island->GetIslandData()->DialoguesByRequiredEvent)
 	{
@@ -96,8 +105,8 @@ void UIslandWidget::DrawDialogueButtons()
 		{
 			if (ACargoGameMode::Get(this)->AlreadyPlayedDialogues.Contains(Dialogue->Id))
 				continue;
-			
-			CreateDialogueOptionButton(Dialogue->Title, Dialogue);			
+
+			CreateDialogueOptionButton(Dialogue->Title, Dialogue);
 		}
 	}
 }

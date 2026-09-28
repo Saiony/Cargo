@@ -131,7 +131,8 @@ void UQuestService::CompleteMission(FGuid MissionId, AActor* InstigatorIsland)
 		ActiveQuests.Remove(Quest->QuestTag);
 		if (Quest->Reward.RewardTag.IsValid())
 			GameMode->AddInGameEventTag(Quest->Reward.RewardTag);
-		GameMode->EconomyService->AddMoney(Quest->Reward.Money);
+		
+		//GameMode->EconomyService->AddMoney(Quest->Reward.Money);
 		AddAvailableQuest(Quest->NextQuest.LoadSynchronous());
 	}
 	else
@@ -179,20 +180,33 @@ TArray<TObjectPtr<UDeliveryMissionStatus>> UQuestService::GetActiveMissionsForDe
 	return Missions;
 }
 
-void UQuestService::ActivateQuest(UQuestData* QuestData, AActor* QuestInstigator)
+bool UQuestService::ActivateQuest(UQuestData* QuestData, AActor* QuestInstigator)
 {
+	if (!IsValid(QuestData))
+	{
+		UE_LOG(LogTemp, Error, TEXT("QuestService::ActivateQuest: QuestData is null or invalid. Instigator='%s'. Check the dialogue callback's QuestData."), *GetPathNameSafe(QuestInstigator));
+		return false;
+	}
+
 	const auto* Island = Cast<ACargoIsland>(QuestInstigator);
-	if (!IsValid(QuestData) || !Island || Island->GetLocationTag() != QuestData->StartLocationTag)
-		return;
-	if (!AvailableQuests.Contains(QuestData) || ActiveQuests.Contains(QuestData->QuestTag))
-		return;
+	if (!IsValid(Island))
+	{
+		UE_LOG(LogTemp, Error, TEXT("QuestService::ActivateQuest: Cannot activate '%s': instigator '%s' is not a valid CargoIsland."), *QuestData->GetPathName(), *GetPathNameSafe(QuestInstigator));
+		return false;
+	}
+	if (ActiveQuests.Find(QuestData->QuestTag))
+	{
+		UE_LOG(LogTemp, Error, TEXT("QuestService::ActivateQuest: QuestTag '%s' is already active (asset '%s')"), *QuestData->GetPathName(), *QuestData->QuestTag.ToString());
+		return false;
+	}
 
 	auto* Quest = NewObject<UQuestStatus>(this);
 	Quest->Initialize(QuestData);
 	if (!Quest->MissionStatus)
 	{
-		UE_LOG(LogTemp, Error, TEXT("QuestService: Cannot accept %s. Assign a supported MissionData asset to the quest."), *QuestData->GetPathName());
-		return;
+		UE_LOG(LogTemp, Error, TEXT("QuestService::ActivateQuest: Cannot activate '%s': MissionData='%s' (class '%s') is missing or unsupported. Expected DeliveryMissionData or TravelMissionData."),
+			*QuestData->GetPathName(), *GetPathNameSafe(QuestData->MissionData), *GetNameSafe(QuestData->MissionData ? QuestData->MissionData->GetClass() : nullptr));
+		return false;
 	}
 
 	ActiveQuests.Add(Quest->QuestTag, Quest);
@@ -201,6 +215,7 @@ void UQuestService::ActivateQuest(UQuestData* QuestData, AActor* QuestInstigator
 	QuestAcceptedDelegate.Broadcast(QuestData, QuestInstigator);
 	if (auto* Delivery = Cast<UDeliveryMissionStatus>(Quest->MissionStatus))
 		MissionAcceptedDelegate.Broadcast(Delivery, Island->GetLocationTag());
+	return true;
 }
 
 void UQuestService::CompleteTravelQuest(FGameplayTag QuestTag, AActor* InstigatorIsland)
@@ -244,6 +259,31 @@ void UQuestService::AddAvailableQuest(TObjectPtr<UQuestData> Quest)
 {
 	if (IsValid(Quest))
 		AvailableQuests.AddUnique(Quest);
+}
+
+TArray<TObjectPtr<UDialogueData>> UQuestService::GetActiveQuestDialoguesForIsland(FGameplayTag IslandTag) const
+{
+	TArray<TObjectPtr<UDialogueData>> Dialogues;
+	if (!IslandTag.IsValid())
+		return Dialogues;
+
+	for (const auto& Entry : ActiveQuests)
+	{
+		const auto* Quest = Entry.Value.Get();
+		if (!IsValid(Quest) || !IsValid(Quest->OriginalQuestData))
+			continue;
+
+		const auto* Collection = Quest->OriginalQuestData->Dialogues.Find(IslandTag);
+		if (!Collection)
+			continue;
+
+		for (const auto& Dialogue : Collection->Dialogues)
+		{
+			if (IsValid(Dialogue))
+				Dialogues.AddUnique(Dialogue);
+		}
+	}
+	return Dialogues;
 }
 
 TArray<TObjectPtr<UQuestStatus>> UQuestService::GetQuestStatus(FGameplayTag QuestTag)

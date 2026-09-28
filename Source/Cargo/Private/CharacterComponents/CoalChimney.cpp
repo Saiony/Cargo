@@ -42,8 +42,6 @@ void ACoalChimney::BeginPlay()
 
 	Ship->OnMovementStarted.AddUObject(this, &ThisClass::PlaySmoke);
 	Ship->OnMovementStopped.AddUObject(this, &ThisClass::StopSmoke);
-	if (Ship->IsShipMoving())
-		PlaySmoke();
 }
 
 void ACoalChimney::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -58,8 +56,10 @@ void ACoalChimney::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 void ACoalChimney::PlaySmoke()
 {
-	if (!SmokeNiagaraComp->IsActive())
-		SmokeNiagaraComp->Activate();
+	// Restart the simulation so the emitter's start delay applies on every movement start.
+	SmokeIntensity = 0.f;
+	SmokeNiagaraComp->SetVariableFloat(TEXT("User.SmokeIntensity"), SmokeIntensity);
+	SmokeNiagaraComp->Activate(true);
 	SetSmokeTarget(1.f);
 }
 
