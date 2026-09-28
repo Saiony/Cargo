@@ -258,3 +258,8 @@ void APlaceable::BakeStackLean()
 	StackLeanPivot->SetRelativeTransform(FTransform::Identity);
 	SetActorTransform(VisualPose, false, nullptr, ETeleportType::TeleportPhysics);
 }
+
+float APlaceable::GetWeightPerCell() const
+{
+	return Weight / PlaceableDA->Shape.Cells.Num();
+}

@@ -304,8 +304,8 @@ void ACargoCharacter::BalanceShip()
 	FR = 0;
 	for (const auto PlaceableKV : GridComp->GetOccupiedSlots())
 	{
-		const auto PlaceableWeight = PlaceableKV.Value->Weight;
-		const auto Momentum = PlaceableWeight * PlaceableKV.Key.Y;
+		//we only care about horizontal momentum
+		const auto Momentum = PlaceableKV.Value->GetWeightPerCell() * PlaceableKV.Key.Y;
 		
 		FR += Momentum;
 	}

@@ -134,4 +134,6 @@ public:
     bool IsPlaceableBlocked(TObjectPtr<APlaceable> Placeable);
     
     TObjectPtr<UContainerDA> GetPlaceableData() { return PlaceableDA; }
+    
+    float GetWeightPerCell() const;
 };
