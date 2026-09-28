@@ -105,7 +105,7 @@ protected:
 	float WeightImbalanceMultiplier_Roll = 0.5f;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
-	FVector2D ShipRotationMovementMinMax = FVector2D(-10.0f, 15.0f);
+	FVector2D ShipRotationMovementMinMax = FVector2D(-10.0f, 10.0f);
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
 	FVector2D ShipRotationMovementMinMax_HighSpeed = FVector2D(-20.0f, 20.0f);

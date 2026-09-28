@@ -261,5 +261,5 @@ void APlaceable::BakeStackLean()
 
 float APlaceable::GetWeightPerCell() const
 {
-	return Weight / PlaceableDA->Shape.Cells.Num();
+	return Weight / GridShapeDefinition.Cells.Num();
 }
