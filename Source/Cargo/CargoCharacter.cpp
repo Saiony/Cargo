@@ -127,13 +127,15 @@ void ACargoCharacter::DoMove(float Right, float Forward)
 	// Rotation
 	if (Right != 0.f)
 	{			
+		const float RollInput = FMath::Clamp(Right, -1.f, 1.f);
+
 		//we only add the side tilt relative to the weight if the player's intentionally rotating the ship
 		auto ContainersSideTilt = WeightImbalanceMultiplier_Movement * FR / 10000;
 		Right += ContainersSideTilt;
 		
 		const float DeltaTime = GetWorld()->GetDeltaSeconds();
 		auto SpeedRotationIncrement = DeltaTime * ShipInclinationMultiplier * FloatingMovement->Velocity.Size() / FloatingMovement->MaxSpeed;
-		SpeedRotationIncrement = Right > 0 ? SpeedRotationIncrement : -SpeedRotationIncrement;
+		SpeedRotationIncrement *= RollInput;
 		
 		if (GEngine)
 		{
