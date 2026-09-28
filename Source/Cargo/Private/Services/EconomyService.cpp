@@ -2,6 +2,8 @@
 
 
 #include "Services/EconomyService.h"
+#include "DataAssets/ContainerDA.h"
+#include "DeveloperSettings/CargoSettings.h"
 
 
 // Sets default values for this component's properties
@@ -41,10 +43,17 @@ void UEconomyService::AddMoney(int32 Amount)
 
 void UEconomyService::IncrementFuelDebt()
 {
-	FuelDebt += FuelDebtPrice;
+	FuelDebt += GetFuelDebtPrice();
 }
 
-void UEconomyService::PayFuelDebts()
+void UEconomyService::PayFuelDebts(const int32 Amount)
 {
-	FuelDebt = 0;
+	FuelDebt = FMath::Max(0, FuelDebt - Amount);
+}
+
+int32 UEconomyService::GetFuelDebtPrice()
+{
+	const auto CoalTag = FGameplayTag::RequestGameplayTag(TEXT("Cargo.Coal"));
+	const auto CoalData = GetDefault<UCargoSettings>()->ContainersMap.FindChecked(CoalTag).LoadSynchronous();
+	return CoalData->BasePrice * 2;
 }

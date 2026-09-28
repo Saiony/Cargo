@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "CargoGameMode.h"
 #include "Quest/QuestData.h"
 #include "Quest/QuestStatus.h"
 #include "MissionReward.generated.h"
@@ -20,7 +21,9 @@ struct FMissionReward
 		
 	int32 MissingCargoDiscount = 0;	
 	int32 DamagedCargoDiscount = 0;	
-	int32 RecklessNavigationDiscount = 0;	
+	int32 RecklessNavigationDiscount = 0;
+	int32 FuelDebt_Before = 0;
+	int32 PaidFuelDebt = 0;
 	
 	FReward BaseReward;
 	
@@ -32,9 +35,9 @@ struct FMissionReward
 
 	FMissionReward() = default;
 
-	FMissionReward(TObjectPtr<UDeliveryMissionStatus> MissionStatus);
-
-	FReward CalculateFinalReward(TObjectPtr<UDeliveryMissionStatus> MissionStatus) const;
+	FMissionReward(TObjectPtr<UDeliveryMissionStatus> MissionStatus, TObjectPtr<ACargoGameMode> GameMode);
+	
+	FReward CalculateFinalReward(TObjectPtr<UDeliveryMissionStatus> MissionStatus);
 	
 	int8 CalculateStars(TObjectPtr<UDeliveryMissionStatus> MissionStatus, const FReward& Reward) const;
 	

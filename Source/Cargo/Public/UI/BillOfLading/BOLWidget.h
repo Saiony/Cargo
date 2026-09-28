@@ -9,7 +9,6 @@
 #include "BOLWidget.generated.h"
 
 class USimpleWidget;
-class UDeliveryMissionStatus;
 class UVerticalBox;
 class UCargoRequirementEntryWidget;
 class UCommonTextBlock;
@@ -113,7 +112,7 @@ protected:
 public:
 	FSimpleMulticastDelegate OnFinished;
 
-	void Init(TObjectPtr<UDeliveryMissionStatus> MissionStatus);
+	void Init(const FMissionReward& MissionReward);
 
 	void Show();	
 	void Hide();

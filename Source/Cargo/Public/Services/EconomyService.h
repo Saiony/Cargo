@@ -15,7 +15,6 @@ class CARGO_API UEconomyService : public UFORGServiceBase
 	
 	int32 Money = 0.0f;
 	int32 FuelDebt = 0;	
-	int32 FuelDebtPrice = 25;
 	
 public:	
 	FOnMoneyChanged OnMoneyChanged;
@@ -31,5 +30,6 @@ public:
 	/*fuel*/
 	int32 GetFuelDebt() const { return FuelDebt; };
 	void IncrementFuelDebt();
-	void PayFuelDebts();
+	void PayFuelDebts(int32 Amount);
+	int32 GetFuelDebtPrice();
 };

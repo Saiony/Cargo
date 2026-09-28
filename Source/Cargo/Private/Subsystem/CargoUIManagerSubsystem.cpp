@@ -5,14 +5,14 @@
 
 #include "Blueprint/UserWidget.h"
 #include "DeveloperSettings/CargoSettings.h"
-#include "Mission/DeliveryMissionStatus.h"
+#include "Mission/MissionReward.h"
 #include "PrimaryGameLayout.h"
 #include "TagDeclaration/UITypes.h"
 #include "UI/BillOfLading/BOLWidget.h"
 
-void UCargoUIManagerSubsystem::ShowMissionResult(UDeliveryMissionStatus* MissionStatus, FSimpleDelegate OnFinished)
+void UCargoUIManagerSubsystem::ShowMissionResult(const FMissionReward* MissionReward, FSimpleDelegate OnFinished)
 {
-	check(IsValid(MissionStatus));
+	check(MissionReward);
 	const auto WidgetClass = GetDefault<UCargoSettings>()->BOLWidgetClass.LoadSynchronous();
 	check(WidgetClass);
 	auto* Layout = UPrimaryGameLayout::GetPrimaryGameLayoutForPrimaryPlayer(this);
@@ -20,7 +20,7 @@ void UCargoUIManagerSubsystem::ShowMissionResult(UDeliveryMissionStatus* Mission
 	auto* Widget = Layout->PushWidgetToLayerStack<UBOLWidget>(TAG_UI_Layer_Prompt, WidgetClass);
 	check(Widget);
 	Widget->OnFinished.Add(OnFinished);
-	Widget->Init(MissionStatus);
+	Widget->Init(*MissionReward);
 }
 
 void UCargoUIManagerSubsystem::ToggleMap()

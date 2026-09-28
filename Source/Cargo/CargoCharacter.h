@@ -10,6 +10,7 @@
 #include "Logging/LogMacros.h"
 #include "CargoCharacter.generated.h"
 
+class UAudioComponent;
 class UCanvasRenderTarget2D;
 class UGameplayCameraComponent;
 class UBuoyancyComponent;
@@ -51,6 +52,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UAudioComponent> MovementAudioComp;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Cargo|Audio")
+	TObjectPtr<UAudioComponent> CollisionAudioComp;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UTimelineComponent> RotateTimelineComp;

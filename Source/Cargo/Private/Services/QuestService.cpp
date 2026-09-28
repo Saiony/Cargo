@@ -139,9 +139,9 @@ void UQuestService::CompleteMission(FGuid MissionId, AActor* InstigatorIsland)
 		ActiveMissions.Remove(MissionId);
 
 	
-	const FMissionReward Result = Mission->CompleteMission();
+	const FMissionReward Result = Mission->CompleteMission(GameMode);
+	GameMode->EconomyService->PayFuelDebts(Result.PaidFuelDebt);
 	GameMode->EconomyService->AddMoney(Result.FinalReward.Money);
-	GameMode->EconomyService->PayFuelDebts();
 	
 	MissionCompletedDelegate.Broadcast(Mission);
 	
@@ -152,7 +152,7 @@ void UQuestService::CompleteMission(FGuid MissionId, AActor* InstigatorIsland)
 	auto* UIManager = GetWorld()->GetGameInstance()->GetSubsystem<UCargoUIManagerSubsystem>();
 	check(UIManager);
 	
-	UIManager->ShowMissionResult(Mission, FSimpleDelegate::CreateWeakLambda(this, [this, EndDialogue, DialogueInstigator]()
+	UIManager->ShowMissionResult(&Result, FSimpleDelegate::CreateWeakLambda(this, [this, EndDialogue, DialogueInstigator]()
 	{
 		if (EndDialogue.IsNull())
 			return;

@@ -291,6 +291,7 @@ void ACargoPlayerController::SwitchEditMode(const FInputActionValue& Value)
 	SetCurrentHovered(nullptr);
 	bEditMode = !bEditMode;
 	bShowMouseCursor = bEditMode;
+	SetIgnoreLookInput(bEditMode);
 
 	if (bEditMode)
 	{

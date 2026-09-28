@@ -48,6 +48,10 @@ ACargoCharacter::ACargoCharacter()
 	GridComp->ContainerFallAngle = 30;
 	
 	MovementAudioComp = CreateDefaultSubobject<UAudioComponent>(TEXT("MovementAudioComp"));	
+
+	CollisionAudioComp = CreateDefaultSubobject<UAudioComponent>(TEXT("CollisionAudioComp"));
+	CollisionAudioComp->SetupAttachment(RootComponent);
+	CollisionAudioComp->bAutoActivate = false;
 	
 	RotateTimelineComp = CreateDefaultSubobject<UTimelineComponent>(TEXT("RotateTimelineComp"));
 	
@@ -359,6 +363,9 @@ void ACargoCharacter::OnShipHit(UPrimitiveComponent* HitComponent, AActor* Other
 
 	KnockbackVelocity = Hit.ImpactNormal.GetSafeNormal() * KnockbackStrength * 100.f;
 	const ShipCollisionType CollisionType = HitVelocity > OriginalMaxSpeed * MaxSpeedContainerFalloff ? ShipCollisionType::Heavy : ShipCollisionType::Light;	
+
+	CollisionAudioComp->SetIntParameter(TEXT("CollisionType"), static_cast<int32>(CollisionType));
+	CollisionAudioComp->Play();
 	
 	if (CollisionType == ShipCollisionType::Heavy)
 		PopRandomContainerFromTop(Hit.ImpactNormal);

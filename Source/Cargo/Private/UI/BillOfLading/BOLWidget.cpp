@@ -3,10 +3,8 @@
 
 #include "UI/BillOfLading/BOLWidget.h"
 
-#include "CargoGameMode.h"
 #include "CommonTextBlock.h"
 #include "Components/VerticalBox.h"
-#include "Mission/DeliveryMissionStatus.h"
 #include "PrimaryGameLayout.h"
 #include "DeveloperSettings/CargoSettings.h"
 #include "GameplayFramework/CargoPlayerState.h"
@@ -34,21 +32,14 @@ void UBOLWidget::NativeOnActivated()
 }
 
 
-void UBOLWidget::Init(const TObjectPtr<UDeliveryMissionStatus> MissionStatus)
+void UBOLWidget::Init(const FMissionReward& MissionReward)
 {	
-	if (!IsValid(MissionStatus))
-	{
-		return;
-	}
-
 	const TObjectPtr<ACargoPlayerState> PlayerState = GetOwningPlayerState<ACargoPlayerState>();
 	if (!IsValid(PlayerState))
 	{
 		return;
 	}
 
-	const FMissionReward MissionReward(MissionStatus);
-	
 	ShipNameText->SetText(FText::FromString(PlayerState->GetShipName()));
 	CaptainNameText->SetText(FText::FromString(PlayerState->GetCaptainName()));
 	
@@ -59,14 +50,14 @@ void UBOLWidget::Init(const TObjectPtr<UDeliveryMissionStatus> MissionStatus)
 	
 	OriginLocationText->SetText(StartIsland->LoadSynchronous()->DisplayName);
 	DestinationLocationText->SetText(DestinationIsland->LoadSynchronous()->DisplayName);
-	/**/
-	
+	/**/	
 	
 	DeliveryTimeText->SetText(FText::FromString("-"));
 	MissingCargoDiscount->SetText(FText::AsNumber(-MissionReward.MissingCargoDiscount));
 	DamagedCargoDiscount->SetText(FText::AsNumber(-MissionReward.DamagedCargoDiscount));
 	RecklessNavigationDiscount->SetText(FText::AsNumber(-MissionReward.RecklessNavigationDiscount));
-	FuelDiscount->SetText(FText::AsNumber(-ACargoGameMode::Get(this)->EconomyService->GetFuelDebt()));
+	
+	FuelDiscount->SetText(FText::AsNumber(-MissionReward.PaidFuelDebt));	
 	
 	BaseRewardText->SetText(FText::AsNumber(MissionReward.BaseReward.Money));
 	FinalRewardText->SetText(FText::AsNumber(MissionReward.FinalReward.Money));		

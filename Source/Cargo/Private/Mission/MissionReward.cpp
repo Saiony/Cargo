@@ -1,11 +1,13 @@
 #include "Mission/MissionReward.h"
 
+#include "CargoGameMode.h"
+#include "IntVectorTypes.h"
 #include "DeveloperSettings/CargoSettings.h"
 #include "Mission/DeliveryMissionStatus.h"
 
 class UCargoSettings;
 
-FMissionReward::FMissionReward(TObjectPtr<UDeliveryMissionStatus> MissionStatus) : BaseReward(MissionStatus->GetBaseReward())
+FMissionReward::FMissionReward(TObjectPtr<UDeliveryMissionStatus> MissionStatus, TObjectPtr<ACargoGameMode> GameMode) : BaseReward(MissionStatus->GetBaseReward())
 {
 	StartIslandTag = MissionStatus->GetStartIslandTag();
 	DestinationTag = MissionStatus->GetDestinationTag();
@@ -14,12 +16,13 @@ FMissionReward::FMissionReward(TObjectPtr<UDeliveryMissionStatus> MissionStatus)
 	MissingCargoDiscount = CalculateMissingCargoDiscount(MissionStatus);
 	DamagedCargoDiscount = CalculateDamagedCargoDiscount(MissionStatus);
 	RecklessNavigationDiscount = CalculateRecklessNavigationDiscount(MissionStatus);
+	FuelDebt_Before = GameMode->EconomyService->GetFuelDebt();
 
 	FinalReward = CalculateFinalReward(MissionStatus);
 	Stars = CalculateStars(MissionStatus, FinalReward);
 }
 
-FReward FMissionReward::CalculateFinalReward(TObjectPtr<UDeliveryMissionStatus> MissionStatus) const
+FReward FMissionReward::CalculateFinalReward(TObjectPtr<UDeliveryMissionStatus> MissionStatus)
 {
 	FReward Reward;
 
@@ -27,6 +30,15 @@ FReward FMissionReward::CalculateFinalReward(TObjectPtr<UDeliveryMissionStatus> 
 	Reward.Money -= MissingCargoDiscount;
 	Reward.Money -= DamagedCargoDiscount;
 	Reward.Money -= RecklessNavigationDiscount;
+		
+	if (FuelDebt_Before > 0)
+	{
+		PaidFuelDebt = FMath::Min(Reward.Money, FuelDebt_Before);
+		Reward.Money -= PaidFuelDebt;
+	}
+	
+	if (Reward.Money < 0)
+		Reward.Money = 0;
 
 	return Reward;
 }
