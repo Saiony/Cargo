@@ -8,9 +8,7 @@
 #include "GameplayFramework/Domains/FuelDomain.h"
 #include "CargoPlayerState.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnWeightChanged, float, NewCurrentWeight, float, MaxWeight);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBaseSpeedChanged, float, NewBaseSpeed);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBalanceChanged, float, NewBalance);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnShipNameChanged, FString, NewShipName);
 
 enum class ShipCollisionType
@@ -31,38 +29,15 @@ class CARGO_API ACargoPlayerState : public APlayerState
 	GENERATED_BODY()
 	
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cargo")
-	float CurrentWeight = 0.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cargo")
-	float MaxWeight = 100.f;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cargo")
-	float ShipBalanceWeight = 0.f;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cargo")
-	float ShipBalanceRotation = 0.f;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cargo")
-	float ShipSpeedMultiplier = 1;
-	
 	FFuelDomain FuelDomain{100.f, 100.f};
 
 	TMap<FGameplayTag, FString> PlayerDataTags;
 	
-	void CalculateShipSpeedMultiplier();
-	
-public:	
+public:
 	// --- Events ---
 
 	UPROPERTY(BlueprintAssignable, Category = "Cargo")
-	FOnWeightChanged OnWeightChanged;
-	
-	UPROPERTY(BlueprintAssignable, Category = "Cargo")
 	FOnBaseSpeedChanged OnBaseSpeedChanged;
-	
-	UPROPERTY(BlueprintAssignable, Category = "Cargo")
-	FOnBalanceChanged OnBalanceChanged;
 
 	FOnShipCollision OnShipCollisionEvent;
 	
@@ -72,21 +47,6 @@ public:
 
 	FFuelDomain* GetFuelDomain() { return &FuelDomain; }
 
-	UFUNCTION(BlueprintPure, Category = "Cargo")
-	float GetCurrentWeight() const { return CurrentWeight; }
-
-	UFUNCTION(BlueprintPure, Category = "Cargo")
-	float GetMaxWeight() const { return MaxWeight; }
-	
-	UFUNCTION(BlueprintPure, Category = "Cargo")
-	float GetShipSpeedMultiplier() const { return ShipSpeedMultiplier; }
-	
-	float GetShipBalanceTotal() const { return ShipBalanceWeight + ShipBalanceRotation; }
-	
-	float GetShipBalanceWeight() const { return ShipBalanceWeight; }
-	
-	float GetShipBalanceRotation() const { return ShipBalanceRotation; }	
-	
 	FString GetShipName() const { return PlayerDataTags.FindRef(FGameplayTag::RequestGameplayTag(TEXT("PlayerData.ShipName"))); }
 	
 	FString GetCaptainName() const { return PlayerDataTags.FindRef(FGameplayTag::RequestGameplayTag(TEXT("PlayerData.CaptainName"))); }
@@ -96,21 +56,6 @@ public:
 	const FString* FindPlayerDataTag(FGameplayTag Tag) const { return PlayerDataTags.Find(Tag); }
 
 	// --- Setters ---
-
-	UFUNCTION(Category = "Cargo")
-	void AddWeight(float Weight);
-	
-	UFUNCTION(Category = "Cargo")
-	void RemoveWeight(float Weight);	
-
-	UFUNCTION(Category = "Cargo")
-	void SetMaxWeight(float NewMaxWeight);
-	
-	UFUNCTION(Category = "Cargo")
-	void SetShipBalanceWeight(float NewBalance);
-	
-	UFUNCTION(Category = "Cargo")
-	void SetShipBalanceRotation(float NewBalance);
 
 	void NotifyShipCollision(AActor* OtherActor, ShipCollisionType CollisionType);
 	

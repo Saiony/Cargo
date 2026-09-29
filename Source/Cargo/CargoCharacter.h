@@ -23,6 +23,8 @@ struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 DECLARE_MULTICAST_DELEGATE(FOnShipMovementChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnWeightChanged, float, NewCurrentWeight, float, MaxWeight);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBalanceChanged, float, NewBalance);
 
 /**
  *  A simple player-controllable third-person character
@@ -34,6 +36,21 @@ class ACargoCharacter : public APawn
 	GENERATED_BODY()	
 	
 protected:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Weight")
+	float CurrentWeight = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Weight")
+	float MaxWeight = 100.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Cargo|Weight")
+	float ShipSpeedMultiplier = 1.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Balance")
+	float ShipBalanceWeight = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Balance")
+	float ShipBalanceRotation = 0.f;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UStaticMeshComponent* RootMeshComponent; 
 	
@@ -81,24 +98,65 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* MouseLookAction;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo")
-	float YawRotationSpeed = 120;
+#pragma region Rotation
+
+	/** Yaw speed in degrees per second. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Rotation|Yaw")
+	float YawTurnSpeed = 120;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo")
-	float WeightImbalanceMultiplier_Movement = 250;
+	/** Cargo imbalance influence on steering input. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Rotation|Yaw")
+	float CargoSteeringInfluence_StraightLine = 100;
 	
-	/** Degrees of cargo roll per unit of weight one grid cell from the centerline. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo")
-	float WeightImbalanceMultiplier_Roll = 0.5f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Rotation|Yaw")
+	float CargoSteeringInfluence_PlayerRotating = 2;
+
+	/** Scaled by speed and steering. */
+	UPROPERTY(EditAnywhere, Category="Cargo|Rotation|Roll|Movement")
+	float MovementRollSensitivity = 10.0f;
+
+	/** Extra movement roll buildup, zero disables the load influence. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Rotation|Roll|Movement", meta=(ClampMin="0.0"))
+	float LoadRollSensitivity = 1.f;
+
+	/** Movement roll limits in degrees at up to half speed. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Rotation|Roll|Movement")
+	FVector2D MovementRollLimits = FVector2D(-10.0f, 10.0f);
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
-	FVector2D ShipRotationMovementMinMax = FVector2D(-10.0f, 10.0f);
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
-	FVector2D ShipRotationMovementMinMax_HighSpeed = FVector2D(-20.0f, 20.0f);
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
-	FVector2D ShipAngleMinMax = FVector2D(-70.0f, 70.0f);
+	/** Movement roll limits in degrees above half speed. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Rotation|Roll|Movement")
+	FVector2D HighSpeedMovementRollLimits = FVector2D(-20.0f, 20.0f);
+
+	/** Roll degrees per weight unit one cell from the centerline. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Rotation|Roll|Cargo")
+	float CargoRollSensitivity = 0.5f;
+
+	/** Cargo-only roll limits in degrees. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Rotation|Roll|Cargo")
+	FVector2D CargoRollLimits = FVector2D(-70.0f, 70.0f);
+
+	/** Roll interpolation speed; zero snaps to the target. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Rotation|Roll", meta=(ClampMin="0.0"))
+	float RollResponseSpeed = 4.f;
+
+	/** Roll interpolation speed when returning after steering input stops. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Rotation|Roll", meta=(ClampMin="0.0"))
+	float RollReturnResponseSpeed = 1.5f;
+
+	/** Mouse look sensitivity for camera yaw and pitch. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Rotation|Camera")
+	float CameraLookSensitivity = 0.8f;
+
+	/** Total cargo weight times lateral distance in grid cells. */
+	float CargoWeightMoment = 0;
+	/** Combined movement and cargo roll target in degrees. */
+	float TargetRoll = 0.f;
+	/** Whether releasing steering must clear movement roll. */
+	bool bNeedsMovementRollReset = false;
+	/** Whether the current roll target is being reached via steering recovery. */
+	bool bIsReturningMovementRoll = false;
+
+#pragma endregion Rotation
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
 	float ReverseGearMultiplier = 0.5f;
@@ -107,17 +165,12 @@ protected:
 	TObjectPtr<USoundBase> MovementSound;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cargo")
-	float MouseSensitivity = 0.8f;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cargo")
 	float MaxSpeedContainerFalloff = 0.5f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Cargo")
 	float FuelConsumptionPerTick = 1;
 	
 	FDelegateHandle HasteCVarDelegateHandle;
-	
-	float FR = 0;	
 	
 	float OriginalMaxSpeed = -1;
 	
@@ -141,18 +194,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category="Cargo|Shake", meta=(ClampMin="0.0"))
 	float ContainerShakeDuration = 0.3f;
 	
-	UPROPERTY(EditDefaultsOnly, Category="Cargo")
-	float ShipInclinationMultiplier = 0.5f;
-	
 	FVector KnockbackVelocity;
-	
-	/** How quickly the visual roll follows its target. Zero applies the target immediately. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Roll", meta=(ClampMin="0.0"))
-	float RollInterpSpeed = 4.f;
-
-	float BoatTargetRoll = 0.f;
-
-	bool ShouldResetRotation = false;
 
 	UPROPERTY()
 	TObjectPtr<ACargoPlayerState> CargoPlayerState;
@@ -160,6 +202,48 @@ protected:
 	void OnHasteCVarChanged(IConsoleVariable* ConsoleVariable);
 	
 public:
+	UPROPERTY(BlueprintAssignable, Category="Cargo|Weight")
+	FOnWeightChanged OnWeightChanged;
+
+	UPROPERTY(BlueprintAssignable, Category="Cargo|Balance")
+	FOnBalanceChanged OnBalanceChanged;
+
+	UFUNCTION(BlueprintPure, Category="Cargo|Weight")
+	float GetCurrentWeight() const { return CurrentWeight; }
+
+	UFUNCTION(BlueprintPure, Category="Cargo|Weight")
+	float GetMaxWeight() const { return MaxWeight; }
+
+	UFUNCTION(BlueprintPure, Category="Cargo|Weight")
+	float GetShipSpeedMultiplier() const { return ShipSpeedMultiplier; }
+
+	UFUNCTION(BlueprintPure, Category="Cargo|Balance")
+	float GetShipBalanceTotal() const { return ShipBalanceWeight + ShipBalanceRotation; }
+
+	UFUNCTION(BlueprintPure, Category="Cargo|Balance")
+	float GetShipBalanceWeight() const { return ShipBalanceWeight; }
+
+	UFUNCTION(BlueprintPure, Category="Cargo|Balance")
+	float GetShipBalanceRotation() const { return ShipBalanceRotation; }
+
+	UFUNCTION(BlueprintPure, Category="Cargo|Balance")
+	float GetCurrentShipRoll() const;
+
+	UFUNCTION(Category="Cargo|Weight")
+	void AddWeight(float Weight);
+
+	UFUNCTION(Category="Cargo|Weight")
+	void RemoveWeight(float Weight);
+
+	UFUNCTION(Category="Cargo|Weight")
+	void SetMaxWeight(float NewMaxWeight);
+
+	UFUNCTION(Category="Cargo|Balance")
+	void SetShipBalanceWeight(float NewBalance);
+
+	UFUNCTION(Category="Cargo|Balance")
+	void SetShipBalanceRotation(float NewBalance);
+
 	/** Constructor */
 	ACargoCharacter();	
 
@@ -214,6 +298,7 @@ protected:
 	void DrawShipName(UCanvas* Canvas, int Width, int Height);
 	
 	void InitializeShipName();
+	void CalculateShipSpeedMultiplier();
 public:
 	/** Handles move inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category="Input")

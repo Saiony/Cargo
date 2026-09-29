@@ -2,23 +2,23 @@
 
 
 #include "UI/ShipWeightWidget.h"
-#include "GameplayFramework/CargoPlayerState.h"
+#include "CargoCharacter.h"
 
 void UShipWeightWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
-	const auto PlayerState = GetOwningPlayerState<ACargoPlayerState>();
-	PlayerState->OnWeightChanged.AddDynamic(this, &ThisClass::HandleWeightChanged);
-	HandleWeightChanged(PlayerState->GetCurrentWeight(), PlayerState->GetMaxWeight());
+	if (const auto Character = GetOwningPlayerPawn<ACargoCharacter>())
+	{
+		Character->OnWeightChanged.AddDynamic(this, &ThisClass::HandleWeightChanged);
+		HandleWeightChanged(Character->GetCurrentWeight(), Character->GetMaxWeight());
+	}
 }
 
 void UShipWeightWidget::NativeDestruct()
 {
 	Super::NativeDestruct();
-	const auto PlayerState = GetOwningPlayerState<ACargoPlayerState>();
-	
-	if (PlayerState)
-		PlayerState->OnWeightChanged.RemoveDynamic(this, &ThisClass::HandleWeightChanged);
+	if (const auto Character = GetOwningPlayerPawn<ACargoCharacter>())
+		Character->OnWeightChanged.RemoveDynamic(this, &ThisClass::HandleWeightChanged);
 }
 
 void UShipWeightWidget::HandleWeightChanged(const float NewCurrentWeight, const float MaxWeight)

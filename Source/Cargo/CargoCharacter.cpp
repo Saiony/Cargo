@@ -120,56 +120,62 @@ void ACargoCharacter::DoMove(float Right, float Forward)
 		CargoPlayerState->GetFuelDomain()->RemoveFuel(FuelConsumptionPerTick);
 	}
 	
+	//Special Yaw rotation based on cargo imbalance
+	const auto ContainersSideTilt_StraightLine = CargoSteeringInfluence_StraightLine * CargoWeightMoment / 10000;
+	const FRotator RotationIncrease(0.f, ContainersSideTilt_StraightLine, 0.f);
+	AddActorLocalRotation(RotationIncrease);
+	
 	// Rotation
-	if (Right != 0.f)
-	{			
-		const float RollInput = FMath::Clamp(Right, -1.f, 1.f);
-
-		//we only add the side tilt relative to the weight if the player's intentionally rotating the ship
-		auto ContainersSideTilt = WeightImbalanceMultiplier_Movement * FR / 10000;
-		Right += ContainersSideTilt;
+	if (Right == 0.f)
+	{
+		if (bNeedsMovementRollReset)
+		{
+			bNeedsMovementRollReset = false;
+			SetShipBalanceRotation(0);
+			bIsReturningMovementRoll = true;
+		}			
+	}
+	else
+	{				
+		//rotate Yaw
+		const FRotator Delta(0.f, Right * YawTurnSpeed * GetWorld()->GetDeltaSeconds(), 0.f);
+		AddActorLocalRotation(Delta);	
 		
-		const float DeltaTime = GetWorld()->GetDeltaSeconds();
-		auto SpeedRotationIncrement = DeltaTime * ShipInclinationMultiplier * FloatingMovement->Velocity.Size() / FloatingMovement->MaxSpeed;
-		SpeedRotationIncrement *= RollInput;
+		
+		//rotate Roll	
+		const auto ContainersSideTilt_PlayerRotating = CargoSteeringInfluence_PlayerRotating* CargoWeightMoment / 10000;
+		Right += ContainersSideTilt_PlayerRotating;
+		
+		const float RollInputDirection = FMath::Clamp(Right, -1.f, 1.f);
+		
+		const float LoadRatio = CurrentWeight / MaxWeight;
+		const float SpeedRation = FloatingMovement->Velocity.Size() / FloatingMovement->MaxSpeed;
+		
+		const auto SpeedRotationIncrement = RollInputDirection * GetWorld()->GetDeltaSeconds() * MovementRollSensitivity * SpeedRation;
 		
 		if (GEngine)
 		{
 			GEngine->AddOnScreenDebugMessage(1,0.0f,FColor::White,FString::Printf(TEXT("Speed: %.2f"), FloatingMovement->Velocity.Size()));
 			GEngine->AddOnScreenDebugMessage(2,0.0f,FColor::White,FString::Printf(TEXT("Speed Rotation Increment: %.10f"),SpeedRotationIncrement));
 		}
-	
-		//rotate Yaw
-		FRotator Delta(0.f, Right * YawRotationSpeed * DeltaTime, 0.f);
-		AddActorLocalRotation(Delta);
-		
-		//rotate Roll
-		float FinalAngle = GetPlayerState<ACargoPlayerState>()->GetShipBalanceRotation() + SpeedRotationIncrement;
+			
+		const float LoadRollMultiplier = (1.0f + LoadRatio) * LoadRollSensitivity;
+		float FinalAngle = (ShipBalanceRotation + SpeedRotationIncrement) * LoadRollMultiplier;
 		
 		if (FloatingMovement->Velocity.Size() > FloatingMovement->MaxSpeed * 0.5f)
 		{
 			FinalAngle += SpeedRotationIncrement;
-			FinalAngle = FMath::Clamp(FinalAngle, ShipRotationMovementMinMax_HighSpeed.X, ShipRotationMovementMinMax_HighSpeed.Y);
+			FinalAngle = FMath::Clamp(FinalAngle, HighSpeedMovementRollLimits.X, HighSpeedMovementRollLimits.Y);
 		}
 		else
 		{			
-			FinalAngle = FMath::Clamp(FinalAngle, ShipRotationMovementMinMax.X, ShipRotationMovementMinMax.Y);
+			FinalAngle = FMath::Clamp(FinalAngle, MovementRollLimits.X, MovementRollLimits.Y);
 		}
 			
-		GetPlayerState<ACargoPlayerState>()->SetShipBalanceRotation(FinalAngle);
-		RotateShip(CargoPlayerState->GetShipBalanceTotal());
+		SetShipBalanceRotation(FinalAngle);
+		bIsReturningMovementRoll = false;
 		
-		ShouldResetRotation = true;
-	}
-	else
-	{
-		if (ShouldResetRotation)
-		{
-			ShouldResetRotation = false;
-			GetPlayerState<ACargoPlayerState>()->SetShipBalanceRotation(0);
-			
-			RotateShip(CargoPlayerState->GetShipBalanceTotal());
-		}			
+		bNeedsMovementRollReset = true;
 	}
 }
 
@@ -178,8 +184,8 @@ void ACargoCharacter::DoLook(float Yaw, float Pitch)
 	if (GetController() != nullptr)
 	{
 		// add yaw and pitch input to controller
-		AddControllerYawInput(Yaw * MouseSensitivity);
-		AddControllerPitchInput(Pitch * MouseSensitivity);
+		AddControllerYawInput(Yaw * CameraLookSensitivity);
+		AddControllerPitchInput(Pitch * CameraLookSensitivity);
 	}
 }
 
@@ -191,14 +197,14 @@ void ACargoCharacter::AttachPlaceable(APlaceable* Placeable, FVector WorldPos)
 
 void ACargoCharacter::OnPlaceableAdded(APlaceable* Placeable)
 {
-	GetPlayerState<ACargoPlayerState>()->AddWeight(Placeable->Weight);
+	AddWeight(Placeable->Weight);
 	BalanceShip();
 	UpdateSpeed();
 }
 
 void ACargoCharacter::OnPlaceableRemoved(APlaceable* Placeable)
 {	
-	GetPlayerState<ACargoPlayerState>()->RemoveWeight(Placeable->Weight);
+	RemoveWeight(Placeable->Weight);
 	BalanceShip();
 	UpdateSpeed();
 }
@@ -210,7 +216,12 @@ void ACargoCharacter::Tick(float DeltaSeconds)
 	UpdateEngineSoundIntensity();
 
 	FRotator Rotation = MeshComponent->GetRelativeRotation();
-	Rotation.Roll = FMath::FInterpTo(Rotation.Roll, BoatTargetRoll, DeltaSeconds, RollInterpSpeed);
+	const float ActiveRollResponseSpeed = bIsReturningMovementRoll ? RollReturnResponseSpeed : RollResponseSpeed;
+	Rotation.Roll = FMath::FInterpTo(Rotation.Roll, TargetRoll, DeltaSeconds, ActiveRollResponseSpeed);
+	if (!FMath::IsNearlyEqual(Rotation.Roll, MeshComponent->GetRelativeRotation().Roll, 0.001f))
+		OnBalanceChanged.Broadcast(Rotation.Roll);
+	if (bIsReturningMovementRoll && FMath::IsNearlyEqual(Rotation.Roll, TargetRoll, 0.01f))
+		bIsReturningMovementRoll = false;
 	MeshComponent->SetRelativeRotation(Rotation);
 	GridComp->UpdateStackLean(Rotation.Roll);
 	
@@ -224,11 +235,11 @@ void ACargoCharacter::Tick(float DeltaSeconds)
 void ACargoCharacter::StopMovementInput()
 {
 	UpdateMovementState(0.f);
-	if (ShouldResetRotation && IsValid(CargoPlayerState))
+	if (bNeedsMovementRollReset)
 	{
-		ShouldResetRotation = false;
-		CargoPlayerState->SetShipBalanceRotation(0.f);
-		RotateShip(CargoPlayerState->GetShipBalanceTotal());
+		bNeedsMovementRollReset = false;
+		SetShipBalanceRotation(0.f);
+		bIsReturningMovementRoll = true;
 	}
 }
 
@@ -243,6 +254,60 @@ void ACargoCharacter::UpdateMovementState(float Forward)
 		OnMovementStarted.Broadcast();
 	else
 		OnMovementStopped.Broadcast();
+}
+
+void ACargoCharacter::CalculateShipSpeedMultiplier()
+{
+	const float WeightRatio = MaxWeight > 0.f ? CurrentWeight / MaxWeight : 0.f;
+	if (WeightRatio >= 0.99f)
+		ShipSpeedMultiplier = 0.25f;
+	else if (WeightRatio >= 0.75f)
+		ShipSpeedMultiplier = 0.5f;
+	else if (WeightRatio >= 0.50f)
+		ShipSpeedMultiplier = 0.75f;
+	else if (WeightRatio >= 0.25f)
+		ShipSpeedMultiplier = 0.8f;
+	else
+		ShipSpeedMultiplier = 1.f;
+}
+
+void ACargoCharacter::AddWeight(float Weight)
+{
+	CurrentWeight += Weight;
+	CalculateShipSpeedMultiplier();
+	OnWeightChanged.Broadcast(CurrentWeight, MaxWeight);
+}
+
+void ACargoCharacter::RemoveWeight(float Weight)
+{
+	CurrentWeight -= Weight;
+	CalculateShipSpeedMultiplier();
+	OnWeightChanged.Broadcast(CurrentWeight, MaxWeight);
+}
+
+void ACargoCharacter::SetMaxWeight(float NewMaxWeight)
+{
+	MaxWeight = NewMaxWeight;
+	CalculateShipSpeedMultiplier();
+	OnWeightChanged.Broadcast(CurrentWeight, MaxWeight);
+	UpdateSpeed();
+}
+
+void ACargoCharacter::SetShipBalanceWeight(float NewBalance)
+{
+	ShipBalanceWeight = NewBalance;
+	RotateShip(GetShipBalanceTotal());
+}
+
+void ACargoCharacter::SetShipBalanceRotation(float NewBalance)
+{
+	ShipBalanceRotation = NewBalance;
+	RotateShip(GetShipBalanceTotal());
+}
+
+float ACargoCharacter::GetCurrentShipRoll() const
+{
+	return MeshComponent ? MeshComponent->GetRelativeRotation().Roll : 0.f;
 }
 
 void ACargoCharacter::BeginPlay()
@@ -265,7 +330,7 @@ void ACargoCharacter::BeginPlay()
 	CargoPlayerState->GetFuelDomain()->OnFuelDepleted.AddUObject(
 		this, &ThisClass::OnFuelDepleted);
 	GridComp->AddTickPrerequisiteActor(this);
-	BoatTargetRoll = MeshComponent->GetRelativeRotation().Roll;
+	TargetRoll = MeshComponent->GetRelativeRotation().Roll;
 	
 	//bind events
 	GetController<ACargoPlayerController>()->OnEditModeChanged.AddDynamic(this, &ACargoCharacter::OnEditModeChanged);
@@ -299,20 +364,19 @@ void ACargoCharacter::OnFuelDepleted()
 
 void ACargoCharacter::BalanceShip()
 {
-	FR = 0;
+	CargoWeightMoment = 0;
 	for (const auto PlaceableKV : GridComp->GetOccupiedSlots())
 	{
 		//we only care about horizontal momentum
 		const auto Momentum = PlaceableKV.Value->GetWeightPerCell() * PlaceableKV.Key.Y;
 		
-		FR += Momentum;
+		CargoWeightMoment += Momentum;
 	}
 	
-	UE_LOG(LogTemp, Log, TEXT("FR: %f"), FR);
+	UE_LOG(LogTemp, Log, TEXT("CargoWeightMoment: %f"), CargoWeightMoment);
 	
-	const float FinalAngle = FMath::Clamp(FR * WeightImbalanceMultiplier_Roll, ShipAngleMinMax.X, ShipAngleMinMax.Y);
-	GetPlayerState<ACargoPlayerState>()->SetShipBalanceWeight(FinalAngle);
-	RotateShip(CargoPlayerState->GetShipBalanceTotal());
+	const float FinalAngle = FMath::Clamp(CargoWeightMoment * CargoRollSensitivity, CargoRollLimits.X, CargoRollLimits.Y);
+	SetShipBalanceWeight(FinalAngle);
 }
 
 void ACargoCharacter::UpdateEngineSoundIntensity()
@@ -325,8 +389,8 @@ void ACargoCharacter::UpdateEngineSoundIntensity()
 
 void ACargoCharacter::UpdateSpeed()
 {
-	FloatingMovement->MaxSpeed = OriginalMaxSpeed * GetPlayerState<ACargoPlayerState>()->GetShipSpeedMultiplier();
-	FloatingMovement->Acceleration = OriginalAcceleration * GetPlayerState<ACargoPlayerState>()->GetShipSpeedMultiplier();
+	FloatingMovement->MaxSpeed = OriginalMaxSpeed * ShipSpeedMultiplier;
+	FloatingMovement->Acceleration = OriginalAcceleration * ShipSpeedMultiplier;
 }
 
 void ACargoCharacter::OnHasteCVarChanged(IConsoleVariable* ConsoleVariable)
@@ -430,7 +494,7 @@ void ACargoCharacter::PopContainersFromZ(int32 Z)
 
 void ACargoCharacter::RotateShip(float TargetAngle)
 {
-	BoatTargetRoll = TargetAngle;
+	TargetRoll = TargetAngle;
 }
 
 void ACargoCharacter::OnEditModeChanged(bool bEditMode)
