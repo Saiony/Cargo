@@ -22,6 +22,11 @@ public:
 	/** Intensity is displacement in centimeters; Duration is in seconds. */
 	UFUNCTION(BlueprintCallable, Category="Cargo|Shake")
 	void DoShake(float Intensity, float Duration);
+
+	UFUNCTION(BlueprintCallable, Category="Cargo|Shake")
+	void StopShake();
+
+	void SetShakeIntensity(float Intensity);
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

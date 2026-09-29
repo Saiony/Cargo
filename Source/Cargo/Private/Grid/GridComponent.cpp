@@ -9,6 +9,97 @@
 #include "Grid/Container.h"
 #include "Grid/PlaceablePreview.h"
 
+namespace
+{
+	struct FStackLeanEntry
+	{
+		APlaceable* Placeable = nullptr;
+		TArray<FIntVector> Cells;
+		int32 BottomZ = MAX_int32;
+	};
+
+	TArray<FStackLeanEntry> BuildStackLeanEntries(const TMap<FIntVector, APlaceable*>& Slots)
+	{
+		TArray<FStackLeanEntry> Entries;
+		TMap<APlaceable*, int32> EntryIndices;
+
+		for (const auto& Slot : Slots)
+		{
+			if (!IsValid(Slot.Value))
+				continue;
+
+			int32* EntryIndex = EntryIndices.Find(Slot.Value);
+			if (!EntryIndex)
+			{
+				const int32 NewIndex = Entries.AddDefaulted();
+				Entries[NewIndex].Placeable = Slot.Value;
+				EntryIndex = &EntryIndices.Add(Slot.Value, NewIndex);
+			}
+
+			FStackLeanEntry& Entry = Entries[*EntryIndex];
+			Entry.Cells.Add(Slot.Key);
+			Entry.BottomZ = FMath::Min(Entry.BottomZ, Slot.Key.Z);
+		}
+
+		Entries.Sort([](const FStackLeanEntry& A, const FStackLeanEntry& B)
+		{
+			return A.BottomZ != B.BottomZ ? A.BottomZ < B.BottomZ :
+				A.Placeable->GetUniqueID() < B.Placeable->GetUniqueID();
+		});
+		return Entries;
+	}
+
+	APlaceable* FindStackSupport(const FStackLeanEntry& Entry, const TMap<FIntVector, APlaceable*>& Slots,
+		const TMap<APlaceable*, FTransform>& Deformations)
+	{
+		TMap<APlaceable*, int32> ContactCounts;
+		APlaceable* BestSupport = nullptr;
+		int32 BestContactCount = 0;
+
+		for (const FIntVector& Cell : Entry.Cells)
+		{
+			if (Cell.Z != Entry.BottomZ)
+				continue;
+
+			APlaceable* Candidate = Slots.FindRef(Cell - FIntVector(0, 0, 1));
+			if (!Candidate || !Deformations.Contains(Candidate))
+				continue;
+
+			const int32 ContactCount = ++ContactCounts.FindOrAdd(Candidate);
+			if (ContactCount > BestContactCount || (ContactCount == BestContactCount &&
+				BestSupport && Candidate->GetUniqueID() < BestSupport->GetUniqueID()))
+			{
+				BestSupport = Candidate;
+				BestContactCount = ContactCount;
+			}
+		}
+		return BestSupport;
+	}
+
+	FVector GetStackHinge(const FStackLeanEntry& Entry, APlaceable* Support,
+		const TMap<FIntVector, APlaceable*>& Slots, float LeanAngle, float CellSize)
+	{
+		int32 MinY = MAX_int32;
+		int32 MaxY = MIN_int32;
+		for (const FIntVector& Cell : Entry.Cells)
+		{
+			if (Cell.Z != Entry.BottomZ)
+				continue;
+
+			const bool bOnChosenSupport = !Support ||
+				Slots.FindRef(Cell - FIntVector(0, 0, 1)) == Support;
+			if (!bOnChosenSupport)
+				continue;
+
+			MinY = FMath::Min(MinY, Cell.Y);
+			MaxY = FMath::Max(MaxY, Cell.Y);
+		}
+
+		const float HingeY = (LeanAngle >= 0.f ? MaxY + 0.5f : MinY - 0.5f) * CellSize;
+		return FVector(0.f, HingeY, (Entry.BottomZ - 0.5f) * CellSize);
+	}
+}
+
 void UGridComponent::UpdateDropHover(APlaceable* Placeable, const FVector& ImpactPoint, APlaceablePreview* Preview)
 {
 	const FIntVector GridPosition = GetNextFreeZPositionGrid(ImpactPoint);
@@ -224,81 +315,26 @@ void UGridComponent::UpdateStackLean(float ShipRoll)
 	CurrentStackRoll = ShipRoll;
 	const auto Slots = GetOccupiedSlots();
 	const float CellSize = GetCellSize();
-
-	struct FStackEntry
-	{
-		APlaceable* Placeable = nullptr;
-		TArray<FIntVector> Cells;
-		int32 BottomZ = MAX_int32;
-	};
-	TArray<FStackEntry> Stack;
-	TMap<APlaceable*, int32> EntryIndices;
-	for (const auto& Slot : Slots)
-	{
-		if (!IsValid(Slot.Value))
-			continue;
-		int32* Index = EntryIndices.Find(Slot.Value);
-		if (!Index)
-		{
-			const int32 NewIndex = Stack.AddDefaulted();
-			Stack[NewIndex].Placeable = Slot.Value;
-			Index = &EntryIndices.Add(Slot.Value, NewIndex);
-		}
-		FStackEntry& Entry = Stack[*Index];
-		Entry.Cells.Add(Slot.Key);
-		Entry.BottomZ = FMath::Min(Entry.BottomZ, Slot.Key.Z);
-	}
-	Stack.Sort([](const FStackEntry& A, const FStackEntry& B)
-	{
-		return A.BottomZ != B.BottomZ ? A.BottomZ < B.BottomZ :
-			A.Placeable->GetUniqueID() < B.Placeable->GetUniqueID();
-	});
+	const TArray<FStackLeanEntry> Stack = BuildStackLeanEntries(Slots);
 
 	TMap<APlaceable*, FTransform> Deformations;
-	for (const FStackEntry& Entry : Stack)
+	TMap<APlaceable*, float> LeanAngles;
+	CumulativeLeanAngles.Empty();
+	for (const FStackLeanEntry& Entry : Stack)
 	{
-		// Each rigid container follows the support with the largest contact area.
-		TMap<APlaceable*, int32> Contacts;
-		APlaceable* Support = nullptr;
-		int32 BestContactCount = 0;
-		for (const FIntVector& Cell : Entry.Cells)
-		{
-			if (Cell.Z != Entry.BottomZ)
-				continue;
-			APlaceable* Below = Slots.FindRef(Cell - FIntVector(0, 0, 1));
-			if (Below && Deformations.Contains(Below))
-			{
-				const int32 Count = ++Contacts.FindOrAdd(Below);
-				if (Count > BestContactCount || (Count == BestContactCount &&
-					Support && Below->GetUniqueID() < Support->GetUniqueID()))
-				{
-					Support = Below;
-					BestContactCount = Count;
-				}
-			}
-		}
-
-		int32 MinY = MAX_int32;
-		int32 MaxY = MIN_int32;
-		for (const FIntVector& Cell : Entry.Cells)
-		{
-			if (Cell.Z == Entry.BottomZ && (!Support ||
-				Slots.FindRef(Cell - FIntVector(0, 0, 1)) == Support))
-			{
-				MinY = FMath::Min(MinY, Cell.Y);
-				MaxY = FMath::Max(MaxY, Cell.Y);
-			}
-		}
-
-		const float Roll = FMath::Clamp(ShipRoll * StackLeanMultiplier *
-			(Entry.BottomZ - GetMin().Z + 1), -45.f, 45.f);
-		// Hinge around the downhill edge of the supporting surface, not the box center.
-		const FVector Hinge(0.f, (Roll >= 0.f ? MaxY + 0.5f : MinY - 0.5f) * CellSize,
-			(Entry.BottomZ - 0.5f) * CellSize);
+		APlaceable* Support = FindStackSupport(Entry, Slots, Deformations);
+		// Each support adds one local lean step to the container above it.
+		const float LocalLeanAngle = FMath::Clamp(ShipRoll * StackLeanMultiplier, -45.f, 45.f);
+		const float SupportLeanAngle = Support ? LeanAngles.FindRef(Support) : 0.f;
+		const float CumulativeLeanAngle = SupportLeanAngle + LocalLeanAngle;
+		const FVector Hinge = GetStackHinge(Entry, Support, Slots, CumulativeLeanAngle, CellSize);
 		const FVector SupportedHinge = Support ? Deformations.FindChecked(Support).TransformPosition(Hinge) : Hinge;
-		const FQuat Rotation = FRotator(0.f, 0.f, Roll).Quaternion();
+		const FQuat Rotation = FRotator(0.f, 0.f, CumulativeLeanAngle).Quaternion();
 		const FTransform Deformation(Rotation, SupportedHinge - Rotation.RotateVector(Hinge));
+
 		Deformations.Add(Entry.Placeable, Deformation);
+		LeanAngles.Add(Entry.Placeable, CumulativeLeanAngle);
+		CumulativeLeanAngles.Add(Entry.Placeable, CumulativeLeanAngle);
 		Entry.Placeable->SetStackLean(Deformation, GetComponentTransform());
 	}
 }
@@ -442,7 +478,7 @@ void UGridComponent::DrawDebugGrid(float Duration) const
 void UGridComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	DropOverTiltedContainers();
+	DropOverTiltedContainers(DeltaTime);
 	
 #if !UE_BUILD_SHIPPING
 	if (CVarCargoShowDebugs.GetValueOnGameThread())
@@ -450,28 +486,87 @@ void UGridComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
 #endif
 }
 
-void UGridComponent::DropOverTiltedContainers()
+void UGridComponent::DropOverTiltedContainers(float DeltaTime)
 {
 	if (ContainerFallAngle <= 0)
+	{
+		for (const auto& State : ContainerTiltStates)
+		{
+			if (AContainer* Container = State.Key.Get(); IsValid(Container) && State.Value.bIsShaking)
+				Container->StopShake();
+		}
+		ContainerTiltStates.Empty();
 		return;
+	}
 
 	TSet<AContainer*> CheckedContainers;
 	TMap<AContainer*, FTransform> FallingContainers;
+	
 	for (const auto& Slot : GetOccupiedSlots())
 	{
 		AContainer* Container = Cast<AContainer>(Slot.Value);
+		
 		if (!IsValid(Container) || CheckedContainers.Contains(Container))
 			continue;
+		
 		CheckedContainers.Add(Container);
-
+		
 		const FTransform Pose = Container->GetStackWorldTransform();
-		const float UpDot = FVector::DotProduct(Pose.GetUnitAxis(EAxis::Z), FVector::UpVector);
-		const float Tilt = FMath::RadiansToDegrees(FMath::Acos(FMath::Clamp(UpDot, -1.f, 1.f)));
-		// Ignore floating-point noise at exactly the configured angle.
-		if (Tilt > ContainerFallAngle + KINDA_SMALL_NUMBER)
-			FallingContainers.Add(Container, Pose);
+		const float* StoredLeanAngle = CumulativeLeanAngles.Find(Container);
+		const float CumulativeLeanAngle = StoredLeanAngle
+			? *StoredLeanAngle
+			: FMath::RadiansToDegrees(FMath::Acos(FMath::Clamp(
+				FVector::DotProduct(Pose.GetUnitAxis(EAxis::Z), FVector::UpVector), -1.f, 1.f)));
+		UpdateContainerTilt(Container, FMath::Abs(CumulativeLeanAngle), DeltaTime, FallingContainers);
 	}
 
+	for (auto It = ContainerTiltStates.CreateIterator(); It; ++It)
+	{
+		AContainer* Container = It.Key().Get();
+		if (!IsValid(Container) || !CheckedContainers.Contains(Container))
+		{
+			if (IsValid(Container) && It.Value().bIsShaking)
+				Container->StopShake();
+			It.RemoveCurrent();
+		}
+	}
+
+	DropFallenContainers(FallingContainers);
+}
+
+void UGridComponent::UpdateContainerTilt(AContainer* Container, float TiltDegrees, float DeltaTime,
+	TMap<AContainer*, FTransform>& FallingContainers)
+{
+	FContainerTiltState& State = ContainerTiltStates.FindOrAdd(Container);
+
+	if (TiltDegrees < ContainerFallAngle)
+	{
+		State.TimeOverFallAngle = 0.f;
+		if (State.bIsShaking)
+		{
+			Container->StopShake();
+			State.bIsShaking = false;
+		}
+		return;
+	}
+
+	const float ShakeIntensity = ContainerShakeIntensity * (TiltDegrees / ContainerFallAngle);
+	
+	if (State.bIsShaking)
+		Container->SetShakeIntensity(ShakeIntensity);
+	else
+	{
+		Container->DoShake(ShakeIntensity, ContainerFallGracePeriodSeconds);
+		State.bIsShaking = true;
+	}
+
+	State.TimeOverFallAngle += DeltaTime;
+	if (State.TimeOverFallAngle >= ContainerFallGracePeriodSeconds)
+		FallingContainers.Add(Container, Container->GetStackWorldTransform());
+}
+
+void UGridComponent::DropFallenContainers(const TMap<AContainer*, FTransform>& FallingContainers)
+{
 	// Decide the entire batch before removal callbacks rebalance the ship and rebuild the stack.
 	for (const auto& Falling : FallingContainers)
 	{
@@ -479,6 +574,8 @@ void UGridComponent::DropOverTiltedContainers()
 		if (!IsValid(Container) || Container->OwningGridActor != this)
 			continue;
 
+		Container->StopShake();
+		ContainerTiltStates.Remove(Container);
 		RemovePlaceableFromGrid(Container);
 		Container->SetActorTransform(Falling.Value, false, nullptr, ETeleportType::TeleportPhysics);
 		const FVector Downhill = Falling.Value.GetUnitAxis(EAxis::Z).GetSafeNormal2D();

@@ -16,7 +16,8 @@ class CARGO_API UCargoTweenSubsystem : public UWorldSubsystem
 	{
 		FTimerHandle Timer;
 		TWeakObjectPtr<USceneComponent> Target;
-		FVector Offset = FVector::ZeroVector;
+		FRotator RotationOffset = FRotator::ZeroRotator;
+		float Intensity = 0.f;
 	};
 
 	TMap<TWeakObjectPtr<AActor>, FShake> Shakes;
@@ -25,9 +26,14 @@ public:
 	// Actors can mark a visual component to shake instead of their collision root.
 	static const FName ShakeTargetTag;
 
-	/** Translation only. Intensity is in centimeters; Duration is in seconds. */
+	/** Applies rotational shake. Intensity is in degrees; Duration is in seconds. */
 	UFUNCTION(BlueprintCallable, Category="Cargo|Tween")
 	void DoShake(AActor* Actor, float Intensity, float Duration);
+
+	UFUNCTION(BlueprintCallable, Category="Cargo|Tween")
+	void StopShake(AActor* Actor);
+
+	void SetShakeIntensity(AActor* Actor, float Intensity);
 
 	virtual void Deinitialize() override;
 };

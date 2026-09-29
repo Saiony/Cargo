@@ -14,6 +14,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlaceableAddedToGrid, APlaceable*
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlaceableRemovedFromGrid, APlaceable*, Placeable);
 
 class APlaceable;
+class AContainer;
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class CARGO_API UGridComponent : public UBoxComponent, public ICargoDropTarget
@@ -37,9 +38,20 @@ protected:
 	FVector WorldToLocal(const FVector& WorldLocation);
 
 	float CurrentStackRoll = 0.f;
-	void DropOverTiltedContainers();
+	TMap<TWeakObjectPtr<APlaceable>, float> CumulativeLeanAngles;
+	struct FContainerTiltState
+	{
+		float TimeOverFallAngle = 0.f;
+		bool bIsShaking = false;
+	};
+	TMap<TWeakObjectPtr<AContainer>, FContainerTiltState> ContainerTiltStates;
 
-	/** Extra roll per grid floor, relative to the ship's roll. */
+	void DropOverTiltedContainers(float DeltaTime);
+	void UpdateContainerTilt(AContainer* Container, float TiltDegrees, float DeltaTime,
+		TMap<AContainer*, FTransform>& FallingContainers);
+	void DropFallenContainers(const TMap<AContainer*, FTransform>& FallingContainers);
+
+	/** Local roll added at each supported floor, scaled by the ship roll. */
 	UPROPERTY(EditAnywhere, Category="Cargo|Stack", meta=(ClampMin="0.0"))
 	float StackLeanMultiplier = 0.15f;
 	
@@ -53,7 +65,13 @@ public:
 
 	/** Maximum container tilt from world vertical, in degrees. Zero disables automatic falling. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo|Stack", meta=(ClampMin="0", ClampMax="180", Units="deg"))
-	int32 ContainerFallAngle = 0;
+	float ContainerFallAngle = 0;
+	
+	UPROPERTY(EditAnywhere, Category="Cargo|Stack")
+	float ContainerShakeIntensity = 100.0f;
+	
+	UPROPERTY(EditAnywhere, Category="Cargo|Stack")
+	float ContainerFallGracePeriodSeconds = 1.5f;
     
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
     

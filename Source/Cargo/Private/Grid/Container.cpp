@@ -64,3 +64,13 @@ void AContainer::DoShake(float Intensity, float Duration)
 {
 	GetWorld()->GetSubsystem<UCargoTweenSubsystem>()->DoShake(this, Intensity, Duration);
 }
+
+void AContainer::StopShake()
+{
+	GetWorld()->GetSubsystem<UCargoTweenSubsystem>()->StopShake(this);
+}
+
+void AContainer::SetShakeIntensity(float Intensity)
+{
+	GetWorld()->GetSubsystem<UCargoTweenSubsystem>()->SetShakeIntensity(this, Intensity);
+}
