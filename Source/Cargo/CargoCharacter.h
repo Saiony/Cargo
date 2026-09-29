@@ -139,9 +139,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Rotation|Roll", meta=(ClampMin="0.0"))
 	float RollResponseSpeed = 4.f;
 
-	/** Roll interpolation speed when returning after steering input stops. */
+	/** Roll interpolation speed while the steering roll resets after input stops. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Rotation|Roll", meta=(ClampMin="0.0"))
-	float RollReturnResponseSpeed = 1.5f;
+	float ResetRollResponseSpeed = 1.5f;
 
 	/** Mouse look sensitivity for camera yaw and pitch. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Rotation|Camera")

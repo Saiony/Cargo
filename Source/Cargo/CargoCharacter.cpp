@@ -216,7 +216,7 @@ void ACargoCharacter::Tick(float DeltaSeconds)
 	UpdateEngineSoundIntensity();
 
 	FRotator Rotation = MeshComponent->GetRelativeRotation();
-	const float ActiveRollResponseSpeed = bIsReturningMovementRoll ? RollReturnResponseSpeed : RollResponseSpeed;
+	const float ActiveRollResponseSpeed = bIsReturningMovementRoll ? ResetRollResponseSpeed : RollResponseSpeed;
 	Rotation.Roll = FMath::FInterpTo(Rotation.Roll, TargetRoll, DeltaSeconds, ActiveRollResponseSpeed);
 	if (!FMath::IsNearlyEqual(Rotation.Roll, MeshComponent->GetRelativeRotation().Roll, 0.001f))
 		OnBalanceChanged.Broadcast(Rotation.Roll);
@@ -296,6 +296,7 @@ void ACargoCharacter::SetMaxWeight(float NewMaxWeight)
 void ACargoCharacter::SetShipBalanceWeight(float NewBalance)
 {
 	ShipBalanceWeight = NewBalance;
+	bIsReturningMovementRoll = false;
 	RotateShip(GetShipBalanceTotal());
 }
 
