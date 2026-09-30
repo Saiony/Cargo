@@ -58,6 +58,8 @@ class CARGO_API UIslandWidget : public UFrogsmithActivatableWidget, public IDial
 
 	UFUNCTION()
 	void OnCloseButtonClicked();
+	
+	void Hide();
 
 	void DrawDialogueButtons();
 	void DrawIslandOptions();

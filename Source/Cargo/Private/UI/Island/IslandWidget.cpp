@@ -22,6 +22,7 @@ void UIslandWidget::NativeOnInitialized()
 	MissionBoardButton->OnClicked.AddDynamic(this, &ThisClass::OnMissionBoardButtonClicked);
 	CloseButton->OnClicked.AddDynamic(this, &ThisClass::OnCloseButtonClicked);
 }
+
 void UIslandWidget::Initialize(TObjectPtr<ACargoIsland> IslandRef)
 {
 	Island = IslandRef;
@@ -131,6 +132,7 @@ void UIslandWidget::CreateDialogueOptionButton(const FText& Title, UDialogueData
 
 void UIslandWidget::OnQuestDialogueOptionClicked(UQuestDialogueOptionButton* Button)
 {
+	Hide();
 }
 
 void UIslandWidget::OnDialogueOptionClicked(UDialogueOptionButton* Button, const int8 Id)
@@ -152,5 +154,11 @@ void UIslandWidget::OnMissionBoardButtonClicked()
 
 void UIslandWidget::OnCloseButtonClicked()
 {
+	Hide();
+}
+
+void UIslandWidget::Hide()
+{
 	UPrimaryGameLayout::GetPrimaryGameLayoutForPrimaryPlayer(this)->FindAndRemoveWidgetFromLayer(this);
+
 }

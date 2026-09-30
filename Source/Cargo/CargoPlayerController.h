@@ -136,6 +136,7 @@ protected:
 	void OnRightClick(const FInputActionValue& Value);
 	void OnCancel(const FInputActionValue& Value);
 	void SwitchEditMode(const FInputActionValue& Value);
+	void UpdateGameplayUIInputMode();
 	void OnToggleMap(const FInputActionInstance& InputActionInstance);
 	
 	void Interact(const FInputActionValue& InputActionValue);

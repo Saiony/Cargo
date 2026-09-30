@@ -14,9 +14,12 @@
 #include "Engine/OverlapResult.h"
 #include "Grid/Container.h"
 #include "Interaction/CargoInteractable.h"
+#include "PrimaryGameLayout.h"
 #include "Runtime/Experimental/Voronoi/Private/voro++/src/container.hh"
 #include "Subsystem/AudioSubsystem.h"
 #include "Subsystem/CargoUIManagerSubsystem.h"
+#include "TagDeclaration/UITypes.h"
+#include "UI/CargoMainHUD.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 
 class UCargoUIManagerSubsystem;
@@ -221,7 +224,7 @@ void ACargoPlayerController::OnLeftClickStart(const FInputActionValue& Value)
 	
 	if (!Placeable)
 	{
-		Placeable = Cast<APlaceable>(HitResult.GetActor()->GetParentActor());
+		Placeable = Cast<APlaceable>(HitResult.GetActor()->GetOwner());
 		
 		if (!Placeable)
 			return;
@@ -290,19 +293,8 @@ void ACargoPlayerController::SwitchEditMode(const FInputActionValue& Value)
 {
 	SetCurrentHovered(nullptr);
 	bEditMode = !bEditMode;
-	bShowMouseCursor = bEditMode;
 	SetIgnoreLookInput(bEditMode);
-
-	if (bEditMode)
-	{
-		FInputModeGameAndUI InputMode;
-		InputMode.SetHideCursorDuringCapture(false);
-		SetInputMode(InputMode);
-	}
-	else
-	{
-		SetInputMode(FInputModeGameOnly());
-	}
+	UpdateGameplayUIInputMode();
 	
 	OnEditModeChanged.Broadcast(bEditMode);
 }
@@ -373,6 +365,13 @@ void ACargoPlayerController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 	GetGameInstance()->GetSubsystem<UCargoUIManagerSubsystem>()->NotifyPlayerAdded(Cast<UCommonLocalPlayer>(GetWorld()->GetFirstLocalPlayerFromController()));
+}
+
+void ACargoPlayerController::UpdateGameplayUIInputMode()
+{
+	UPrimaryGameLayout* Layout = UPrimaryGameLayout::GetPrimaryGameLayout(this);
+	UCargoMainHUD* MainHUD = Cast<UCargoMainHUD>(Layout->GetLayerWidget(TAG_UI_Layer_Game)->GetActiveWidget());
+	MainHUD->SetEditMode(bEditMode);
 }
 
 void ACargoPlayerController::UpdateInteractionFocus()
@@ -480,10 +479,8 @@ void ACargoPlayerController::StartDragging(APlaceable* InPlaceable)
 	if (!bEditMode)
 	{
 		bEditMode = true;
-		bShowMouseCursor = true;
-		FInputModeGameAndUI InputMode;
-		InputMode.SetHideCursorDuringCapture(false);
-		SetInputMode(InputMode);
+		SetIgnoreLookInput(true);
+		UpdateGameplayUIInputMode();
 	}
 
 	FVector MouseWorldLocation;
