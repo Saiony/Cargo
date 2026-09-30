@@ -323,13 +323,16 @@ void UGridComponent::UpdateStackLean(float ShipRoll)
 	for (const FStackLeanEntry& Entry : Stack)
 	{
 		APlaceable* Support = FindStackSupport(Entry, Slots, Deformations);
-		// Each support adds one local lean step to the container above it.
-		const float LocalLeanAngle = FMath::Clamp(ShipRoll * StackLeanMultiplier, -45.f, 45.f);
 		const float SupportLeanAngle = Support ? LeanAngles.FindRef(Support) : 0.f;
-		const float CumulativeLeanAngle = SupportLeanAngle + LocalLeanAngle;
+		const int32 FloorNumber = Entry.BottomZ - GetMin().Z + 1;
+		const float GrowthScale = FMath::Pow(StackLeanGrowthRate, FloorNumber - 2);
+		const float CumulativeLeanAngle = ShipRoll * StackLeanMultiplier * GrowthScale;
+		const float LocalLeanAngle = CumulativeLeanAngle - SupportLeanAngle;
 		const FVector Hinge = GetStackHinge(Entry, Support, Slots, CumulativeLeanAngle, CellSize);
 		const FVector SupportedHinge = Support ? Deformations.FindChecked(Support).TransformPosition(Hinge) : Hinge;
-		const FQuat Rotation = FRotator(0.f, 0.f, CumulativeLeanAngle).Quaternion();
+		const FQuat SupportRotation = Support ? Deformations.FindChecked(Support).GetRotation() : FQuat::Identity;
+		const FQuat LocalRotation = FRotator(0.f, 0.f, LocalLeanAngle).Quaternion();
+		const FQuat Rotation = SupportRotation * LocalRotation;
 		const FTransform Deformation(Rotation, SupportedHinge - Rotation.RotateVector(Hinge));
 
 		Deformations.Add(Entry.Placeable, Deformation);

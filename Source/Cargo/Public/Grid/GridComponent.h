@@ -51,9 +51,13 @@ protected:
 		TMap<AContainer*, FTransform>& FallingContainers);
 	void DropFallenContainers(const TMap<AContainer*, FTransform>& FallingContainers);
 
-	/** Local roll added at each supported floor, scaled by the ship roll. */
+	/** Base cumulative roll for the second floor, scaled by the ship roll. */
 	UPROPERTY(EditAnywhere, Category="Cargo|Stack", meta=(ClampMin="0.0"))
 	float StackLeanMultiplier = 0.15f;
+
+	/** Exponential growth of cumulative lean for each higher floor. */
+	UPROPERTY(EditAnywhere, Category="Cargo|Stack", meta=(ClampMin="1.0"))
+	float StackLeanGrowthRate = 2.f;
 	
 	virtual void OnRegister() override;
 
