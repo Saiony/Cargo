@@ -11,6 +11,7 @@
 #include "DeliveryMissionStatus.generated.h"
 
 struct FMissionReward;
+class ACargoGameMode;
 
 /**
  * 
@@ -72,7 +73,7 @@ public:
 	
 	FReward GetBaseReward() const { return BaseReward; }
 	
-	FMissionReward CompleteMission();
+	FMissionReward CompleteMission(TObjectPtr<ACargoGameMode> GameMode);
 	
 	void AddCollision_Light();
 	

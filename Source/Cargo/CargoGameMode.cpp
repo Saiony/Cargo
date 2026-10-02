@@ -26,7 +26,7 @@ void ACargoGameMode::AddDebugInitialTags()
 {
 	for (const FGameplayTag& DebugTag : Debug_InitialTags)
 	{
-		AddTag(DebugTag);
+		AddInGameEventTag(DebugTag);
 	}
 }
 #endif
@@ -81,13 +81,13 @@ void ACargoGameMode::BootService(const int32 Index)
 	Services[Index]->Boot(FOnServiceBooted::CreateUObject(this, &ACargoGameMode::BootService, Index + 1));
 }
 
-void ACargoGameMode::AddTag(FGameplayTag ChoiceTag)
+void ACargoGameMode::AddInGameEventTag(FGameplayTag ChoiceTag)
 {
-	TagsContainer.AddTag(ChoiceTag);
+	InGameEventsContainer.AddTag(ChoiceTag);
 }
 
-bool ACargoGameMode::HasTag(FGameplayTag ChoiceName)
+bool ACargoGameMode::HasInGameEventTag(FGameplayTag ChoiceName)
 {
-	return TagsContainer.HasTag(ChoiceName);
+	return InGameEventsContainer.HasTag(ChoiceName);
 }
 

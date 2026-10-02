@@ -68,10 +68,10 @@ int32 UDeliveryMissionStatus::GetNumDamagedContainers() const
 	return NumDamaged;
 }
 
-FMissionReward UDeliveryMissionStatus::CompleteMission()
+FMissionReward UDeliveryMissionStatus::CompleteMission(TObjectPtr<ACargoGameMode> GameMode)
 {
 	IsCompleted = true;
-	return FMissionReward(this);
+	return FMissionReward(this, GameMode);
 }
 
 void UDeliveryMissionStatus::AddCollision_Light()

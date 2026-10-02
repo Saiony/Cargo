@@ -7,15 +7,17 @@
 #include "DataAssets/GridComponentDA.h"
 #include "DeveloperSettings/CargoSettings.h"
 #include "Grid/FROGGrid.h"
+#include "Interaction/CargoDropTarget.h"
 #include "GridComponent.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlaceableAddedToGrid, APlaceable*, Placeable);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlaceableRemovedFromGrid, APlaceable*, Placeable);
 
 class APlaceable;
+class AContainer;
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
-class CARGO_API UGridComponent : public UBoxComponent
+class CARGO_API UGridComponent : public UBoxComponent, public ICargoDropTarget
 {
 	GENERATED_BODY()
 protected:  
@@ -34,15 +36,52 @@ protected:
 	void InitializeGrid();
 
 	FVector WorldToLocal(const FVector& WorldLocation);
+
+	float CurrentStackRoll = 0.f;
+	TMap<TWeakObjectPtr<APlaceable>, float> CumulativeLeanAngles;
+	struct FContainerTiltState
+	{
+		float TimeOverFallAngle = 0.f;
+		bool bIsShaking = false;
+	};
+	TMap<TWeakObjectPtr<AContainer>, FContainerTiltState> ContainerTiltStates;
+
+	void DropOverTiltedContainers(float DeltaTime);
+	void UpdateContainerTilt(AContainer* Container, float TiltDegrees, float DeltaTime,
+		TMap<AContainer*, FTransform>& FallingContainers);
+	void DropFallenContainers(const TMap<AContainer*, FTransform>& FallingContainers);
+
+	/** Base cumulative roll for the second floor, scaled by the ship roll. */
+	UPROPERTY(EditAnywhere, Category="Cargo|Stack", meta=(ClampMin="0.0"))
+	float StackLeanMultiplier = 0.15f;
+
+	/** Exponential growth of cumulative lean for each higher floor. */
+	UPROPERTY(EditAnywhere, Category="Cargo|Stack", meta=(ClampMin="1.0"))
+	float StackLeanGrowthRate = 2.f;
 	
 	virtual void OnRegister() override;
 
 public:
 	UGridComponent();
+
+	virtual void UpdateDropHover(APlaceable* Placeable, const FVector& ImpactPoint, APlaceablePreview* Preview) override;
+	virtual bool TryAcceptDrop(APlaceable* Placeable, APlaceablePreview* Preview) override;
+
+	/** Maximum container tilt from world vertical, in degrees. Zero disables automatic falling. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Cargo|Stack", meta=(ClampMin="0", ClampMax="180", Units="deg"))
+	float ContainerFallAngle = 0;
+	
+	UPROPERTY(EditAnywhere, Category="Cargo|Stack")
+	float ContainerShakeIntensity = 100.0f;
+	
+	UPROPERTY(EditAnywhere, Category="Cargo|Stack")
+	float ContainerFallGracePeriodSeconds = 1.5f;
     
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
     
 	void ClearGrid();
+
+	void UpdateStackLean(float ShipRoll);
 
 	bool CanAddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const FVector WorldLocation, float Rotation);
 	

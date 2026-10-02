@@ -27,7 +27,7 @@ class ACargoGameMode : public AGameModeBase
 	UPROPERTY()
 	TMap<TSubclassOf<UFORGServiceBase>, TObjectPtr<UFORGServiceBase>> ServicesMap;
 	
-	FGameplayTagContainer TagsContainer = FGameplayTagContainer();	
+	FGameplayTagContainer InGameEventsContainer = FGameplayTagContainer();	
 	
 	virtual void BeginPlay() override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
@@ -68,8 +68,11 @@ public:
 		return Cast<ACargoGameMode>(UGameplayStatics::GetGameMode(WorldContextObject));
 	};
 		
-	void AddTag(FGameplayTag ChoiceTag);
-	bool HasTag(FGameplayTag ChoiceName);	
+	void AddInGameEventTag(FGameplayTag ChoiceTag);
+	bool HasInGameEventTag(FGameplayTag ChoiceName);
+	
+	TSet<FGuid> AlreadyPlayedDialogues;
+	
 	float GetGridCellSize() const { return 100.0f; }
 	
 	template <typename T>

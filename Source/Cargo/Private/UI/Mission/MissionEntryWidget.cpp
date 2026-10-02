@@ -4,6 +4,7 @@
 #include "UI/Mission/MissionEntryWidget.h"
 
 #include "Components/Button.h"
+#include "DeveloperSettings/CargoSettings.h"
 #include "Quest/QuestData.h"
 
 void UMissionEntryWidget::NativeOnInitialized()
@@ -20,7 +21,9 @@ void UMissionEntryWidget::Initialize(const TObjectPtr<UDeliveryMissionData> InMi
 	Listener = InListener;
 	MissionData = InMissionData;
 	
-	DestinationText->SetText(FText::FromName(InMissionData->DestinationTag.GetTagName()));
+	const auto* IslandReference = GetDefault<UCargoSettings>()->IslandsMap.Find(InMissionData->DestinationTag);
+	const auto* IslandData = IslandReference ? IslandReference->LoadSynchronous() : nullptr;
+	DestinationText->SetText(IslandData ? IslandData->DisplayName : FText::GetEmpty());
 	Fade();
 
 	RequirementsContainer->ClearChildren();

@@ -116,13 +116,14 @@ void UQuestService::CompleteMission(FGuid MissionId, AActor* InstigatorIsland)
 	auto GameMode = ACargoGameMode::Get(this);
 	auto Quest = FindQuestForMission(MissionId);
 	TSoftObjectPtr<UDialogueData> EndDialogue;
+	TSoftObjectPtr<UDialogueData> NextQuestDialogue;
 	
 	if (Quest)
 	{
 		EndDialogue = Quest->EndDeliveryDialogue;
 		for (const FGameplayTag Tag : Quest->AlternativeEndDeliveryDialogue.RequiredChoiceTags)
 		{
-			if (GameMode->HasTag(Tag))
+			if (GameMode->HasInGameEventTag(Tag))
 			{
 				EndDialogue = Quest->AlternativeEndDeliveryDialogue.AlternativeDialogue;
 				break;
@@ -130,16 +131,23 @@ void UQuestService::CompleteMission(FGuid MissionId, AActor* InstigatorIsland)
 		}
 		ActiveQuests.Remove(Quest->QuestTag);
 		if (Quest->Reward.RewardTag.IsValid())
-			GameMode->AddTag(Quest->Reward.RewardTag);
-		GameMode->EconomyService->AddMoney(Quest->Reward.Money);
-		AddAvailableQuest(Quest->NextQuest.LoadSynchronous());
+			GameMode->AddInGameEventTag(Quest->Reward.RewardTag);
+		
+		//GameMode->EconomyService->AddMoney(Quest->Reward.Money);
+		if (UQuestData* NextQuest = Quest->NextQuest.LoadSynchronous())
+		{
+			AddAvailableQuest(NextQuest);
+			NextQuestDialogue = NextQuest->StartDialogue;
+		}
 	}
 	else
 		ActiveMissions.Remove(MissionId);
 
 	
-	const FMissionReward Result = Mission->CompleteMission();
+	const FMissionReward Result = Mission->CompleteMission(GameMode);
+	GameMode->EconomyService->PayFuelDebts(Result.PaidFuelDebt);
 	GameMode->EconomyService->AddMoney(Result.FinalReward.Money);
+	
 	MissionCompletedDelegate.Broadcast(Mission);
 	
 	if (Quest)
@@ -149,20 +157,24 @@ void UQuestService::CompleteMission(FGuid MissionId, AActor* InstigatorIsland)
 	auto* UIManager = GetWorld()->GetGameInstance()->GetSubsystem<UCargoUIManagerSubsystem>();
 	check(UIManager);
 	
-	UIManager->ShowMissionResult(Mission, FSimpleDelegate::CreateWeakLambda(this, [this, EndDialogue, DialogueInstigator]()
+	UIManager->ShowMissionResult(&Result, FSimpleDelegate::CreateWeakLambda(this, [this, EndDialogue, NextQuestDialogue, DialogueInstigator]()
 	{
-		if (EndDialogue.IsNull())
-			return;
-		
-		check(DialogueInstigator.IsValid());
-		
-		UDialogueData* Dialogue = EndDialogue.LoadSynchronous();
-		check(Dialogue);
-		
 		const auto DialogueSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UFROGDialogueSubsystem>();
 		check(DialogueSubsystem);
-		
-		DialogueSubsystem->PlayDialogue(Dialogue, DialogueInstigator.Get());
+
+		if (!EndDialogue.IsNull())
+		{
+			check(DialogueInstigator.IsValid());
+			UDialogueData* Dialogue = EndDialogue.LoadSynchronous();
+			check(Dialogue);
+			DialogueSubsystem->PlayDialogue(Dialogue, DialogueInstigator.Get());
+			if (!NextQuestDialogue.IsNull())
+				DialogueSubsystem->SetNextDialogue(NextQuestDialogue);
+		}
+		else if (!NextQuestDialogue.IsNull())
+		{
+			DialogueSubsystem->PlayDialogue(NextQuestDialogue.LoadSynchronous(), DialogueInstigator.Get());
+		}
 	}));
 }
 
@@ -177,20 +189,33 @@ TArray<TObjectPtr<UDeliveryMissionStatus>> UQuestService::GetActiveMissionsForDe
 	return Missions;
 }
 
-void UQuestService::ActivateQuest(UQuestData* QuestData, AActor* QuestInstigator)
+bool UQuestService::ActivateQuest(UQuestData* QuestData, AActor* QuestInstigator)
 {
+	if (!IsValid(QuestData))
+	{
+		UE_LOG(LogTemp, Error, TEXT("QuestService::ActivateQuest: QuestData is null or invalid. Instigator='%s'. Check the dialogue callback's QuestData."), *GetPathNameSafe(QuestInstigator));
+		return false;
+	}
+
 	const auto* Island = Cast<ACargoIsland>(QuestInstigator);
-	if (!IsValid(QuestData) || !Island || Island->GetLocationTag() != QuestData->StartLocationTag)
-		return;
-	if (!AvailableQuests.Contains(QuestData) || ActiveQuests.Contains(QuestData->QuestTag))
-		return;
+	if (!IsValid(Island))
+	{
+		UE_LOG(LogTemp, Error, TEXT("QuestService::ActivateQuest: Cannot activate '%s': instigator '%s' is not a valid CargoIsland."), *QuestData->GetPathName(), *GetPathNameSafe(QuestInstigator));
+		return false;
+	}
+	if (ActiveQuests.Find(QuestData->QuestTag))
+	{
+		UE_LOG(LogTemp, Error, TEXT("QuestService::ActivateQuest: QuestTag '%s' is already active (asset '%s')"), *QuestData->GetPathName(), *QuestData->QuestTag.ToString());
+		return false;
+	}
 
 	auto* Quest = NewObject<UQuestStatus>(this);
 	Quest->Initialize(QuestData);
 	if (!Quest->MissionStatus)
 	{
-		UE_LOG(LogTemp, Error, TEXT("QuestService: Cannot accept %s. Assign a supported MissionData asset to the quest."), *QuestData->GetPathName());
-		return;
+		UE_LOG(LogTemp, Error, TEXT("QuestService::ActivateQuest: Cannot activate '%s': MissionData='%s' (class '%s') is missing or unsupported. Expected DeliveryMissionData or TravelMissionData."),
+			*QuestData->GetPathName(), *GetPathNameSafe(QuestData->MissionData), *GetNameSafe(QuestData->MissionData ? QuestData->MissionData->GetClass() : nullptr));
+		return false;
 	}
 
 	ActiveQuests.Add(Quest->QuestTag, Quest);
@@ -199,11 +224,13 @@ void UQuestService::ActivateQuest(UQuestData* QuestData, AActor* QuestInstigator
 	QuestAcceptedDelegate.Broadcast(QuestData, QuestInstigator);
 	if (auto* Delivery = Cast<UDeliveryMissionStatus>(Quest->MissionStatus))
 		MissionAcceptedDelegate.Broadcast(Delivery, Island->GetLocationTag());
+	return true;
 }
 
 void UQuestService::CompleteTravelQuest(FGameplayTag QuestTag, AActor* InstigatorIsland)
 {
-	auto Quest = GetQuestStatus(QuestTag);
+	const auto Quests = GetQuestStatus(QuestTag);
+	const auto Quest = Quests.IsEmpty() ? nullptr : Quests[0];
 	const auto* Island = Cast<ACargoIsland>(InstigatorIsland);
 	const auto* Travel = Quest ? Cast<UTravelMissionStatus>(Quest->MissionStatus) : nullptr;
 	if (!Travel || !Island || !Travel->GetDestinationTag().IsValid()
@@ -214,7 +241,7 @@ void UQuestService::CompleteTravelQuest(FGameplayTag QuestTag, AActor* Instigato
 	auto EndDialogue = Quest->EndDeliveryDialogue;
 	for (const FGameplayTag Tag : Quest->AlternativeEndDeliveryDialogue.RequiredChoiceTags)
 	{
-		if (GameMode->HasTag(Tag))
+		if (GameMode->HasInGameEventTag(Tag))
 		{
 			EndDialogue = Quest->AlternativeEndDeliveryDialogue.AlternativeDialogue;
 			break;
@@ -224,9 +251,10 @@ void UQuestService::CompleteTravelQuest(FGameplayTag QuestTag, AActor* Instigato
 	// Remove before rewards and callbacks so repeated interactions cannot complete it twice.
 	ActiveQuests.Remove(QuestTag);
 	if (Quest->Reward.RewardTag.IsValid())
-		GameMode->AddTag(Quest->Reward.RewardTag);
+		GameMode->AddInGameEventTag(Quest->Reward.RewardTag);
 	GameMode->EconomyService->AddMoney(Quest->Reward.Money);
-	AddAvailableQuest(Quest->NextQuest.LoadSynchronous());
+	UQuestData* NextQuest = Quest->NextQuest.LoadSynchronous();
+	AddAvailableQuest(NextQuest);
 	QuestCompletedDelegate.Broadcast(Quest);
 
 	if (UDialogueData* Dialogue = EndDialogue.LoadSynchronous())
@@ -234,6 +262,14 @@ void UQuestService::CompleteTravelQuest(FGameplayTag QuestTag, AActor* Instigato
 		auto* DialogueSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UFROGDialogueSubsystem>();
 		check(DialogueSubsystem);
 		DialogueSubsystem->PlayDialogue(Dialogue, InstigatorIsland);
+		if (NextQuest && !NextQuest->StartDialogue.IsNull())
+			DialogueSubsystem->SetNextDialogue(NextQuest->StartDialogue);
+	}
+	else if (NextQuest && !NextQuest->StartDialogue.IsNull())
+	{
+		auto* DialogueSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UFROGDialogueSubsystem>();
+		check(DialogueSubsystem);
+		DialogueSubsystem->PlayDialogue(NextQuest->StartDialogue.LoadSynchronous(), InstigatorIsland);
 	}
 }
 
@@ -243,41 +279,75 @@ void UQuestService::AddAvailableQuest(TObjectPtr<UQuestData> Quest)
 		AvailableQuests.AddUnique(Quest);
 }
 
-TObjectPtr<UQuestStatus> UQuestService::GetQuestStatus(FGameplayTag QuestTag)
+TArray<TObjectPtr<UDialogueData>> UQuestService::GetActiveQuestDialoguesForIsland(FGameplayTag IslandTag) const
 {
-	const auto* Quest = ActiveQuests.Find(QuestTag);
-	return Quest ? *Quest : nullptr;
+	TArray<TObjectPtr<UDialogueData>> Dialogues;
+	if (!IslandTag.IsValid())
+		return Dialogues;
+
+	for (const auto& Entry : ActiveQuests)
+	{
+		const auto* Quest = Entry.Value.Get();
+		if (!IsValid(Quest) || !IsValid(Quest->OriginalQuestData))
+			continue;
+
+		const auto* Collection = Quest->OriginalQuestData->Dialogues.Find(IslandTag);
+		if (!Collection)
+			continue;
+
+		for (const auto& Dialogue : Collection->Dialogues)
+		{
+			if (IsValid(Dialogue))
+				Dialogues.AddUnique(Dialogue);
+		}
+	}
+	return Dialogues;
 }
 
-TObjectPtr<UQuestStatus> UQuestService::GetQuestStatusByDestination(FGameplayTag Destination)
+TArray<TObjectPtr<UQuestStatus>> UQuestService::GetQuestStatus(FGameplayTag QuestTag)
 {
+	TArray<TObjectPtr<UQuestStatus>> Quests;
+	if (const auto* Quest = ActiveQuests.Find(QuestTag))
+		Quests.Add(*Quest);
+	return Quests;
+}
+
+TArray<TObjectPtr<UQuestStatus>> UQuestService::GetQuestStatusByDestination(FGameplayTag Destination)
+{
+	TArray<TObjectPtr<UQuestStatus>> Quests;
 	for (const auto& Entry : ActiveQuests)
 	{
 		const auto* Delivery = Cast<UDeliveryMissionStatus>(Entry.Value->MissionStatus);
 		if (Delivery && Delivery->GetDestinationTag() == Destination)
-			return Entry.Value;
+			Quests.Add(Entry.Value);
 		const auto* Travel = Cast<UTravelMissionStatus>(Entry.Value->MissionStatus);
 		if (Travel && Travel->GetDestinationTag().IsValid() && Travel->GetDestinationTag() == Destination)
-			return Entry.Value;
+			Quests.Add(Entry.Value);
 	}
-	return nullptr;
+	return Quests;
 }
 
-TObjectPtr<UQuestStatus> UQuestService::GetQuestStatusByOrigin(FGameplayTag OriginIsland)
+TArray<TObjectPtr<UQuestStatus>> UQuestService::GetQuestsStatusByOrigin(FGameplayTag OriginIsland)
 {
+	TArray<TObjectPtr<UQuestStatus>> Quests;
 	for (const auto& Entry : ActiveQuests)
 	{
 		if (Entry.Value->StartIslandTag == OriginIsland)
-			return Entry.Value;
+			Quests.Add(Entry.Value);
 	}
-	return nullptr;
+	
+	return Quests;
 }
 
-TObjectPtr<UQuestData> UQuestService::GetAvailableQuestByStartLocation(FGameplayTag StartLocation)
+TArray<TObjectPtr<UQuestData>> UQuestService::GetAvailableQuestsByStartLocation(FGameplayTag StartLocation)
 {
-	const auto* Quest = AvailableQuests.FindByPredicate([StartLocation](const auto& Data)
+	TArray<TObjectPtr<UQuestData>> Quests;
+	
+	for (const auto Entry : AvailableQuests)
 	{
-		return Data->StartLocationTag == StartLocation;
-	});
-	return Quest ? *Quest : nullptr;
+		if (Entry->StartLocationTag == StartLocation)
+			Quests.Add(Entry);
+	}
+	
+	return Quests;
 }

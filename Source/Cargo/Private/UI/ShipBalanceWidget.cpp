@@ -2,22 +2,23 @@
 
 
 #include "UI/ShipBalanceWidget.h"
-#include "GameplayFramework/CargoPlayerState.h"
+#include "CargoCharacter.h"
 
 void UShipBalanceWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
-	const auto PlayerState = GetOwningPlayerState<ACargoPlayerState>();
-	PlayerState->OnBalanceChanged.AddDynamic(this, &ThisClass::HandleBalanceChanged);
+	if (const auto Character = GetOwningPlayerPawn<ACargoCharacter>())
+	{
+		Character->OnBalanceChanged.AddDynamic(this, &ThisClass::HandleBalanceChanged);
+		HandleBalanceChanged(Character->GetCurrentShipRoll());
+	}
 }
 
 void UShipBalanceWidget::NativeDestruct()
 {
 	Super::NativeDestruct();
-	const auto PlayerState = GetOwningPlayerState<ACargoPlayerState>();
-	
-	if (PlayerState) //when game closes suddenly, player state is destroyed previously
-		PlayerState->OnBalanceChanged.RemoveDynamic(this, &ThisClass::HandleBalanceChanged);
+	if (const auto Character = GetOwningPlayerPawn<ACargoCharacter>())
+		Character->OnBalanceChanged.RemoveDynamic(this, &ThisClass::HandleBalanceChanged);
 }
 
 void UShipBalanceWidget::HandleBalanceChanged(float NewBalance)

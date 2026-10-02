@@ -14,9 +14,12 @@
 #include "Engine/OverlapResult.h"
 #include "Grid/Container.h"
 #include "Interaction/CargoInteractable.h"
+#include "PrimaryGameLayout.h"
 #include "Runtime/Experimental/Voronoi/Private/voro++/src/container.hh"
 #include "Subsystem/AudioSubsystem.h"
 #include "Subsystem/CargoUIManagerSubsystem.h"
+#include "TagDeclaration/UITypes.h"
+#include "UI/CargoMainHUD.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 
 class UCargoUIManagerSubsystem;
@@ -109,83 +112,66 @@ void ACargoPlayerController::PlayerTick(float DeltaTime)
 	FVector MouseWorldDirection;
 	
     if (!DeprojectMousePositionToWorld(MouseWorldLocation, MouseWorldDirection))
+    {
+        SetCurrentHovered(nullptr);
         return;
+    }
 
 	//placeable positioning
     const float T = (DraggingZHeight - MouseWorldLocation.Z) / MouseWorldDirection.Z;
     const FVector TargetLocation = MouseWorldLocation + MouseWorldDirection * T;
     DraggingObject->SetActorLocation(TargetLocation + DraggingOffset); //TODO: also use MouseWorldDirection.Rotation()
 
-	//gets hit component
     FHitResult HitResult;
-    FCollisionQueryParams Params;
-    Params.AddIgnoredActor(DraggingObject);
-		
-	if (!bEditMode)
-		return;
-	
-	GetHitResultUnderCursor(DropSurfaceChannel, false, HitResult);
-	const auto HitComponent = HitResult.GetComponent();
-	
-    if (!HitComponent)
-    {     
-        PlaceablePreview->SetActorHiddenInGame(true);
-    	CurrentHoveredGrid = nullptr;
+    GetHitResultUnderCursor(DropSurfaceChannel, false, HitResult);
+    SetCurrentHovered(ResolveDropTarget(HitResult));
+
+    if (!CurrentHovered)
         return;
-    }
 
-    UGridComponent* GridComponent = Cast<UGridComponent>(HitComponent);
-	CurrentHoveredGrid = GridComponent;
-	
-	FVector ImpactPoint = HitResult.ImpactPoint;	
-	
-	FIntVector ImpactPointGrid;
+    CurrentHovered->UpdateDropHover(DraggingObject, HitResult.ImpactPoint, PlaceablePreview);
+    if (!PlaceablePreview->IsHidden())
+        DraggingObject->SetActorRotation(PlaceablePreview->GetActorRotation() + FRotator(DraggingRotationOffset.X, DraggingRotationOffset.Y, DraggingRotationOffset.Z));
+}
 
-    if (!GridComponent)
-    {    	
-    	if (auto ContainerVisual = Cast<APlaceableVisual>(HitComponent->GetOwner()))
-    	{
-    		UE_LOG(LogTemp, Log, TEXT("HitComponent is a container. OriginalPos:"));    		
-    		CurrentHoveredGrid = Cast<APlaceable>(ContainerVisual->GetOwner())->OwningGridActor; //TODO: melhorar isso
-    		ImpactPointGrid = CurrentHoveredGrid->GetNextFreeZPositionGrid(ImpactPoint);
-    	}
-    	else
-    	{
-	        PlaceablePreview->SetActorHiddenInGame(true);
-	        return;
-    	}
-    }
-    else
+TScriptInterface<ICargoDropTarget> ACargoPlayerController::ResolveDropTarget(const FHitResult& HitResult) const
+{
+    // Components take precedence over their actors (for example, the ship's grid).
+    if (Cast<ICargoDropTarget>(HitResult.GetComponent()))
+        return TScriptInterface<ICargoDropTarget>(HitResult.GetComponent());
+
+    AActor* HitActor = HitResult.GetActor();
+    if (HitActor == DraggingObject)
+        return nullptr;
+
+    if (Cast<ICargoDropTarget>(HitActor))
+        return TScriptInterface<ICargoDropTarget>(HitActor);
+
+    // The visible cells belong to a child actor; the placeable handles stacking.
+    if (APlaceableVisual* Visual = Cast<APlaceableVisual>(HitActor))
     {
-    	ImpactPointGrid = CurrentHoveredGrid->GetNextFreeZPositionGrid(ImpactPoint);
+        AActor* Owner = Visual->GetOwner();
+        if (Owner != DraggingObject && Cast<ICargoDropTarget>(Owner))
+            return TScriptInterface<ICargoDropTarget>(Owner);
     }
 
-    if (CurrentHoveredGrid->CanAddPlaceableToGridIndex(DraggingObject, ImpactPointGrid, DraggingObject->GetLocalYaw()))
-    {
-        PlaceablePreview->SetValid();
-    }
-    else
-    {
-        PlaceablePreview->SetInvalid();
-    }
-    
-    PlaceablePreview->SetActorHiddenInGame(false);
-    PlaceablePreview->AttachToComponent(CurrentHoveredGrid, FAttachmentTransformRules::SnapToTargetIncludingScale);	
-	
-	//attach preview to grid and update transform
-    FVector WorldLocation = CurrentHoveredGrid->GridToLocalPos(ImpactPointGrid);
+    return nullptr;
+}
 
-    const float GridSize = GetDefault<UCargoSettings>()->GridCellSize;
+void ACargoPlayerController::SetCurrentHovered(TScriptInterface<ICargoDropTarget> NewHovered)
+{
+    if (CurrentHovered.GetObject() == NewHovered.GetObject())
+        return;
 
-    // WorldLocation.X = FMath::GridSnap(WorldLocation.X, GridSize);
-    // WorldLocation.Y = FMath::GridSnap(WorldLocation.Y, GridSize);
-    // WorldLocation.Z = FMath::GridSnap(WorldLocation.Z, GridSize);
+    if (IsValid(CurrentHovered.GetObject()))
+        CurrentHovered->EndDropHover();
 
-    PlaceablePreview->SetActorRelativeLocation(WorldLocation);
-	PlaceablePreview->SetActorRelativeRotation(FRotator(0.f, 0.f, 0.f));
-	PlaceablePreview->MimicPlaceableYaw(DraggingObject);	
-	
-	DraggingObject->SetActorRotation(PlaceablePreview->GetActorRotation() + FRotator(DraggingRotationOffset.X, DraggingRotationOffset.Y, DraggingRotationOffset.Z)); // + MouseWorldDirection.Rotation() + );
+    CurrentHovered = NewHovered;
+    if (PlaceablePreview)
+        PlaceablePreview->SetActorHiddenInGame(true);
+
+    if (IsValid(CurrentHovered.GetObject()))
+        CurrentHovered->BeginDropHover(DraggingObject);
 }
 
 void ACargoPlayerController::UpdateContainerHoverDetection(float DeltaTime)
@@ -238,7 +224,7 @@ void ACargoPlayerController::OnLeftClickStart(const FInputActionValue& Value)
 	
 	if (!Placeable)
 	{
-		Placeable = Cast<APlaceable>(HitResult.GetActor()->GetParentActor());
+		Placeable = Cast<APlaceable>(HitResult.GetActor()->GetOwner());
 		
 		if (!Placeable)
 			return;
@@ -251,6 +237,7 @@ void ACargoPlayerController::OnLeftClickStart(const FInputActionValue& Value)
 		return;
 	}
 	
+	SetCurrentHovered(nullptr);
 	bIsDragging = true;
 		
 	DraggingObject->Grab();
@@ -267,29 +254,20 @@ void ACargoPlayerController::OnLeftClickEnd(const FInputActionValue& InputAction
 	if (!bIsDragging || !DraggingObject)
 		return;	
 	
-	//if no grid below, just drop with physics
-	if (!CurrentHoveredGrid)
-	{		
-		DraggingObject->Release();
-		
-		//TODO: turn this into a StopDragging method
-		DraggingObject = nullptr;
-		PlaceablePreview->SetActorHiddenInGame(true);
-		bIsDragging = false;	
-		
-		return;
-	}
-	
-	if (!CurrentHoveredGrid->CanAddPlaceableToGrid(DraggingObject, PlaceablePreview->GetActorLocation(), DraggingObject->GetLocalYaw()))
-	{		
-		return;
-	}
+    if (IsValid(CurrentHovered.GetObject()))
+    {
+        if (!CurrentHovered->TryAcceptDrop(DraggingObject, PlaceablePreview))
+            return;
+    }
+    else
+    {
+        DraggingObject->Release();
+    }
 
-	CurrentHoveredGrid->AddPlaceableToGrid(DraggingObject, PlaceablePreview->GetActorLocation(), DraggingObject->GetLocalYaw());
-	
-	PlaceablePreview->SetActorHiddenInGame(true);
-	bIsDragging = false;
-	DraggingObject = nullptr;	
+    SetCurrentHovered(nullptr);
+    PlaceablePreview->SetActorHiddenInGame(true);
+    bIsDragging = false;
+    DraggingObject = nullptr;
 }
 
 void ACargoPlayerController::OnRightClick(const FInputActionValue& Value)
@@ -313,19 +291,10 @@ void ACargoPlayerController::OnCancel(const FInputActionValue& Value)
 
 void ACargoPlayerController::SwitchEditMode(const FInputActionValue& Value)
 {
+	SetCurrentHovered(nullptr);
 	bEditMode = !bEditMode;
-	bShowMouseCursor = bEditMode;
-
-	if (bEditMode)
-	{
-		FInputModeGameAndUI InputMode;
-		InputMode.SetHideCursorDuringCapture(false);
-		SetInputMode(InputMode);
-	}
-	else
-	{
-		SetInputMode(FInputModeGameOnly());
-	}
+	SetIgnoreLookInput(bEditMode);
+	UpdateGameplayUIInputMode();
 	
 	OnEditModeChanged.Broadcast(bEditMode);
 }
@@ -336,10 +305,7 @@ void ACargoPlayerController::OnToggleMap(const FInputActionInstance& InputAction
 }
 
 void ACargoPlayerController::Interact(const FInputActionValue& InputActionValue)
-{
-	if (bEditMode)
-		return;
-	
+{	
 	const auto ControlledPawn = GetPawn();
 
 	const FVector Origin = ControlledPawn->GetActorLocation();
@@ -399,6 +365,13 @@ void ACargoPlayerController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 	GetGameInstance()->GetSubsystem<UCargoUIManagerSubsystem>()->NotifyPlayerAdded(Cast<UCommonLocalPlayer>(GetWorld()->GetFirstLocalPlayerFromController()));
+}
+
+void ACargoPlayerController::UpdateGameplayUIInputMode()
+{
+	UPrimaryGameLayout* Layout = UPrimaryGameLayout::GetPrimaryGameLayout(this);
+	UCargoMainHUD* MainHUD = Cast<UCargoMainHUD>(Layout->GetLayerWidget(TAG_UI_Layer_Game)->GetActiveWidget());
+	MainHUD->SetEditMode(bEditMode);
 }
 
 void ACargoPlayerController::UpdateInteractionFocus()
@@ -473,6 +446,8 @@ void ACargoPlayerController::StartDragging(APlaceable* InPlaceable)
 		return;
 	}
 
+	SetCurrentHovered(nullptr);
+
 	if (DraggingObject && DraggingObject != InPlaceable)
 	{
 		DraggingObject->Destroy();
@@ -504,10 +479,8 @@ void ACargoPlayerController::StartDragging(APlaceable* InPlaceable)
 	if (!bEditMode)
 	{
 		bEditMode = true;
-		bShowMouseCursor = true;
-		FInputModeGameAndUI InputMode;
-		InputMode.SetHideCursorDuringCapture(false);
-		SetInputMode(InputMode);
+		SetIgnoreLookInput(true);
+		UpdateGameplayUIInputMode();
 	}
 
 	FVector MouseWorldLocation;

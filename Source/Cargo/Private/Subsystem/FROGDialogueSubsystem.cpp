@@ -8,7 +8,7 @@
 
 UFROGDialogueSubsystem::UFROGDialogueSubsystem()
 {
-	DialogueWidgetClass = TSoftClassPtr<UDIalogueWidget>(FSoftObjectPath(TEXT("/Game/Cargo/Blueprints/UI/WBP_Dialogue.WBP_Dialogue_C")));
+	DialogueWidgetClass = TSoftClassPtr<UDIalogueWidget>(FSoftObjectPath(TEXT("/Game/Cargo/Blueprints/UI/Dialogue/WBP_Dialogue.WBP_Dialogue_C")));
 }
 
 void UFROGDialogueSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -116,6 +116,8 @@ void UFROGDialogueSubsystem::PlayDialogue(UDialogueData* DialogueData, AActor* I
 	CurrentDialogue = DialogueData;
 	NextDialogue = DialogueData->NextDialogue;
 	PushDialogueWidget(DialogueData);
+	
+	ACargoGameMode::Get(this)->AlreadyPlayedDialogues.Add(DialogueData->Id);
 }
 
 void UFROGDialogueSubsystem::PushDialogueWidget(UDialogueData* DialogueData)
@@ -135,7 +137,7 @@ void UFROGDialogueSubsystem::PushDialogueWidget(UDialogueData* DialogueData)
 
 	bIsPlayingDialogue = true;
 	UE_LOG(LogTemp, Warning, TEXT("ARCDialogueSubsystem::PlayDialogue - Pushing widget for dialogue: %s"), *DialogueData->DialogueTag.ToString());
-	Layout->PushWidgetToLayerStackAsync<UDIalogueWidget>(TAG_UI_Layer_Game, true, DialogueWidgetClass, [this, DialogueData](EAsyncWidgetLayerState State, UDIalogueWidget* Widget)
+	Layout->PushWidgetToLayerStackAsync<UDIalogueWidget>(TAG_UI_Layer_GameMenu, true, DialogueWidgetClass, [this, DialogueData](EAsyncWidgetLayerState State, UDIalogueWidget* Widget)
 	{
 		if (State == EAsyncWidgetLayerState::AfterPush)
 		{

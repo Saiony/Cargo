@@ -4,6 +4,25 @@
 
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Grid/PlaceablePreview.h"
+
+void APlaceable::UpdateDropHover(APlaceable* Placeable, const FVector& ImpactPoint, APlaceablePreview* Preview)
+{
+    // Stacking on a placeable uses the same placement rules as its grid.
+    if (IsValid(OwningGridActor))
+        OwningGridActor->UpdateDropHover(Placeable, ImpactPoint, Preview);
+    else
+        Preview->SetActorHiddenInGame(true);
+}
+
+bool APlaceable::TryAcceptDrop(APlaceable* Placeable, APlaceablePreview* Preview)
+{
+    if (IsValid(OwningGridActor))
+        return OwningGridActor->TryAcceptDrop(Placeable, Preview);
+
+    Placeable->Release();
+    return true;
+}
 
 APlaceable::APlaceable()
 {
@@ -14,8 +33,11 @@ APlaceable::APlaceable()
     BoxComp->SetCollisionProfileName(TEXT("PhysicsActor"));
     BoxComp->SetSimulatePhysics(false);
 
+    StackLeanPivot = CreateDefaultSubobject<USceneComponent>(TEXT("StackLeanPivot"));
+    StackLeanPivot->SetupAttachment(RootComponent);
+
     PivotComp = CreateDefaultSubobject<USceneComponent>(TEXT("PivotComp"));
-    PivotComp->SetupAttachment(RootComponent);
+    PivotComp->SetupAttachment(StackLeanPivot);
 
     BuoyancyComp = CreateDefaultSubobject<UBuoyancyComponent>(TEXT("BuoyancyComp"));	
 	
@@ -26,6 +48,12 @@ APlaceable::APlaceable()
 void APlaceable::BeginPlay()
 {
     Super::BeginPlay();
+
+    BuoyancyComp->OnEnteredWaterDelegate.AddDynamic(this, &ThisClass::OnEnteredWater);
+
+    // Existing Blueprints may retain the old attachment directly to the root.
+    if (PivotComp->GetAttachParent() != StackLeanPivot)
+        PivotComp->AttachToComponent(StackLeanPivot, FAttachmentTransformRules::KeepRelativeTransform);
 }
 
 void APlaceable::Tick(float DeltaTime)
@@ -38,28 +66,44 @@ void APlaceable::OnConstruction(const FTransform& Transform)
 	Super::OnConstruction(Transform);
 }
 
+void APlaceable::SetPlacementCollisionEnabled(bool bEnabled)
+{
+    SetActorEnableCollision(bEnabled);
+
+    // Visual meshes belong to child actors, not to the placeable itself.
+    TArray<AActor*> ChildActors;
+    GetAllChildActors(ChildActors, true);
+    for (AActor* ChildActor : ChildActors)
+    {
+        ChildActor->SetActorEnableCollision(bEnabled);
+    }
+}
+
 void APlaceable::Grab()
-{   
-    if (OwningGridActor == nullptr)
-       return;
-    
-    BoxComp->SetSimulatePhysics(false);
+{
     BoxComp->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
     BoxComp->SetPhysicsLinearVelocity(FVector::ZeroVector);
+    BoxComp->SetSimulatePhysics(false);
+    BoxComp->SetCollisionProfileName(TEXT("NoCollision"));
+    SetPlacementCollisionEnabled(false);
     
     BuoyancyComp->SetComponentTickEnabled(false);
 
+    if (IsValid(OwningGridActor))
+        OwningGridActor->RemovePlaceableFromGrid(this);
+    DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
     SetActorRotation(FRotator(0.f, LocalYaw, 0.f));
-    
-    OwningGridActor->RemovePlaceableFromGrid(this);
     
     UGameplayStatics::PlaySoundAtLocation(this, GrabSound, GetActorLocation());
 }
 
 void APlaceable::Place(TObjectPtr<UGridComponent> GridActor, int32 GridPosX, int32 GridPosY, int32 GridPosZ)
 {
+	StackLeanPivot->SetRelativeTransform(FTransform::Identity);
+	BoxComp->SetCollisionProfileName(TEXT("PhysicsActor"));
 	BoxComp->SetSimulatePhysics(false);
 	BoxComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+    SetPlacementCollisionEnabled(true);
  
 	BuoyancyComp->SetComponentTickEnabled(false);
     
@@ -72,8 +116,10 @@ void APlaceable::Place(TObjectPtr<UGridComponent> GridActor, int32 GridPosX, int
 
 void APlaceable::Release()
 {
-    BoxComp->SetSimulatePhysics(true);	
+	BoxComp->SetCollisionProfileName(TEXT("PhysicsActor"));
 	BoxComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    SetPlacementCollisionEnabled(true);
+    BoxComp->SetSimulatePhysics(true);
 
     BuoyancyComp->SetComponentTickEnabled(true);
     //BuoyancyComp->Activate();
@@ -150,24 +196,31 @@ bool APlaceable::IsPlaceableBlocked(TObjectPtr<APlaceable> Placeable)
     return OwningGridActor->IsPlaceableBlocked(Placeable);
 }
 
-void APlaceable::FallIntoSea(const FVector& Direction)
+void APlaceable::FallIntoSea(const FVector& Direction, const FVector& InheritedVelocity)
 {
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	UGameplayStatics::PlaySoundAtLocation(this, DetachSound, GetActorLocation());
+	BuoyancyComp->SetComponentTickEnabled(true);
 
+	BoxComp->SetCollisionProfileName(TEXT("PhysicsActor"));
 	BoxComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+    SetPlacementCollisionEnabled(true);
 	BoxComp->SetSimulatePhysics(true);
 
-	const FVector UpImpulse = FVector::UpVector * 1000.0f;
-	const FVector SideImpulse = -Direction.GetSafeNormal() * 5000.0f;
-
-	BoxComp->AddImpulse(UpImpulse + SideImpulse, NAME_None, true);
+	BoxComp->SetPhysicsLinearVelocity(InheritedVelocity, false, NAME_None);
+	BoxComp->AddImpulse(Direction.GetSafeNormal() * 150.0f, NAME_None, true);
 	BoxComp->AddAngularImpulseInDegrees(
-		FMath::VRand() * 500.0f,
+		FMath::VRand() * 35.0f,
 		NAME_None,
 		true
 	);
 	
 	OwningGridActor = nullptr;
+}
+
+void APlaceable::OnEnteredWater(const FSphericalPontoon& Pontoon)
+{
+	UGameplayStatics::PlaySoundAtLocation(this, WaterImpactSound, Pontoon.WaterSurfacePosition);
 }
 
 void APlaceable::UpdateMesh()
@@ -187,4 +240,26 @@ void APlaceable::UpdateMesh()
 	//
 	// 	InstanceMeshComp->AddInstance(FTransform(LocalLocation));
 	// }
+}
+
+void APlaceable::SetStackLean(const FTransform& GridDeformation, const FTransform& GridWorldTransform)
+{
+	const FVector GridPosition = GridWorldTransform.InverseTransformPosition(GetActorLocation());
+	const FVector Location = GridWorldTransform.TransformPosition(GridDeformation.TransformPosition(GridPosition));
+	const FQuat Rotation = GridWorldTransform.GetRotation() * GridDeformation.GetRotation() *
+		GridWorldTransform.GetRotation().Inverse() * GetActorQuat();
+	StackLeanPivot->SetWorldLocationAndRotation(Location, Rotation);
+}
+
+void APlaceable::BakeStackLean()
+{
+	// Once cargo leaves the grid, its physics root takes over the visible pose.
+	const FTransform VisualPose = StackLeanPivot->GetComponentTransform();
+	StackLeanPivot->SetRelativeTransform(FTransform::Identity);
+	SetActorTransform(VisualPose, false, nullptr, ETeleportType::TeleportPhysics);
+}
+
+float APlaceable::GetWeightPerCell() const
+{
+	return Weight / GridShapeDefinition.Cells.Num();
 }

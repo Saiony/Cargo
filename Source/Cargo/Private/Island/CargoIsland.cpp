@@ -43,7 +43,7 @@ void ACargoIsland::Interact_Implementation(AActor* Interactor)
 	UGameplayStatics::PlaySoundAtLocation(this, InteractionSound, GetActorLocation());
 
 	const auto PrimaryGameLayout = UPrimaryGameLayout::GetPrimaryGameLayoutForPrimaryPlayer(this);
-	const auto IslandWidget = PrimaryGameLayout->PushWidgetToLayerStack<UIslandWidget>(TAG_UI_Layer_Game, IslandWidgetClass.LoadSynchronous());
+	const auto IslandWidget = PrimaryGameLayout->PushWidgetToLayerStack<UIslandWidget>(TAG_UI_Layer_GameMenu, IslandWidgetClass.LoadSynchronous());
 	
 	IslandWidget->Initialize(this);
 }

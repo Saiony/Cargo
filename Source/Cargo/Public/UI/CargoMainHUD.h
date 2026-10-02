@@ -9,6 +9,8 @@
 #include "ShipWeightWidget.h"
 #include "CargoMainHUD.generated.h"
 
+struct FUIInputConfig;
+
 /**
  * 
  */
@@ -16,6 +18,9 @@ UCLASS()
 class CARGO_API UCargoMainHUD : public UFrogsmithActivatableWidget
 {
 	GENERATED_BODY()
+
+public:
+	void SetEditMode(bool bInEditMode);
 	
 protected:
 	UPROPERTY(meta = (BindWidget))
@@ -26,7 +31,8 @@ protected:
 	
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UShipBalanceWidget> ShipBalanceWidget;
-	
+
 	virtual void NativeConstruct() override;
+	void HandleActiveInputConfigChanged(FUIInputConfig NewConfig);
 	
 };

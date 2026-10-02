@@ -7,12 +7,13 @@
 #include "PlaceableVisual.h"
 #include "GameFramework/Actor.h"
 #include "Components/BoxComponent.h"
+#include "Interaction/CargoDropTarget.h"
 #include "Placeable.generated.h"
 
 class UTimelineComponent;
 
 UCLASS()
-class CARGO_API APlaceable : public AActor
+class CARGO_API APlaceable : public AActor, public ICargoDropTarget
 {
     GENERATED_BODY()
     
@@ -31,6 +32,9 @@ protected:
     
     UPROPERTY(VisibleAnywhere, Category = "Visual")
     TObjectPtr<UChildActorComponent> PlaceableVisualComp;
+
+    UPROPERTY(VisibleAnywhere, Category = "Visual")
+    TObjectPtr<USceneComponent> StackLeanPivot;
 
 public:    
     
@@ -61,9 +65,19 @@ public:
     UPROPERTY(EditDefaultsOnly, Category="Cargo")
     TObjectPtr<USoundBase> PlaceSound;
 
+    UPROPERTY(EditDefaultsOnly, Category="Cargo|Audio")
+    TObjectPtr<USoundBase> DetachSound;
+
+    UPROPERTY(EditDefaultsOnly, Category="Cargo|Audio")
+    TObjectPtr<USoundBase> WaterImpactSound;
+
     TObjectPtr<UGridComponent> OwningGridActor;    
     
     TObjectPtr<APlaceableVisual> GetVisual() { return Cast<APlaceableVisual>(PlaceableVisualComp->GetChildActor()); }
+
+    void SetStackLean(const FTransform& GridDeformation, const FTransform& GridWorldTransform);
+    void BakeStackLean();
+	FTransform GetStackWorldTransform() const { return StackLeanPivot->GetComponentTransform(); }
 
 protected:
 
@@ -75,9 +89,18 @@ protected:
     virtual void BeginPlay() override;    
     
     void UpdateMesh();
+
+    void SetPlacementCollisionEnabled(bool bEnabled);
+
+    UFUNCTION()
+    void OnEnteredWater(const FSphericalPontoon& Pontoon);
+
 public:
 
     virtual void Tick(float DeltaTime) override;
+
+    virtual void UpdateDropHover(APlaceable* Placeable, const FVector& ImpactPoint, APlaceablePreview* Preview) override;
+    virtual bool TryAcceptDrop(APlaceable* Placeable, APlaceablePreview* Preview) override;
     
     virtual void OnConstruction(const FTransform& Transform) override;
 
@@ -106,9 +129,11 @@ public:
     UFUNCTION(BlueprintImplementableEvent, Category = "Placeable")
     void LaunchPlaceable(const FVector& Direction);    
     
-    void FallIntoSea(const FVector& Direction);
+    void FallIntoSea(const FVector& Direction, const FVector& InheritedVelocity = FVector::ZeroVector);
 
     bool IsPlaceableBlocked(TObjectPtr<APlaceable> Placeable);
     
     TObjectPtr<UContainerDA> GetPlaceableData() { return PlaceableDA; }
+    
+    float GetWeightPerCell() const;
 };

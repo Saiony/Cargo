@@ -59,11 +59,12 @@ public:
 	void CompleteMission(FGuid MissionId, AActor* InstigatorIsland);
 	TArray<TObjectPtr<UDeliveryMissionStatus>> GetActiveMissionsForDestination(FGameplayTag DestinationTag);
 
-	void ActivateQuest(UQuestData* QuestData, AActor* QuestInstigator);
+	bool ActivateQuest(UQuestData* QuestData, AActor* QuestInstigator);
 	void CompleteTravelQuest(FGameplayTag QuestTag, AActor* InstigatorIsland);
 	void AddAvailableQuest(TObjectPtr<UQuestData> Quest);
-	TObjectPtr<UQuestStatus> GetQuestStatus(FGameplayTag QuestTag);
-	TObjectPtr<UQuestStatus> GetQuestStatusByDestination(FGameplayTag Destination);
-	TObjectPtr<UQuestStatus> GetQuestStatusByOrigin(FGameplayTag OriginIsland);
-	TObjectPtr<UQuestData> GetAvailableQuestByStartLocation(FGameplayTag StartLocation);
+	TArray<TObjectPtr<UDialogueData>> GetActiveQuestDialoguesForIsland(FGameplayTag IslandTag) const;
+	TArray<TObjectPtr<UQuestStatus>> GetQuestStatus(FGameplayTag QuestTag);
+	TArray<TObjectPtr<UQuestStatus>> GetQuestStatusByDestination(FGameplayTag Destination);
+	TArray<TObjectPtr<UQuestStatus>> GetQuestsStatusByOrigin(FGameplayTag OriginIsland);
+	TArray<TObjectPtr<UQuestData>> GetAvailableQuestsByStartLocation(FGameplayTag StartLocation);
 };

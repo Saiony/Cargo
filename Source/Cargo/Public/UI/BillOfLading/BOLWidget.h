@@ -9,7 +9,6 @@
 #include "BOLWidget.generated.h"
 
 class USimpleWidget;
-class UDeliveryMissionStatus;
 class UVerticalBox;
 class UCargoRequirementEntryWidget;
 class UCommonTextBlock;
@@ -40,6 +39,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, meta = (BindWidget))
 	TObjectPtr<UCommonTextBlock> DeliveryTimeText;
 	
+	/*discounts*/
 	UPROPERTY(EditDefaultsOnly, meta = (BindWidget))
 	TObjectPtr<UCommonTextBlock> RecklessNavigationDiscount;
 	
@@ -48,6 +48,9 @@ protected:
 	
 	UPROPERTY(EditDefaultsOnly, meta = (BindWidget))
 	TObjectPtr<UCommonTextBlock> DamagedCargoDiscount;	
+	
+	UPROPERTY(EditDefaultsOnly, meta = (BindWidget))
+	TObjectPtr<UCommonTextBlock> FuelDiscount;
 	
 	UPROPERTY(EditDefaultsOnly, meta = (BindWidget))
 	TObjectPtr<UCommonTextBlock> BaseRewardText;
@@ -109,7 +112,7 @@ protected:
 public:
 	FSimpleMulticastDelegate OnFinished;
 
-	void Init(TObjectPtr<UDeliveryMissionStatus> MissionStatus);
+	void Init(const FMissionReward& MissionReward);
 
 	void Show();	
 	void Hide();

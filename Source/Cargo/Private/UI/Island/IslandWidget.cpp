@@ -5,87 +5,160 @@
 
 #include "CargoGameMode.h"
 #include "PrimaryGameLayout.h"
+#include "Components/VerticalBoxSlot.h"
+#include "DeveloperSettings/CargoSettings.h"
 #include "Island/CargoIsland.h"
-#include "Mission/TravelMissionStatus.h"
+#include "Island/IslandStoreOptionData.h"
 #include "Quest/QuestStatus.h"
-#include "Subsystem/FROGDialogueSubsystem.h"
+#include "Services/UIService.h"
 #include "TagDeclaration/UITypes.h"
-
-class UFROGDialogueSubsystem;
+#include "UI/Generic/GenericButton.h"
+#include "UI/Shop/StoreWidget.h"
 
 void UIslandWidget::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
-	
-	DialogueButton->OnClicked.AddDynamic(this, &ThisClass::OnDialogueButtonClicked);
+
 	MissionBoardButton->OnClicked.AddDynamic(this, &ThisClass::OnMissionBoardButtonClicked);
-	CloseButton->OnClicked.AddDynamic(this, &ThisClass::OnCloseButtonClicked);	
+	CloseButton->OnClicked.AddDynamic(this, &ThisClass::OnCloseButtonClicked);
 }
 
 void UIslandWidget::Initialize(TObjectPtr<ACargoIsland> IslandRef)
-{	
-	Island = IslandRef;	
+{
+	Island = IslandRef;
+
+	MissionBoardButton->SetVisibility(!ACargoGameMode::Get(this)->HasInGameEventTag(TAG_InGameEvent_MissionBoardUnlocked) ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
+
+	OptionsContainer->ClearChildren();
+	DrawDialogueButtons();
+	DrawIslandOptions();
 	
-	MissionBoardButton->SetVisibility(!ACargoGameMode::Get(this)->HasTag(TAG_InGameEvent_MissionBoardUnlocked) ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
+	DefaultDialogueButton->Init(FText::FromString("Conversar"), IslandRef->GetIslandData()->DefaultInteractionDialogue.LoadSynchronous(), IslandRef, this);
 }
 
-void UIslandWidget::OnDialogueButtonClicked()
-{	
-	auto DialogueSubsystem = GetGameInstance()->GetSubsystem<UFROGDialogueSubsystem>();
-	
-	// An active quest at this destination takes priority over the island's other dialogues.
-	if (auto ActiveQuest = ACargoGameMode::Get(this)->QuestService->GetQuestStatusByDestination(Island->GetLocationTag()))
+void UIslandWidget::DrawIslandOptions()
+{
+	for (const auto& Option : Island->GetIslandData()->Options)
 	{
-		//travel mission
-		if (Cast<UTravelMissionStatus>(ActiveQuest->MissionStatus))
-		{
-			ACargoGameMode::Get(this)->QuestService->CompleteTravelQuest(ActiveQuest->QuestTag, Island);
-			return;
-		}
-	
-		//delivery mission
-		if (UDialogueData* Dialogue = ActiveQuest->StartDeliveryDialogue.LoadSynchronous())
-			DialogueSubsystem->PlayDialogue(Dialogue, Island);
-		
-		if (auto* Delivery = Cast<UDeliveryMissionStatus>(ActiveQuest->MissionStatus))
-			Island->GetPort()->StartMissionDelivery(Delivery->GetId());
+		const auto StoreOption = Cast<UIslandStoreOptionData>(Option);
+		if (!StoreOption)
+			continue;
 
-		return;
+		const auto GenericButtonClass = GetDefault<UCargoSettings>()->GenericButtonClass.LoadSynchronous();
+		const auto Button = CreateWidget<UGenericButton>(this, GenericButtonClass);
+		Button->SetText(StoreOption->GetButtonText());
+		Button->OnClicked().AddWeakLambda(this, [this, StoreOption]()
+		{
+			const auto UIService = ACargoGameMode::Get(this)->GetService<UUIService>();
+			const auto StoreWidgetClass = GetDefault<UCargoSettings>()->StoreWidgetClass.LoadSynchronous();
+			const auto Widget = UIService->ShowWidget<UStoreWidget>(StoreWidgetClass);
+			Widget->Init(StoreOption->StoreCatalog, Island);
+		});
+
+		const auto ChildrenSlot = OptionsContainer->AddChildToVerticalBox(Button);
+		ChildrenSlot->SetPadding(FMargin(0.f, 0.f, 0.f, DialogueOptionsContainerPadding));
 	}
+}
+
+void UIslandWidget::DrawDialogueButtons()
+{
+	const auto QuestService = ACargoGameMode::Get(this)->QuestService;
+	const auto LocationTag = Island->GetLocationTag();
+
+	// Quests that start here
+	const auto AvailableQuests = QuestService->GetAvailableQuestsByStartLocation(LocationTag);
+	for (const auto& AvailableQuest : AvailableQuests)
+	{			
+		CreateQuestDialogueOptionButton(AvailableQuest, EQuestDialogueOptionType::StartQuest);
+	}	
 	
-	//if we have an active quest that started here, play in progress dialogue instead
-	if (auto ActiveQuest = ACargoGameMode::Get(this)->QuestService->GetQuestStatusByOrigin(Island->GetLocationTag()))
+	// Quests that end here
+	const auto ActiveQuests = QuestService->GetQuestStatusByDestination(LocationTag);
+	for (const auto& ActiveQuest : ActiveQuests)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Play in progress quest dialogue"));		
-		if (UDialogueData* Dialogue = ActiveQuest->InProgressDialogue.LoadSynchronous())
-			DialogueSubsystem->PlayDialogue(Dialogue, Island);	
-		return;
+		CreateQuestDialogueOptionButton(ActiveQuest->OriginalQuestData, EQuestDialogueOptionType::EndQuest);
 	}
-	
-	//if we have an available quest for this island, play start dialogue and activate it
-	if (auto AvailableQuest = ACargoGameMode::Get(this)->QuestService->GetAvailableQuestByStartLocation(Island->GetLocationTag()))
+
+	// Quests that start here, but are already in progress
+	const auto OriginQuests = QuestService->GetQuestsStatusByOrigin(LocationTag);
+	for (const auto& OriginQuest : OriginQuests)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Play start quest dialogue"));		
-		if (UDialogueData* Dialogue = AvailableQuest->StartDialogue.LoadSynchronous())
-			DialogueSubsystem->PlayDialogue(Dialogue, Island);	
-		return;
+		if (!ActiveQuests.Contains(OriginQuest))
+			CreateQuestDialogueOptionButton(OriginQuest->OriginalQuestData, EQuestDialogueOptionType::QuestInProgress);
 	}
 	
-	DialogueSubsystem->PlayDialogue(Island->GetDefaultInteractionDialogue().LoadSynchronous(), Island);
+	// Dialogues from active quests for this island.
+	for (const auto& Dialogue : QuestService->GetActiveQuestDialoguesForIsland(LocationTag))
+	{
+		if (ACargoGameMode::Get(this)->AlreadyPlayedDialogues.Contains(Dialogue->Id))
+			continue;
+
+		CreateDialogueOptionButton(Dialogue->Title, Dialogue);
+	}
+
+	//Simple dialogues based on in-game events
+	for (const auto DialogueByInGameEvent : Island->GetIslandData()->DialoguesByRequiredEvent)
+	{
+		if (!ACargoGameMode::Get(this)->HasInGameEventTag(DialogueByInGameEvent.Key))
+			continue;
+		
+		for (const auto Dialogue : DialogueByInGameEvent.Value.Dialogues)
+		{
+			if (ACargoGameMode::Get(this)->AlreadyPlayedDialogues.Contains(Dialogue->Id))
+				continue;
+
+			CreateDialogueOptionButton(Dialogue->Title, Dialogue);
+		}
+	}
+}
+
+void UIslandWidget::CreateQuestDialogueOptionButton(TObjectPtr<UQuestData> Quest, EQuestDialogueOptionType Type)
+{
+	const auto OptionButton = CreateWidget<UQuestDialogueOptionButton>(this, QuestDialogueOptionButtonClass);
+	OptionButton->Init(Quest, Type, Island, this);
+	
+	const auto ChildrenSlot = OptionsContainer->AddChildToVerticalBox(OptionButton);
+	ChildrenSlot->SetPadding(FMargin(0.f, 0.f, 0.f, DialogueOptionsContainerPadding)); 
+}
+
+void UIslandWidget::CreateDialogueOptionButton(const FText& Title, UDialogueData* Dialogue)
+{
+	const auto OptionButton = CreateWidget<UDialogueOptionButton>(this, DialogueOptionButtonClass);
+	OptionButton->Init(Title, Dialogue, Island, this);
+	
+	const auto ChildrenSlot = OptionsContainer->AddChildToVerticalBox(OptionButton);
+	ChildrenSlot->SetPadding(FMargin(0.f, 0.f, 0.f, DialogueOptionsContainerPadding)); 
+}
+
+void UIslandWidget::OnQuestDialogueOptionClicked(UQuestDialogueOptionButton* Button)
+{
+	Hide();
+}
+
+void UIslandWidget::OnDialogueOptionClicked(UDialogueOptionButton* Button, const int8 Id)
+{
+	if (Button != DefaultDialogueButton)
+		Button->SetIsEnabled(false);
 }
 
 void UIslandWidget::OnMissionBoardButtonClicked()
 {
 	const auto PrimaryGameLayout = UPrimaryGameLayout::GetPrimaryGameLayoutForPrimaryPlayer(this);
-	const auto MissionBoardWidget = PrimaryGameLayout->PushWidgetToLayerStack<UMissionBoardWidget>(TAG_UI_Layer_Game, MissionBoardWidgetClass);
-		
-	const auto CargoSettings = GetDefault<UCargoSettings>();	
+	const auto MissionBoardWidget = PrimaryGameLayout->PushWidgetToLayerStack<UMissionBoardWidget>(TAG_UI_Layer_GameMenu, MissionBoardWidgetClass);
+
+	const auto CargoSettings = GetDefault<UCargoSettings>();
 	const auto Missions = CargoSettings->GetMissionsDatabase()->GetMissionsForLocation(Island->GetLocationTag());
-	
+
 	MissionBoardWidget->Initialize(Missions, Island);
 }
 
 void UIslandWidget::OnCloseButtonClicked()
 {
+	Hide();
+}
+
+void UIslandWidget::Hide()
+{
 	UPrimaryGameLayout::GetPrimaryGameLayoutForPrimaryPlayer(this)->FindAndRemoveWidgetFromLayer(this);
+
 }
