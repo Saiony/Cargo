@@ -18,9 +18,11 @@ class CARGO_API UCargoTweenSubsystem : public UWorldSubsystem
 		TWeakObjectPtr<USceneComponent> Target;
 		FRotator RotationOffset = FRotator::ZeroRotator;
 		float Intensity = 0.f;
+		uint64 Generation = 0;
 	};
 
 	TMap<TWeakObjectPtr<AActor>, FShake> Shakes;
+	uint64 NextShakeGeneration = 0;
 
 public:
 	// Actors can mark a visual component to shake instead of their collision root.

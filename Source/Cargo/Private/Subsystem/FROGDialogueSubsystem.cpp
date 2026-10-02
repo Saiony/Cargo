@@ -8,7 +8,7 @@
 
 UFROGDialogueSubsystem::UFROGDialogueSubsystem()
 {
-	DialogueWidgetClass = TSoftClassPtr<UDIalogueWidget>(FSoftObjectPath(TEXT("/Game/Cargo/Blueprints/UI/WBP_Dialogue.WBP_Dialogue_C")));
+	DialogueWidgetClass = TSoftClassPtr<UDIalogueWidget>(FSoftObjectPath(TEXT("/Game/Cargo/Blueprints/UI/Dialogue/WBP_Dialogue.WBP_Dialogue_C")));
 }
 
 void UFROGDialogueSubsystem::Initialize(FSubsystemCollectionBase& Collection)

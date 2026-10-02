@@ -410,37 +410,72 @@ void ACargoCharacter::OnHasteCVarChanged(IConsoleVariable* ConsoleVariable)
 void ACargoCharacter::OnShipHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {	
 	const float Now = GetWorld()->GetTimeSeconds();
+	UE_LOG(LogTemp, Warning, TEXT("[ShipHit][%.3f] Enter self=%s hitComponent=%s otherActor=%s otherComponent=%s blocking=%d impactPoint=%s impactNormal=%s normalImpulse=%s lastKnockback=%.3f cooldown=%.3f"),
+		Now, *GetNameSafe(this), *GetNameSafe(HitComponent), *GetNameSafe(OtherActor), *GetNameSafe(OtherComp),
+		Hit.bBlockingHit, *Hit.ImpactPoint.ToCompactString(), *Hit.ImpactNormal.ToCompactString(), *NormalImpulse.ToCompactString(),
+		LastKnockbackTime, KnockbackCooldown);
 	if (Now - LastKnockbackTime < KnockbackCooldown)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ShipHit][%.3f] Return: cooldown remaining=%.3f"),
+			Now, KnockbackCooldown - (Now - LastKnockbackTime));
 		return;
+	}
 	
 	LastKnockbackTime = Now;
-		
+	UE_LOG(LogTemp, Warning, TEXT("[ShipHit][%.3f] Cooldown accepted; FloatingMovement=%s"), Now, *GetNameSafe(FloatingMovement));
 	const float HitVelocity = FloatingMovement->Velocity.Size();
 	const float ShakeIntensity = HitVelocity * ContainerShakeIntensity;
+	UE_LOG(LogTemp, Warning, TEXT("[ShipHit][%.3f] Velocity=%.3f maxSpeed=%.3f shakeIntensity=%.3f shakeDuration=%.3f"),
+		Now, HitVelocity, OriginalMaxSpeed, ShakeIntensity, ContainerShakeDuration);
 	
-	GetWorld()->GetSubsystem<UCargoTweenSubsystem>()->DoShake(this, ShakeIntensity, ContainerShakeDuration);
+	UCargoTweenSubsystem* TweenSubsystem = GetWorld()->GetSubsystem<UCargoTweenSubsystem>();
+	UE_LOG(LogTemp, Warning, TEXT("[ShipHit][%.3f] Ship shake begin subsystem=%s"), Now, *GetNameSafe(TweenSubsystem));
+	TweenSubsystem->DoShake(this, ShakeIntensity, ContainerShakeDuration);
+	UE_LOG(LogTemp, Warning, TEXT("[ShipHit][%.3f] Ship shake end"), Now);
 	
 	TSet<AContainer*> ShakenContainers;
-	for (const auto& Slot : GridComp->GetOccupiedSlots())
+	const auto OccupiedSlots = GridComp->GetOccupiedSlots();
+	UE_LOG(LogTemp, Warning, TEXT("[ShipHit][%.3f] Container shakes begin grid=%s occupiedSlots=%d"),
+		Now, *GetNameSafe(GridComp), OccupiedSlots.Num());
+	for (const auto& Slot : OccupiedSlots)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("[ShipHit][%.3f] Slot %s placeable=%s"),
+			Now, *Slot.Key.ToString(), *GetNameSafe(Slot.Value));
 		AContainer* Container = Cast<AContainer>(Slot.Value);
+		UE_LOG(LogTemp, Warning, TEXT("[ShipHit][%.3f] Slot %s container=%s valid=%d alreadyShaken=%d"),
+			Now, *Slot.Key.ToString(), *GetNameSafe(Container), IsValid(Container), ShakenContainers.Contains(Container));
 		if (IsValid(Container) && !ShakenContainers.Contains(Container))
 		{
 			ShakenContainers.Add(Container);
+			UE_LOG(LogTemp, Warning, TEXT("[ShipHit][%.3f] Container shake begin container=%s"), Now, *GetNameSafe(Container));
 			Container->DoShake(ShakeIntensity, ContainerShakeDuration);
+			UE_LOG(LogTemp, Warning, TEXT("[ShipHit][%.3f] Container shake end container=%s"), Now, *GetNameSafe(Container));
 		}
 	}
+	UE_LOG(LogTemp, Warning, TEXT("[ShipHit][%.3f] Container shakes end uniqueContainers=%d"), Now, ShakenContainers.Num());
 
 	KnockbackVelocity = Hit.ImpactNormal.GetSafeNormal() * KnockbackStrength * 100.f;
 	const ShipCollisionType CollisionType = HitVelocity > OriginalMaxSpeed * MaxSpeedContainerFalloff ? ShipCollisionType::Heavy : ShipCollisionType::Light;	
+	UE_LOG(LogTemp, Warning, TEXT("[ShipHit][%.3f] Knockback velocity=%s strength=%.3f collisionType=%s threshold=%.3f"),
+		Now, *KnockbackVelocity.ToCompactString(), KnockbackStrength,
+		CollisionType == ShipCollisionType::Heavy ? TEXT("Heavy") : TEXT("Light"), OriginalMaxSpeed * MaxSpeedContainerFalloff);
 
+	UE_LOG(LogTemp, Warning, TEXT("[ShipHit][%.3f] Collision audio begin component=%s"), Now, *GetNameSafe(CollisionAudioComp));
 	CollisionAudioComp->SetIntParameter(TEXT("CollisionType"), static_cast<int32>(CollisionType));
 	CollisionAudioComp->Play();
+	UE_LOG(LogTemp, Warning, TEXT("[ShipHit][%.3f] Collision audio end"), Now);
 	
 	if (CollisionType == ShipCollisionType::Heavy)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[ShipHit][%.3f] Heavy impact: pop container begin"), Now);
 		PopRandomContainerFromTop(Hit.ImpactNormal);
+		UE_LOG(LogTemp, Warning, TEXT("[ShipHit][%.3f] Heavy impact: pop container end"), Now);
+	}
 	
+	UE_LOG(LogTemp, Warning, TEXT("[ShipHit][%.3f] Notify player state begin playerState=%s otherActor=%s"),
+		Now, *GetNameSafe(CargoPlayerState), *GetNameSafe(OtherActor));
 	CargoPlayerState->NotifyShipCollision(OtherActor, CollisionType);
+	UE_LOG(LogTemp, Warning, TEXT("[ShipHit][%.3f] Notify player state end"), Now);
 	UE_LOG(LogTemp, Log, TEXT("Hit Velocity: %f / %f -> %.2f%% "), HitVelocity, OriginalMaxSpeed, HitVelocity / OriginalMaxSpeed)
 }
 

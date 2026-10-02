@@ -35,39 +35,52 @@ void UCargoTweenSubsystem::DoShake(AActor* Actor, float Intensity, float Duratio
 
 	const TWeakObjectPtr<AActor> Key(Actor);
 	FShake& Shake = Shakes.FindOrAdd(Key);
-	if (USceneComponent* PreviousTarget = Shake.Target.Get())
-		ApplyRotationOffset(PreviousTarget, Shake.RotationOffset, FRotator::ZeroRotator);
+	USceneComponent* PreviousTarget = Shake.Target.Get();
+	const FRotator PreviousOffset = Shake.RotationOffset;
 	Shake.Target = Target;
 	Shake.RotationOffset = FRotator::ZeroRotator;
 	Shake.Intensity = Intensity;
+	Shake.Generation = ++NextShakeGeneration;
+	const uint64 Generation = Shake.Generation;
 
 	const double StartTime = GetWorld()->GetTimeSeconds();
 	const float Seed = FMath::FRandRange(0.f, 10000.f);
 	GetWorld()->GetTimerManager().SetTimer(Shake.Timer, FTimerDelegate::CreateWeakLambda(this,
-		[this, Key, Duration, StartTime, Seed]()
+		[this, Key, Generation, Duration, StartTime, Seed]()
 		{
-			FShake& Active = Shakes.FindChecked(Key);
-			USceneComponent* Component = Active.Target.Get();
+			FShake* Active = Shakes.Find(Key);
+			if (!Active || Active->Generation != Generation)
+				return;
+
+			USceneComponent* Component = Active->Target.Get();
 			const float Elapsed = GetWorld()->GetTimeSeconds() - StartTime;
 			if (!Key.IsValid() || !Component || Elapsed >= Duration)
 			{
-				ApplyRotationOffset(Component, Active.RotationOffset, FRotator::ZeroRotator);
-				GetWorld()->GetTimerManager().ClearTimer(Active.Timer);
-				Shakes.Remove(Key);
+				const TWeakObjectPtr<AActor> ShakeKey = Key;
+				FTimerHandle TimerToClear = Active->Timer;
+				const FRotator PreviousOffset = Active->RotationOffset;
+				UWorld* const World = GetWorld();
+				Shakes.Remove(ShakeKey);
+				World->GetTimerManager().ClearTimer(TimerToClear);
+				ApplyRotationOffset(Component, PreviousOffset, FRotator::ZeroRotator);
 				return;
 			}
 
 			const float Time = Seed + Elapsed * 18.f;
 			const float Envelope = 1.f - Elapsed / Duration;
 			const FRotator NewOffset(
-				FMath::PerlinNoise1D(Time) * Active.Intensity * Envelope,
-				FMath::PerlinNoise1D(Time + 37.1f) * Active.Intensity * Envelope,
-				FMath::PerlinNoise1D(Time + 91.7f) * Active.Intensity * Envelope);
+				FMath::PerlinNoise1D(Time) * Active->Intensity * Envelope,
+				FMath::PerlinNoise1D(Time + 37.1f) * Active->Intensity * Envelope,
+				FMath::PerlinNoise1D(Time + 91.7f) * Active->Intensity * Envelope);
 
 			// Replace only this shake's rotation offset, preserving other rotation changes.
-			ApplyRotationOffset(Component, Active.RotationOffset, NewOffset);
-			Active.RotationOffset = NewOffset;
+			const FRotator PreviousOffset = Active->RotationOffset;
+			Active->RotationOffset = NewOffset;
+			ApplyRotationOffset(Component, PreviousOffset, NewOffset);
 		}), 1.f / 60.f, true);
+
+	if (PreviousTarget)
+		ApplyRotationOffset(PreviousTarget, PreviousOffset, FRotator::ZeroRotator);
 }
 
 void UCargoTweenSubsystem::SetShakeIntensity(AActor* Actor, float Intensity)
@@ -89,10 +102,11 @@ void UCargoTweenSubsystem::StopShake(AActor* Actor)
 	if (!Shake)
 		return;
 
+	USceneComponent* Component = Shake->Target.Get();
+	const FRotator PreviousOffset = Shake->RotationOffset;
 	GetWorld()->GetTimerManager().ClearTimer(Shake->Timer);
-	if (USceneComponent* Component = Shake->Target.Get())
-		ApplyRotationOffset(Component, Shake->RotationOffset, FRotator::ZeroRotator);
 	Shakes.Remove(Key);
+	ApplyRotationOffset(Component, PreviousOffset, FRotator::ZeroRotator);
 }
 
 void UCargoTweenSubsystem::Deinitialize()

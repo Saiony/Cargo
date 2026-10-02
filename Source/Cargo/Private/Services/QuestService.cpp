@@ -116,6 +116,7 @@ void UQuestService::CompleteMission(FGuid MissionId, AActor* InstigatorIsland)
 	auto GameMode = ACargoGameMode::Get(this);
 	auto Quest = FindQuestForMission(MissionId);
 	TSoftObjectPtr<UDialogueData> EndDialogue;
+	TSoftObjectPtr<UDialogueData> NextQuestDialogue;
 	
 	if (Quest)
 	{
@@ -133,7 +134,11 @@ void UQuestService::CompleteMission(FGuid MissionId, AActor* InstigatorIsland)
 			GameMode->AddInGameEventTag(Quest->Reward.RewardTag);
 		
 		//GameMode->EconomyService->AddMoney(Quest->Reward.Money);
-		AddAvailableQuest(Quest->NextQuest.LoadSynchronous());
+		if (UQuestData* NextQuest = Quest->NextQuest.LoadSynchronous())
+		{
+			AddAvailableQuest(NextQuest);
+			NextQuestDialogue = NextQuest->StartDialogue;
+		}
 	}
 	else
 		ActiveMissions.Remove(MissionId);
@@ -152,20 +157,24 @@ void UQuestService::CompleteMission(FGuid MissionId, AActor* InstigatorIsland)
 	auto* UIManager = GetWorld()->GetGameInstance()->GetSubsystem<UCargoUIManagerSubsystem>();
 	check(UIManager);
 	
-	UIManager->ShowMissionResult(&Result, FSimpleDelegate::CreateWeakLambda(this, [this, EndDialogue, DialogueInstigator]()
+	UIManager->ShowMissionResult(&Result, FSimpleDelegate::CreateWeakLambda(this, [this, EndDialogue, NextQuestDialogue, DialogueInstigator]()
 	{
-		if (EndDialogue.IsNull())
-			return;
-		
-		check(DialogueInstigator.IsValid());
-		
-		UDialogueData* Dialogue = EndDialogue.LoadSynchronous();
-		check(Dialogue);
-		
 		const auto DialogueSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UFROGDialogueSubsystem>();
 		check(DialogueSubsystem);
-		
-		DialogueSubsystem->PlayDialogue(Dialogue, DialogueInstigator.Get());
+
+		if (!EndDialogue.IsNull())
+		{
+			check(DialogueInstigator.IsValid());
+			UDialogueData* Dialogue = EndDialogue.LoadSynchronous();
+			check(Dialogue);
+			DialogueSubsystem->PlayDialogue(Dialogue, DialogueInstigator.Get());
+			if (!NextQuestDialogue.IsNull())
+				DialogueSubsystem->SetNextDialogue(NextQuestDialogue);
+		}
+		else if (!NextQuestDialogue.IsNull())
+		{
+			DialogueSubsystem->PlayDialogue(NextQuestDialogue.LoadSynchronous(), DialogueInstigator.Get());
+		}
 	}));
 }
 
@@ -244,7 +253,8 @@ void UQuestService::CompleteTravelQuest(FGameplayTag QuestTag, AActor* Instigato
 	if (Quest->Reward.RewardTag.IsValid())
 		GameMode->AddInGameEventTag(Quest->Reward.RewardTag);
 	GameMode->EconomyService->AddMoney(Quest->Reward.Money);
-	AddAvailableQuest(Quest->NextQuest.LoadSynchronous());
+	UQuestData* NextQuest = Quest->NextQuest.LoadSynchronous();
+	AddAvailableQuest(NextQuest);
 	QuestCompletedDelegate.Broadcast(Quest);
 
 	if (UDialogueData* Dialogue = EndDialogue.LoadSynchronous())
@@ -252,6 +262,14 @@ void UQuestService::CompleteTravelQuest(FGameplayTag QuestTag, AActor* Instigato
 		auto* DialogueSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UFROGDialogueSubsystem>();
 		check(DialogueSubsystem);
 		DialogueSubsystem->PlayDialogue(Dialogue, InstigatorIsland);
+		if (NextQuest && !NextQuest->StartDialogue.IsNull())
+			DialogueSubsystem->SetNextDialogue(NextQuest->StartDialogue);
+	}
+	else if (NextQuest && !NextQuest->StartDialogue.IsNull())
+	{
+		auto* DialogueSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UFROGDialogueSubsystem>();
+		check(DialogueSubsystem);
+		DialogueSubsystem->PlayDialogue(NextQuest->StartDialogue.LoadSynchronous(), InstigatorIsland);
 	}
 }
 
