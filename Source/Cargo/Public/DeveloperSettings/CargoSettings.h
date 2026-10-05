@@ -6,6 +6,7 @@
 #include "DataAssets/ContainerDA.h"
 #include "Engine/DeveloperSettings.h"
 #include "GameplayTagContainer.h"
+#include "DataAssets/LevelDatabase.h"
 #include "Island/IslandData.h"
 #include "Mission/MissionsDatabase.h"
 #include "UI/MapWidget.h"
@@ -84,6 +85,9 @@ public:
 	
 	UPROPERTY(EditAnywhere, Config, Category = "Debug")
 	TSoftObjectPtr<UStaticMesh> SimpleCube;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Level")
+	TSoftObjectPtr<ULevelDatabase> LevelDatabase;
 	
 	TObjectPtr<UMissionsDatabase> GetMissionsDatabase() const;
 	

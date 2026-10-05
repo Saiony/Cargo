@@ -6,6 +6,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "Quest/QuestData.h"
+#include "Services/DryDockService.h"
 #include "Services/EconomyService.h"
 #include "Services/QuestService.h"
 #include "Services/UIService.h"
@@ -27,8 +28,8 @@ class ACargoGameMode : public AGameModeBase
 	UPROPERTY()
 	TMap<TSubclassOf<UFORGServiceBase>, TObjectPtr<UFORGServiceBase>> ServicesMap;
 	
-	FGameplayTagContainer InGameEventsContainer = FGameplayTagContainer();	
-	
+	FGameplayTagContainer InGameEventsContainer = FGameplayTagContainer();
+
 	virtual void BeginPlay() override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 	virtual void Logout(AController* Exiting) override;
@@ -60,6 +61,9 @@ public:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UUIService> UIService;	
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TObjectPtr<UDryDockService> DryDockService;
 	
 	ACargoGameMode(const FObjectInitializer& ObjectInitializer);
 
