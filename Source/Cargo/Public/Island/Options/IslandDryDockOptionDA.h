@@ -4,13 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "Island/IslandOptionData.h"
-#include "IslandDryckDockOptionDA.generated.h"
+#include "IslandDryDockOptionDA.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class CARGO_API UIslandDryckDockOptionDA : public UIslandOptionData
+class CARGO_API UIslandDryDockOptionDA : public UIslandOptionData
 {
 	GENERATED_BODY()
+	
+	virtual FText GetButtonText() const override
+	{
+		return NSLOCTEXT("IslandOptions", "Dry Dock", "Estaleiro");
+	}
 };

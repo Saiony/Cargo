@@ -5,7 +5,6 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Interaction/CargoInteractable.h"
-#include "CargoGameMode.h"
 #include "GameplayTagContainer.h"
 #include "Grid/Container.h"
 #include "Port/CargoPort.h"
@@ -13,6 +12,8 @@
 
 class UWidgetComponent;
 class UIslandWidget;
+class ACargoGameMode;
+class UDeliveryMissionStatus;
 
 UCLASS()
 class CARGO_API ACargoIsland : public AActor, public ICargoInteractable

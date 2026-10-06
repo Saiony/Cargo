@@ -6,11 +6,24 @@
 #include "Engine/DataAsset.h"
 #include "LevelDatabase.generated.h"
 
-struct FLevelData;
-enum class ELevelType;
-/**
- * 
- */
+UENUM(BlueprintType)
+enum class ELevelType : uint8
+{
+	Unknown = 0,
+	MainMenu,
+	MainLevel,
+	DryDock,
+};
+
+USTRUCT(BlueprintType)
+struct FLevelData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TSoftObjectPtr<UWorld> Level;
+};
+
 UCLASS()
 class CARGO_API ULevelDatabase : public UPrimaryDataAsset
 {

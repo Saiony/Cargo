@@ -24,9 +24,24 @@ void UDryDockService::TickComponent(float DeltaTime, ELevelTick TickType, FActor
 
 void UDryDockService::GoToDryDock(TObjectPtr<ACargoIsland> From)
 {
-	const auto LevelManagerSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<ULevelManagerSubsystem>();
-	
-	LevelManagerSubsystem->LoadLevel(ELevelType::DryDock);
+	if (!IsValid(From))
+	{
+		UE_LOG(LogTemp, Error, TEXT("DryDockService: Cannot travel to Dry Dock without a valid source island"));
+		return;
+	}
+
+	const auto SourceWorld = From->GetWorld();
+	const auto GameInstance =SourceWorld->GetGameInstance();
+	const auto LevelManagerSubsystem = GameInstance->GetSubsystem<ULevelManagerSubsystem>();
+	check(LevelManagerSubsystem);
+
+	TWeakObjectPtr<ULevelManagerSubsystem> WeakLevelManagerSubsystem(LevelManagerSubsystem);
+	LevelManagerSubsystem->LoadStreamingLevel(ELevelType::DryDock, [WeakLevelManagerSubsystem]()
+	{
+		UE_LOG(LogTemp, Log, TEXT("DryDockService: Teleporting to Dry Dock"));
+		ULevelManagerSubsystem* Subsystem = WeakLevelManagerSubsystem.Get();
+		Subsystem->TeleportPlayer(ELevelType::DryDock);
+	});
 }
 
 

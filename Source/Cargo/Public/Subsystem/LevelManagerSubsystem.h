@@ -4,39 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "DataAssets/LevelDatabase.h"
+#include "Engine/LevelStreamingDynamic.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "LevelManagerSubsystem.generated.h"
-
-
-
-enum class ELevelType
-{
-	Unknown = 0,
-	MainMenu,
-	MainLevel,
-	DryDock,
-};
-
-
-enum class ELevelLoadType
-{
-	Unknown = 0,
-	OpenLevel,
-	Streaming,
-};
-
-USTRUCT(BlueprintType)
-struct FLevelData
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TSoftObjectPtr<UWorld> Level;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	ELevelLoadType LoadType;
-};
-
 /**
  * 
  */
@@ -46,14 +16,25 @@ class CARGO_API ULevelManagerSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 	
 protected:
-	FLevelData PendingLevelData;
-	
-	void OnLevelLoaded();
-	void OnLevelUnloaded();
+	TFunction<void()> LevelLoadedCallback;
+	TFunction<void()> LevelUnloadedCallback;
+	UPROPERTY()
+	TMap<ELevelType, TObjectPtr<ULevelStreamingDynamic>> StreamingLevelInstances;
+
+	ULevel* GetLevel(ELevelType LevelType) const;
+	class ACargoLevelConfig* GetLevelConfig(ULevel* Level) const;
+
 
 public:
-	void LoadLevel(ELevelType LevelType);
-	void UnloadLevel(ELevelType LevelType);
+	void OpenLevel(ELevelType LevelType, TFunction<void()> OnLoaded = {});
+	void LoadStreamingLevel(ELevelType LevelType, TFunction<void()> OnLoaded = {});
+	void UnloadLevel(ELevelType LevelType, TFunction<void()> OnUnloaded = {});
 	
-	void TeleportPlayer();
+	void TeleportPlayer(ELevelType LevelType);
+	
+	UFUNCTION()
+	void OnLevelLoaded();
+	
+	UFUNCTION()
+	void OnLevelUnloaded();
 };

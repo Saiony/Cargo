@@ -86,7 +86,7 @@ public:
 	UPROPERTY(EditAnywhere, Config, Category = "Debug")
 	TSoftObjectPtr<UStaticMesh> SimpleCube;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Level")
+	UPROPERTY(EditAnywhere, Config, BlueprintReadOnly, Category = "Level")
 	TSoftObjectPtr<ULevelDatabase> LevelDatabase;
 	
 	TObjectPtr<UMissionsDatabase> GetMissionsDatabase() const;
