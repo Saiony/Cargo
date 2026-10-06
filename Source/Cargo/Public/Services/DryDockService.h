@@ -17,10 +17,14 @@ public:
 	UDryDockService();
 
 protected:
+	UPROPERTY()
+	TObjectPtr<ACargoIsland> PreviousIsland;
+	
 	virtual void BeginPlay() override;
 
 public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	
 	void GoToDryDock(TObjectPtr<ACargoIsland> From);
+	void LeaveDryDock();
 };

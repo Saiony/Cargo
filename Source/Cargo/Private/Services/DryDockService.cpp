@@ -10,12 +10,10 @@ UDryDockService::UDryDockService()
 	PrimaryComponentTick.bCanEverTick = true;
 }
 
-
 void UDryDockService::BeginPlay()
 {
 	Super::BeginPlay();
 }
-
 
 void UDryDockService::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
@@ -29,19 +27,37 @@ void UDryDockService::GoToDryDock(TObjectPtr<ACargoIsland> From)
 		UE_LOG(LogTemp, Error, TEXT("DryDockService: Cannot travel to Dry Dock without a valid source island"));
 		return;
 	}
-
-	const auto SourceWorld = From->GetWorld();
-	const auto GameInstance =SourceWorld->GetGameInstance();
+	
+	PreviousIsland = From;	
+	
+	const auto GameInstance = GetOwner()->GetWorld()->GetGameInstance();	
 	const auto LevelManagerSubsystem = GameInstance->GetSubsystem<ULevelManagerSubsystem>();
-	check(LevelManagerSubsystem);
-
-	TWeakObjectPtr<ULevelManagerSubsystem> WeakLevelManagerSubsystem(LevelManagerSubsystem);
+	
+	TWeakObjectPtr<ULevelManagerSubsystem> WeakLevelManagerSubsystem(LevelManagerSubsystem);	
 	LevelManagerSubsystem->LoadStreamingLevel(ELevelType::DryDock, [WeakLevelManagerSubsystem]()
 	{
 		UE_LOG(LogTemp, Log, TEXT("DryDockService: Teleporting to Dry Dock"));
 		ULevelManagerSubsystem* Subsystem = WeakLevelManagerSubsystem.Get();
 		Subsystem->TeleportPlayer(ELevelType::DryDock);
 	});
+}
+
+void UDryDockService::LeaveDryDock()
+{
+	check(PreviousIsland);
+	
+	const auto GameInstance = GetOwner()->GetWorld()->GetGameInstance();
+	const auto LevelManagerSubsystem = GameInstance->GetSubsystem<ULevelManagerSubsystem>();
+	
+	TWeakObjectPtr<ULevelManagerSubsystem> WeakLevelManagerSubsystem(LevelManagerSubsystem);
+	LevelManagerSubsystem->UnloadLevel(ELevelType::DryDock, [WeakLevelManagerSubsystem, this]()
+	{
+	});
+		const auto PlayerController = GetOwner()->GetGameInstance()->GetPrimaryPlayerController();
+		const auto PlayerPawn = PlayerController->GetPawn();
+		const auto SpawnLocation = PreviousIsland->GetPort()->GetPlayerSpawnLocation();
+		
+		PlayerPawn->TeleportTo(SpawnLocation.GetLocation(), SpawnLocation.GetRotation().Rotator());
 }
 
 

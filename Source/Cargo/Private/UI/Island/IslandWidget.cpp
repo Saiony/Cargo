@@ -61,8 +61,8 @@ void UIslandWidget::DrawIslandOptions()
 		{
 			Button->OnClicked().AddWeakLambda(this, [this]()
 			{
-				const auto DryDockService = ACargoGameMode::Get(this)->GetService<UDryDockService>();
-				DryDockService->GoToDryDock(Island);				
+				const auto DryDockService2 = ACargoGameMode::Get(this)->DryDockService;
+				DryDockService2->GoToDryDock(Island);
 			});	
 		}		
 
