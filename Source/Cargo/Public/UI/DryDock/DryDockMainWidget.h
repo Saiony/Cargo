@@ -31,4 +31,6 @@ protected:
 	
 	UFUNCTION()
 	void OnCloseButtonClicked();
+	
+	void Hide();
 };

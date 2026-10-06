@@ -46,18 +46,17 @@ void UDryDockService::LeaveDryDock()
 {
 	check(PreviousIsland);
 	
+	//unload drydock level
 	const auto GameInstance = GetOwner()->GetWorld()->GetGameInstance();
-	const auto LevelManagerSubsystem = GameInstance->GetSubsystem<ULevelManagerSubsystem>();
+	const auto LevelManagerSubsystem = GameInstance->GetSubsystem<ULevelManagerSubsystem>();	
+	LevelManagerSubsystem->UnloadLevel(ELevelType::DryDock, nullptr);
 	
-	TWeakObjectPtr<ULevelManagerSubsystem> WeakLevelManagerSubsystem(LevelManagerSubsystem);
-	LevelManagerSubsystem->UnloadLevel(ELevelType::DryDock, [WeakLevelManagerSubsystem, this]()
-	{
-	});
-		const auto PlayerController = GetOwner()->GetGameInstance()->GetPrimaryPlayerController();
-		const auto PlayerPawn = PlayerController->GetPawn();
-		const auto SpawnLocation = PreviousIsland->GetPort()->GetPlayerSpawnLocation();
-		
-		PlayerPawn->TeleportTo(SpawnLocation.GetLocation(), SpawnLocation.GetRotation().Rotator());
+	//get spawn location
+	const auto PlayerController = GetOwner()->GetGameInstance()->GetPrimaryPlayerController();
+	const auto PlayerPawn = PlayerController->GetPawn();
+	const auto SpawnLocation = PreviousIsland->GetPort()->GetPlayerSpawnLocation();
+	
+	PlayerPawn->TeleportTo(SpawnLocation.GetLocation(), SpawnLocation.GetRotation().Rotator());
 }
 
 

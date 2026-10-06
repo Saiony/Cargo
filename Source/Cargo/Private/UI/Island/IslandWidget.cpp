@@ -63,6 +63,7 @@ void UIslandWidget::DrawIslandOptions()
 			{
 				const auto DryDockService2 = ACargoGameMode::Get(this)->DryDockService;
 				DryDockService2->GoToDryDock(Island);
+				Hide();
 			});	
 		}		
 
@@ -172,5 +173,4 @@ void UIslandWidget::OnCloseButtonClicked()
 void UIslandWidget::Hide()
 {
 	UPrimaryGameLayout::GetPrimaryGameLayoutForPrimaryPlayer(this)->FindAndRemoveWidgetFromLayer(this);
-
 }

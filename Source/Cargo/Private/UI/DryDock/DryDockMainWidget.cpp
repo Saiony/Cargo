@@ -4,6 +4,7 @@
 #include "UI/DryDock/DryDockMainWidget.h"
 
 #include "CargoGameMode.h"
+#include "PrimaryGameLayout.h"
 
 void UDryDockMainWidget::NativeOnInitialized()
 {
@@ -15,4 +16,10 @@ void UDryDockMainWidget::NativeOnInitialized()
 void UDryDockMainWidget::OnCloseButtonClicked()
 {
 	ACargoGameMode::Get(this)->DryDockService->LeaveDryDock();
+	Hide();
+}
+
+void UDryDockMainWidget::Hide()
+{
+	UPrimaryGameLayout::GetPrimaryGameLayoutForPrimaryPlayer(this)->FindAndRemoveWidgetFromLayer(this);
 }
