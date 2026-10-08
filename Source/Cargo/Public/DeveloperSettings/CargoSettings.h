@@ -7,6 +7,7 @@
 #include "Engine/DeveloperSettings.h"
 #include "GameplayTagContainer.h"
 #include "DataAssets/LevelDatabase.h"
+#include "DataAssets/ShipUpgrades/ShipUpgradesDatabase.h"
 #include "Island/IslandData.h"
 #include "Mission/MissionsDatabase.h"
 #include "UI/MapWidget.h"
@@ -88,6 +89,9 @@ public:
 	
 	UPROPERTY(EditAnywhere, Config, BlueprintReadOnly, Category = "Level")
 	TSoftObjectPtr<ULevelDatabase> LevelDatabase;
+	
+	UPROPERTY(EditAnywhere, Config, Category = "Upgrade")
+	TSoftObjectPtr<UShipUpgradesDatabase> ShipUpgradesDatabase;
 	
 	TObjectPtr<UMissionsDatabase> GetMissionsDatabase() const;
 	

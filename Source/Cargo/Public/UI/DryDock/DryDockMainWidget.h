@@ -3,12 +3,16 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "DryDockUpgradeButton.h"
 #include "FrogsmithActivatableWidget.h"
 #include "Components/Button.h"
 #include "Components/HorizontalBox.h"
 #include "Components/VerticalBox.h"
+#include "DataAssets/ShipUpgrades/ShipUpgradesDatabase.h"
+#include "DataAssets/ShipUpgrades/UpgradeCategoryType.h"
 #include "DryDockMainWidget.generated.h"
 
+class UCommonButtonGroupBase;
 /**
  * 
  */
@@ -26,6 +30,26 @@ class CARGO_API UDryDockMainWidget : public UFrogsmithActivatableWidget
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UHorizontalBox> UpgradesBox;
 	
+	UPROPERTY(EditDefaultsOnly, Category="Cargo")
+	TSubclassOf<UDryDockUpgradeButton> UpgradeButtonClass;
+	
+	UPROPERTY()
+	TObjectPtr<UCommonButtonGroupBase> CategoryButtonGroup;
+	
+	UPROPERTY()
+	TObjectPtr<UCommonButtonGroupBase> UpgradeButtonGroup;
+	
+	UPROPERTY()
+	TObjectPtr<UShipUpgradeCategoryDA> SelectedCategory;
+	
+	void CreateCategoryButtons(TObjectPtr<UShipUpgradesDatabase> UpgradesDatabase);
+	
+	void OnCategorySelected(TObjectPtr<UShipUpgradeCategoryDA> Category);
+	
+	void UpdateUpgradeButtons();
+	
+	void OnUpgradeSelected(TObjectPtr<UShipUpgradeDA> UpgradeDA);
+
 protected:
 	virtual void NativeOnInitialized() override;
 	

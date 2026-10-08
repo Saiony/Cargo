@@ -44,7 +44,7 @@ void UIslandWidget::DrawIslandOptions()
 	{
 		const auto GenericButtonClass = GetDefault<UCargoSettings>()->GenericButtonClass.LoadSynchronous();
 		const auto Button = CreateWidget<UGenericButton>(this, GenericButtonClass);
-		Button->SetText(Option->GetButtonText());
+		Button->Initialize(Option->GetButtonText(), nullptr);
 		
 		
 		if (const auto StoreOption = Cast<UIslandStoreOptionData>(Option))

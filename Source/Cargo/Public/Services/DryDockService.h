@@ -12,6 +12,8 @@ UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class CARGO_API UDryDockService : public UFORGServiceBase
 {
 	GENERATED_BODY()
+	
+	float FadeDuration = 2.0f;
 
 public:
 	UDryDockService();

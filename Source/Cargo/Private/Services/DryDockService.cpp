@@ -3,6 +3,7 @@
 
 #include "Services/DryDockService.h"
 
+#include "CargoGameMode.h"
 #include "Subsystem/LevelManagerSubsystem.h"
 
 UDryDockService::UDryDockService()
@@ -27,36 +28,43 @@ void UDryDockService::GoToDryDock(TObjectPtr<ACargoIsland> From)
 		UE_LOG(LogTemp, Error, TEXT("DryDockService: Cannot travel to Dry Dock without a valid source island"));
 		return;
 	}
-	
-	PreviousIsland = From;	
-	
-	const auto GameInstance = GetOwner()->GetWorld()->GetGameInstance();	
-	const auto LevelManagerSubsystem = GameInstance->GetSubsystem<ULevelManagerSubsystem>();
-	
-	TWeakObjectPtr<ULevelManagerSubsystem> WeakLevelManagerSubsystem(LevelManagerSubsystem);	
-	LevelManagerSubsystem->LoadStreamingLevel(ELevelType::DryDock, [WeakLevelManagerSubsystem]()
+
+	PreviousIsland = From;
+
+	ACargoGameMode::Get(GetOwner())->UIService->FadeIn(FadeDuration, [this]()
 	{
-		UE_LOG(LogTemp, Log, TEXT("DryDockService: Teleporting to Dry Dock"));
-		ULevelManagerSubsystem* Subsystem = WeakLevelManagerSubsystem.Get();
-		Subsystem->TeleportPlayer(ELevelType::DryDock);
+		const auto GameInstance = GetOwner()->GetWorld()->GetGameInstance();
+		const auto LevelManagerSubsystem = GameInstance->GetSubsystem<ULevelManagerSubsystem>();
+
+		TWeakObjectPtr<ULevelManagerSubsystem> WeakLevelManagerSubsystem(LevelManagerSubsystem);
+		LevelManagerSubsystem->LoadStreamingLevel(ELevelType::DryDock, [WeakLevelManagerSubsystem, this]()
+		{
+			UE_LOG(LogTemp, Log, TEXT("DryDockService: Teleporting to Dry Dock"));
+			ULevelManagerSubsystem* Subsystem = WeakLevelManagerSubsystem.Get();
+			Subsystem->TeleportPlayer(ELevelType::DryDock);
+
+			ACargoGameMode::Get(GetOwner())->UIService->FadeOut(FadeDuration, nullptr);
+		});
 	});
 }
 
 void UDryDockService::LeaveDryDock()
 {
 	check(PreviousIsland);
-	
-	//unload drydock level
-	const auto GameInstance = GetOwner()->GetWorld()->GetGameInstance();
-	const auto LevelManagerSubsystem = GameInstance->GetSubsystem<ULevelManagerSubsystem>();	
-	LevelManagerSubsystem->UnloadLevel(ELevelType::DryDock, nullptr);
-	
-	//get spawn location
-	const auto PlayerController = GetOwner()->GetGameInstance()->GetPrimaryPlayerController();
-	const auto PlayerPawn = PlayerController->GetPawn();
-	const auto SpawnLocation = PreviousIsland->GetPort()->GetPlayerSpawnLocation();
-	
-	PlayerPawn->TeleportTo(SpawnLocation.GetLocation(), SpawnLocation.GetRotation().Rotator());
+
+	ACargoGameMode::Get(GetOwner())->UIService->FadeIn(FadeDuration, [this]()
+	{
+		//unload drydock level
+		const auto GameInstance = GetOwner()->GetWorld()->GetGameInstance();
+		const auto LevelManagerSubsystem = GameInstance->GetSubsystem<ULevelManagerSubsystem>();
+		LevelManagerSubsystem->UnloadLevel(ELevelType::DryDock, nullptr);
+
+		//get spawn location
+		const auto PlayerController = GetOwner()->GetGameInstance()->GetPrimaryPlayerController();
+		const auto PlayerPawn = PlayerController->GetPawn();
+		const auto SpawnLocation = PreviousIsland->GetPort()->GetPlayerSpawnLocation();
+
+		PlayerPawn->TeleportTo(SpawnLocation.GetLocation(), SpawnLocation.GetRotation().Rotator());
+		ACargoGameMode::Get(GetOwner())->UIService->FadeOut(FadeDuration, nullptr);
+	});
 }
-
-

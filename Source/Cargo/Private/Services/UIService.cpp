@@ -36,8 +36,7 @@ void UUIService::FadeOut(float Duration, TFunction<void()> Callback)
 {
 	const auto CameraManager = UGameplayStatics::GetPlayerCameraManager(this, 0);
 
-	CameraManager->StartCameraFade(
-		1.f, 0.f, Duration, FLinearColor::Black, false, false);
+	CameraManager->StartCameraFade(1.f, 0.f, Duration, FLinearColor::Black, false, false);
 
 	GetWorld()->GetTimerManager().SetTimer(
 		FadeTimer,
