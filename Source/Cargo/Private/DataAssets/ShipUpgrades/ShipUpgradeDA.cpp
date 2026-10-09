@@ -9,3 +9,8 @@ void UShipUpgradeDA::PostDuplicate(const bool bDuplicateForPIE)
 	
 	Id = FGuid::NewGuid();
 }
+
+UShipUpgradeDA::UShipUpgradeDA()
+{
+	Id = FGuid::NewGuid();
+}

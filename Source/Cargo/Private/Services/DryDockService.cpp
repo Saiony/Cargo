@@ -86,7 +86,6 @@ void UDryDockService::LeaveDryDock()
 	});
 }
 
-
 void UDryDockService::PurchaseUpgrade(const FGuid UpgradeGuid)
 {
 	PurchasedUpgrades.Add(UpgradeGuid);

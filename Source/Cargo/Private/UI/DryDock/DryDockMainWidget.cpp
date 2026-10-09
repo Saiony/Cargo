@@ -5,6 +5,7 @@
 
 #include "CargoGameMode.h"
 #include "PrimaryGameLayout.h"
+#include "Components/HorizontalBoxSlot.h"
 #include "DataAssets/ShipUpgrades/ShipUpgradeCategoryDA.h"
 #include "Groups/CommonButtonGroupBase.h"
 #include "UI/Generic/GenericButton.h"
@@ -82,9 +83,11 @@ void UDryDockMainWidget::UpdateUpgradeButtons()
 	for (const auto& Upgrade : SelectedCategory->ShipUpgrades)
 	{
 		const auto UpgradeButton = CreateWidget<UDryDockUpgradeButton>(this, UpgradeButtonClass.Get());
-		UpgradesBox->AddChildToHorizontalBox(UpgradeButton);
-		UpgradeButton->Initialize(Upgrade);
+		const auto Slot = UpgradesBox->AddChildToHorizontalBox(UpgradeButton);
+		Slot->SetSize(FSlateChildSize(ESlateSizeRule::Automatic));
+		Slot->SetVerticalAlignment(VAlign_Center);
 		
+		UpgradeButton->Initialize(Upgrade);		
 		UpgradeButton->OnClicked().AddWeakLambda(this, [Upgrade, this]()
 		{
 			OnUpgradeSelected(Upgrade);
