@@ -8,6 +8,7 @@
 #include "ShipUpgradeCategoryDA.generated.h"
 
 class UShipUpgradeDA;
+class UCameraRigAsset;
 /**
  * 
  */
@@ -25,6 +26,9 @@ public:
 	
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UTexture2D> Icon;
+
+	UPROPERTY(EditDefaultsOnly, Category="Camera")
+	TObjectPtr<UCameraRigAsset> CameraRig;
 	
 	UPROPERTY(EditDefaultsOnly)
 	TArray<TObjectPtr<UShipUpgradeDA>> ShipUpgrades;

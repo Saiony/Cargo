@@ -8,6 +8,8 @@
 #include "DataAssets/ShipUpgrades/ShipUpgradeCategoryDA.h"
 #include "Groups/CommonButtonGroupBase.h"
 #include "UI/Generic/GenericButton.h"
+#include "GameFramework/GameplayCameraComponent.h"
+#include "Core/CameraAsset.h"
 
 
 void UDryDockMainWidget::NativeOnInitialized()
@@ -24,9 +26,24 @@ void UDryDockMainWidget::NativeOnInitialized()
 	
 	const auto UpgradesDatabase = GetDefault<UCargoSettings>()->ShipUpgradesDatabase.LoadSynchronous();
 	CreateCategoryButtons(UpgradesDatabase);
+}
+
+void UDryDockMainWidget::NativeOnActivated()
+{
+	Super::NativeOnActivated();
+
+	const auto PlayerPawn = GetOwningPlayerPawn();
+	ShipCameraComponent = PlayerPawn->FindComponentByClass<UGameplayCameraComponent>();
+	check(ShipCameraComponent);
 	
-	CategoryButtonGroup->SelectButtonAtIndex(0, false); //TODO: pegar selecao do upgrade ja instalado
-	OnCategorySelected(UpgradesDatabase->ShipUpgradeCategories[0]);	
+	GameplayCameraAsset = ShipCameraComponent->CameraReference.GetCameraAsset();
+	SetCameraAsset(DryDockCameraAsset);
+
+	const auto UpgradesDatabase = GetDefault<UCargoSettings>()->ShipUpgradesDatabase.LoadSynchronous();
+	check(UpgradesDatabase);
+	
+	CategoryButtonGroup->SelectButtonAtIndex(0, false);
+	OnCategorySelected(UpgradesDatabase->ShipUpgradeCategories[0]);
 }
 
 void UDryDockMainWidget::CreateCategoryButtons(TObjectPtr<UShipUpgradesDatabase> UpgradesDatabase)
@@ -48,9 +65,11 @@ void UDryDockMainWidget::CreateCategoryButtons(TObjectPtr<UShipUpgradesDatabase>
 }
 
 void UDryDockMainWidget::OnCategorySelected(const TObjectPtr<UShipUpgradeCategoryDA> Category)
-{			
+{		 
 	UE_LOG(LogTemp, Warning, TEXT("Category selected: %s"), *Category->Name.ToString());
 	SelectedCategory = Category;
+	ACargoGameMode::Get(this)->DryDockService->SetSelectedCategory(Category);
+
 	UpdateUpgradeButtons();
 }
 
@@ -81,8 +100,28 @@ void UDryDockMainWidget::OnUpgradeSelected(const TObjectPtr<UShipUpgradeDA> Upgr
 
 void UDryDockMainWidget::OnCloseButtonClicked()
 {
+	RestoreGameplayCamera();
 	ACargoGameMode::Get(this)->DryDockService->LeaveDryDock();
 	Hide();
+}
+
+void UDryDockMainWidget::SetCameraAsset(UCameraAsset* CameraAsset)
+{
+	if (!ShipCameraComponent || !CameraAsset || ShipCameraComponent->CameraReference.GetCameraAsset() == CameraAsset)
+	{
+		return;
+	}
+
+	ShipCameraComponent->DeactivateCamera(true);
+	ShipCameraComponent->CameraReference.SetCameraAsset(CameraAsset);
+	ShipCameraComponent->ActivateCameraForPlayerController(GetOwningPlayer(), true);
+}
+
+void UDryDockMainWidget::RestoreGameplayCamera()
+{
+	SetCameraAsset(GameplayCameraAsset);
+	ShipCameraComponent = nullptr;
+	GameplayCameraAsset = nullptr;
 }
 
 void UDryDockMainWidget::Hide()

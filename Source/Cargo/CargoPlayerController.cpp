@@ -2,6 +2,7 @@
 
 
 #include "CargoPlayerController.h"
+#include "GameFramework/GameplayCamerasPlayerCameraManager.h"
 #include "CargoCharacter.h"
 #include "Public/Grid/Placeable.h"
 #include "EnhancedInputComponent.h"
@@ -26,6 +27,7 @@ class UCargoUIManagerSubsystem;
 
 ACargoPlayerController::ACargoPlayerController()
 {
+	PlayerCameraManagerClass = AGameplayCamerasPlayerCameraManager::StaticClass();
 	bEnableMouseOverEvents = true;
 	bEnableClickEvents = true;
 }

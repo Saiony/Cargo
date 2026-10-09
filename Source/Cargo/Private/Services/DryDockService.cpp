@@ -4,6 +4,7 @@
 #include "Services/DryDockService.h"
 
 #include "CargoGameMode.h"
+#include "DataAssets/ShipUpgrades/ShipUpgradeCategoryDA.h"
 #include "Subsystem/LevelManagerSubsystem.h"
 
 UDryDockService::UDryDockService()
@@ -19,6 +20,16 @@ void UDryDockService::BeginPlay()
 void UDryDockService::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+}
+
+void UDryDockService::SetSelectedCategory(UShipUpgradeCategoryDA* Category)
+{
+	SelectedCategory = Category;
+}
+
+UCameraRigAsset* UDryDockService::GetSelectedCameraRig() const
+{
+	return SelectedCategory ? SelectedCategory->CameraRig.Get() : nullptr;
 }
 
 void UDryDockService::GoToDryDock(TObjectPtr<ACargoIsland> From)
@@ -51,6 +62,7 @@ void UDryDockService::GoToDryDock(TObjectPtr<ACargoIsland> From)
 void UDryDockService::LeaveDryDock()
 {
 	check(PreviousIsland);
+	SelectedCategory = nullptr;
 
 	ACargoGameMode::Get(GetOwner())->UIService->FadeIn(FadeDuration, [this]()
 	{

@@ -13,6 +13,8 @@
 #include "DryDockMainWidget.generated.h"
 
 class UCommonButtonGroupBase;
+class UCameraAsset;
+class UGameplayCameraComponent;
 /**
  * 
  */
@@ -32,6 +34,15 @@ class CARGO_API UDryDockMainWidget : public UFrogsmithActivatableWidget
 	
 	UPROPERTY(EditDefaultsOnly, Category="Cargo")
 	TSubclassOf<UDryDockUpgradeButton> UpgradeButtonClass;
+
+	UPROPERTY(EditDefaultsOnly, Category="Camera")
+	TObjectPtr<UCameraAsset> DryDockCameraAsset;
+
+	UPROPERTY()
+	TObjectPtr<UGameplayCameraComponent> ShipCameraComponent;
+
+	UPROPERTY()
+	TObjectPtr<UCameraAsset> GameplayCameraAsset;
 	
 	UPROPERTY()
 	TObjectPtr<UCommonButtonGroupBase> CategoryButtonGroup;
@@ -49,9 +60,12 @@ class CARGO_API UDryDockMainWidget : public UFrogsmithActivatableWidget
 	void UpdateUpgradeButtons();
 	
 	void OnUpgradeSelected(TObjectPtr<UShipUpgradeDA> UpgradeDA);
+	void SetCameraAsset(UCameraAsset* CameraAsset);
+	void RestoreGameplayCamera();
 
 protected:
 	virtual void NativeOnInitialized() override;
+	virtual void NativeOnActivated() override;
 	
 	UFUNCTION()
 	void OnCloseButtonClicked();

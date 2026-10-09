@@ -7,6 +7,9 @@
 #include "Island/CargoIsland.h"
 #include "DryDockService.generated.h"
 
+class UCameraRigAsset;
+class UShipUpgradeCategoryDA;
+
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class CARGO_API UDryDockService : public UFORGServiceBase
@@ -26,6 +29,15 @@ protected:
 
 public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
+	UPROPERTY(BlueprintReadOnly, Category="Dry Dock|Camera")
+	TObjectPtr<UShipUpgradeCategoryDA> SelectedCategory;
+
+	UFUNCTION(BlueprintCallable, Category="Dry Dock|Camera")
+	void SetSelectedCategory(UShipUpgradeCategoryDA* Category);
+
+	UFUNCTION(BlueprintPure, Category="Dry Dock|Camera")
+	UCameraRigAsset* GetSelectedCameraRig() const;
 	
 	void GoToDryDock(TObjectPtr<ACargoIsland> From);
 	void LeaveDryDock();
