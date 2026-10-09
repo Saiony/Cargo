@@ -97,6 +97,9 @@ public:
 	UPROPERTY(EditAnywhere, Config, Category = "Upgrade")
 	TSoftObjectPtr<UShipUpgradesDatabase> ShipUpgradesDatabase;
 	
+	UPROPERTY(EditAnywhere, Config, Category = "Upgrade")
+	TArray<FGuid> InitiallyUnlockedUpgrades;
+	
 	TObjectPtr<UMissionsDatabase> GetMissionsDatabase() const;
 	
 	virtual FName GetCategoryName() const override { return FName("Cargo"); }

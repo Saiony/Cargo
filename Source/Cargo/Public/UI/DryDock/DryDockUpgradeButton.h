@@ -20,6 +20,9 @@ class CARGO_API UDryDockUpgradeButton : public UGenericButton
 	
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<USimpleMoneyDisplayWidget> MoneyDisplayWidget;
+	
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UWidget> PricePlate;
 		
 public:
 	void Initialize(TObjectPtr<UShipUpgradeDA> ShipUpgradeDA);

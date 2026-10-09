@@ -15,6 +15,11 @@ UDryDockService::UDryDockService()
 void UDryDockService::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	for (const auto UpgradeId : GetDefault<UCargoSettings>()->InitiallyUnlockedUpgrades)
+	{
+		PurchasedUpgrades.Add(UpgradeId);
+	}
 }
 
 void UDryDockService::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)

@@ -9,14 +9,13 @@ void UDryDockUpgradeButton::Initialize(TObjectPtr<UShipUpgradeDA> ShipUpgradeDA)
 {
 	Super::Initialize(ShipUpgradeDA->Name, ShipUpgradeDA->Icon);
 	
-	const auto PlayerMoney = ACargoGameMode::Get(this)->EconomyService->GetMoney();
-	
-	if (PlayerMoney < ShipUpgradeDA->Price)
+	if (!ACargoGameMode::Get(this)->DryDockService->HasUpgradeBeenPurchased(ShipUpgradeDA->Id))
 	{
-		MoneyDisplayWidget->SetVisibility(ESlateVisibility::Visible);
+		PricePlate->SetVisibility(ESlateVisibility::Visible);
+		MoneyDisplayWidget->Initialize(ShipUpgradeDA->Price);
+		
 		return;
 	}
 	
-	MoneyDisplayWidget->SetVisibility(ESlateVisibility::Visible);
-	MoneyDisplayWidget->Initialize(ShipUpgradeDA->Price);
+	PricePlate->SetVisibility(ESlateVisibility::Hidden);	
 }

@@ -92,20 +92,30 @@ void UDryDockMainWidget::UpdateUpgradeButtons()
 	}
 }
 
-void UDryDockMainWidget::OnUpgradeSelected(const TObjectPtr<UShipUpgradeDA> UpgradeDA) const
+void UDryDockMainWidget::OnUpgradeSelected(const TObjectPtr<UShipUpgradeDA> UpgradeDA)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Upgrade selected: %s"), *UpgradeDA->Name.ToString());
 	
 	if (DryDockService->HasUpgradeBeenPurchased(UpgradeDA->Id))
 	{
-		SelectUpgrade(UpgradeDA);
+		InstallUpgrade(UpgradeDA);
 		return;
 	}
 	
+	const TWeakObjectPtr WeakThis(this);
+	ACargoGameMode::Get(this)->UIService->ShowSimplePurchaseWidget(UpgradeDA->Price, UpgradeDA->Name.ToString(), [WeakThis, UpgradeDA](const bool bPurchased)
+	{
+		if (!bPurchased)
+			return;
+		
+		WeakThis->DryDockService->PurchaseUpgrade(UpgradeDA->Id);
+		WeakThis->UpdateUpgradeButtons();
+	});
+}
+
+void UDryDockMainWidget::InstallUpgrade(TObjectPtr<UShipUpgradeDA> UpgradeDA)
+{
 	
-	
-	//TODO: se nao tiver comprado, aparecer modal de compra
-	// se ja tiver comprado, instalar upgrade no barco	
 }
 
 void UDryDockMainWidget::OnCloseButtonClicked()

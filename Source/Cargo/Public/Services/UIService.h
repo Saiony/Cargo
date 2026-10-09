@@ -34,5 +34,5 @@ public:
 	}
 	
 	UCargoInputTextWidget* ShowInputTextWidget() const;
-	USimplePurchaseWidget* ShowSimplePurchaseWidget(int32 Price, const FString& Description, ISimplePurchaseWidgetListener* Listener) const;
+	USimplePurchaseWidget* ShowSimplePurchaseWidget(int32 Price, const FString& Description, TFunction<void(bool)> PurchaseCallback) const;
 };

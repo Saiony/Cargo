@@ -50,13 +50,14 @@ void AUnlockableObstacle::Interact_Implementation(AActor* Interactor)
 	ICargoInteractable::Interact_Implementation(Interactor);
 	
 	const auto UIService = ACargoGameMode::Get(this)->GetService<UUIService>();
-	UIService->ShowSimplePurchaseWidget(CostToUnlock, "Desbloquear obstaculo por:", this);
-}
-
-void AUnlockableObstacle::OnSimplePurchaseWidgetCallback(bool Purchased)
-{
-	if (Purchased)
-		Unlock();
+	const TWeakObjectPtr<AUnlockableObstacle> WeakThis(this);
+	UIService->ShowSimplePurchaseWidget(CostToUnlock, "Desbloquear obstaculo por:", [WeakThis](bool bPurchased)
+	{
+		if (bPurchased && WeakThis.IsValid())
+		{
+			WeakThis->Unlock();
+		}
+	});
 }
 
 void AUnlockableObstacle::Unlock()

@@ -26,7 +26,7 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	FShipUpgradeData UpgradeData;
 	
-	UPROPERTY()
+	UPROPERTY(EditDefaultsOnly)
 	FGuid Id = FGuid::NewGuid();
 	
 	virtual void PostDuplicate(bool bDuplicateForPIE) override;

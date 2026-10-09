@@ -18,20 +18,26 @@ void USimplePurchaseWidget::OnPurchaseButtonClicked()
 {
 	if (ACargoGameMode::Get(this)->EconomyService->RemoveMoney(Price))
 	{
-		Listener->OnSimplePurchaseWidgetCallback(true);
+		if (PurchaseCallback)
+		{
+			PurchaseCallback(true);
+		}
 		Hide();
 	}
 }
 
 void USimplePurchaseWidget::OnExitButtonClicked()
 {
-	Listener->OnSimplePurchaseWidgetCallback(false);
+	if (PurchaseCallback)
+	{
+		PurchaseCallback(false);
+	}
 	Hide();	
 }
 
-void USimplePurchaseWidget::Initialize(int32 Price, const FString& Description, ISimplePurchaseWidgetListener* Listener)
+void USimplePurchaseWidget::Initialize(int32 Price, const FString& Description, TFunction<void(bool)> PurchaseCallback)
 {
-	this->Listener = Listener;
+	this->PurchaseCallback = MoveTemp(PurchaseCallback);
 	this->Price = Price;
 	
 	DescriptionText->SetText(FText::FromString(Description));
