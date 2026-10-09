@@ -80,3 +80,14 @@ void UDryDockService::LeaveDryDock()
 		ACargoGameMode::Get(GetOwner())->UIService->FadeOut(FadeDuration, nullptr);
 	});
 }
+
+
+void UDryDockService::PurchaseUpgrade(const FGuid UpgradeGuid)
+{
+	PurchasedUpgrades.Add(UpgradeGuid);
+}
+
+bool UDryDockService::HasUpgradeBeenPurchased(const FGuid UpgradeGuid) const
+{
+	return PurchasedUpgrades.Contains(UpgradeGuid);
+}

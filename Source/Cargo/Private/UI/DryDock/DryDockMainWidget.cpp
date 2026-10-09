@@ -26,6 +26,8 @@ void UDryDockMainWidget::NativeOnInitialized()
 	
 	const auto UpgradesDatabase = GetDefault<UCargoSettings>()->ShipUpgradesDatabase.LoadSynchronous();
 	CreateCategoryButtons(UpgradesDatabase);
+	
+	DryDockService = ACargoGameMode::Get(this)->DryDockService;
 }
 
 void UDryDockMainWidget::NativeOnActivated()
@@ -90,9 +92,17 @@ void UDryDockMainWidget::UpdateUpgradeButtons()
 	}
 }
 
-void UDryDockMainWidget::OnUpgradeSelected(const TObjectPtr<UShipUpgradeDA> UpgradeDA)
+void UDryDockMainWidget::OnUpgradeSelected(const TObjectPtr<UShipUpgradeDA> UpgradeDA) const
 {
 	UE_LOG(LogTemp, Warning, TEXT("Upgrade selected: %s"), *UpgradeDA->Name.ToString());
+	
+	if (DryDockService->HasUpgradeBeenPurchased(UpgradeDA->Id))
+	{
+		SelectUpgrade(UpgradeDA);
+		return;
+	}
+	
+	
 	
 	//TODO: se nao tiver comprado, aparecer modal de compra
 	// se ja tiver comprado, instalar upgrade no barco	
@@ -105,7 +115,7 @@ void UDryDockMainWidget::OnCloseButtonClicked()
 	Hide();
 }
 
-void UDryDockMainWidget::SetCameraAsset(UCameraAsset* CameraAsset)
+void UDryDockMainWidget::SetCameraAsset(UCameraAsset* CameraAsset) const
 {
 	if (!ShipCameraComponent || !CameraAsset || ShipCameraComponent->CameraReference.GetCameraAsset() == CameraAsset)
 	{

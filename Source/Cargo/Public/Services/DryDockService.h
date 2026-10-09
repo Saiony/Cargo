@@ -4,7 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "FORGServiceBase.h"
+#include "DataAssets/ShipUpgrades/UpgradeCategoryType.h"
 #include "Island/CargoIsland.h"
+#include "Utils/GuidArray.h"
 #include "DryDockService.generated.h"
 
 class UCameraRigAsset;
@@ -17,6 +19,9 @@ class CARGO_API UDryDockService : public UFORGServiceBase
 	GENERATED_BODY()
 	
 	float FadeDuration = 2.0f;
+	
+	UPROPERTY()
+	TSet<FGuid> PurchasedUpgrades;
 
 public:
 	UDryDockService();
@@ -41,4 +46,7 @@ public:
 	
 	void GoToDryDock(TObjectPtr<ACargoIsland> From);
 	void LeaveDryDock();
+	
+	void PurchaseUpgrade(FGuid UpgradeGuid);
+	bool HasUpgradeBeenPurchased(FGuid UpgradeGuid) const;
 };

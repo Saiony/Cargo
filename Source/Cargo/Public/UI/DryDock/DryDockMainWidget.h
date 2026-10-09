@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "CargoGameMode.h"
 #include "DryDockUpgradeButton.h"
 #include "FrogsmithActivatableWidget.h"
 #include "Components/Button.h"
@@ -53,14 +54,17 @@ class CARGO_API UDryDockMainWidget : public UFrogsmithActivatableWidget
 	UPROPERTY()
 	TObjectPtr<UShipUpgradeCategoryDA> SelectedCategory;
 	
+	UPROPERTY()
+	TObjectPtr<UDryDockService> DryDockService;
+
 	void CreateCategoryButtons(TObjectPtr<UShipUpgradesDatabase> UpgradesDatabase);
 	
 	void OnCategorySelected(TObjectPtr<UShipUpgradeCategoryDA> Category);
 	
 	void UpdateUpgradeButtons();
 	
-	void OnUpgradeSelected(TObjectPtr<UShipUpgradeDA> UpgradeDA);
-	void SetCameraAsset(UCameraAsset* CameraAsset);
+	void OnUpgradeSelected(TObjectPtr<UShipUpgradeDA> UpgradeDA) const;
+	void SetCameraAsset(UCameraAsset* CameraAsset) const;
 	void RestoreGameplayCamera();
 
 protected:
