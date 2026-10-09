@@ -94,3 +94,16 @@ UCargoInputTextWidget* UUIService::ShowInputTextWidget() const
 	
 	return Cast<UCargoInputTextWidget>(InputTextWidget);
 }
+
+USimplePurchaseWidget* UUIService::ShowSimplePurchaseWidget(int32 Price, const FString& Description, ISimplePurchaseWidgetListener* Listener) const
+{
+	const auto WidgetClass = GetDefault<UCargoSettings>()->SimplePurchaseWidgetClass.LoadSynchronous();
+	const auto Widget = ShowWidget(WidgetClass);
+	if (!Widget)
+	{
+		return nullptr;
+	}
+
+	Widget->Initialize(Price, Description, Listener);
+	return Widget;
+}

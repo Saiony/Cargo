@@ -12,6 +12,7 @@
 #include "Mission/MissionsDatabase.h"
 #include "UI/MapWidget.h"
 #include "UI/Generic/CargoInputTextWidget.h"
+#include "UI/Shop/SimplePurchaseWidget.h"
 #include "CargoSettings.generated.h"
 
 class UGenericButton;
@@ -64,6 +65,9 @@ public:
 	
 	UPROPERTY(EditAnywhere, Config, Category = "UI")
 	TSoftClassPtr<UCargoInputTextWidget> InputTextWidgetClass;	
+
+	UPROPERTY(EditAnywhere, Config, Category = "UI")
+	TSoftClassPtr<USimplePurchaseWidget> SimplePurchaseWidgetClass;
 
 	UPROPERTY(EditAnywhere, Config, Category="UI")
 	TSoftClassPtr<UStoreWidget> StoreWidgetClass;

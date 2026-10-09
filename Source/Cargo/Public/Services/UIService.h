@@ -6,6 +6,7 @@
 #include "FORGServiceBase.h"
 #include "Templates/Function.h"
 #include "UI/Generic/CargoInputTextWidget.h"
+#include "UI/Shop/SimplePurchaseWidget.h"
 #include "UIService.generated.h"
 
 
@@ -33,4 +34,5 @@ public:
 	}
 	
 	UCargoInputTextWidget* ShowInputTextWidget() const;
+	USimplePurchaseWidget* ShowSimplePurchaseWidget(int32 Price, const FString& Description, ISimplePurchaseWidgetListener* Listener) const;
 };

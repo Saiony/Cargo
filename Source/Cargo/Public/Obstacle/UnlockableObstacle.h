@@ -21,9 +21,6 @@ protected:
 	UPROPERTY(visibleAnywhere, BlueprintReadOnly, Category="Cargo")
 	TObjectPtr<UStaticMeshComponent> ObstacleMeshComp;
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
-	TSubclassOf<USimplePurchaseWidget> SimplePurchaseWidgetClass;
-	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo")
 	int32 CostToUnlock = 50;
 
