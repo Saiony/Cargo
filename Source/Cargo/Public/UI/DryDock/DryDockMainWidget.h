@@ -63,8 +63,8 @@ class CARGO_API UDryDockMainWidget : public UFrogsmithActivatableWidget
 	
 	void UpdateUpgradeButtons();
 
-	void OnUpgradeSelected(TObjectPtr<UShipUpgradeDA> UpgradeDA);
-	void InstallUpgrade(TObjectPtr<UShipUpgradeDA> UpgradeDA);
+	void OnUpgradeSelected(TObjectPtr<UShipUpgradeDA> UpgradeDA, EUpgradeCategoryType CategoryType);
+	void InstallUpgrade(EUpgradeCategoryType CategoryType, TObjectPtr<UShipUpgradeDA> UpgradeDA);
 	
 	void SetCameraAsset(UCameraAsset* CameraAsset) const;
 	void RestoreGameplayCamera();

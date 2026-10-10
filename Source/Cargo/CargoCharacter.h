@@ -6,6 +6,7 @@
 #include "CargoPlayerController.h"
 #include "GameplayFramework/CargoPlayerState.h"
 #include "Grid/GridComponent.h"
+#include "CharacterComponents/ShipUpgradesComponent.h"
 #include "Logging/LogMacros.h"
 #include "CargoCharacter.generated.h"
 
@@ -18,6 +19,7 @@ class UFloatingPawnMovement;
 class APlaceable;
 class USpringArmComponent;
 class UCameraComponent;
+class USceneComponent;
 class UInputAction;
 struct FInputActionValue;
 
@@ -56,7 +58,13 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UStaticMeshComponent* MeshComponent; 
-	
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Cargo|Upgrades")
+	TObjectPtr<USceneComponent> UpgradePivots;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Cargo|Upgrades")
+	TObjectPtr<USceneComponent> ChimneyPivot;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UFloatingPawnMovement* FloatingMovement;
 	
@@ -65,6 +73,9 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UGridComponent> GridComp;	
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Cargo|Upgrades")
+	TObjectPtr<UShipUpgradesComponent> ShipUpgradesComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UAudioComponent> MovementAudioComp;
@@ -243,6 +254,9 @@ public:
 
 	UFUNCTION(Category="Cargo|Balance")
 	void SetShipBalanceRotation(float NewBalance);
+
+	UFUNCTION(BlueprintCallable, Category="Cargo|Upgrades")
+	void InstallUpgrade(EUpgradeCategoryType CategoryType, UShipUpgradeDA* UpgradeDA);
 
 	/** Constructor */
 	ACargoCharacter();	

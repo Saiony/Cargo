@@ -22,6 +22,9 @@ public:
 	
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UTexture2D> Icon;
+
+	UPROPERTY(EditDefaultsOnly, Category="Upgrade")
+	TSubclassOf<AActor> UpgradeActorClass;
 	
 	UPROPERTY(EditDefaultsOnly)
 	FShipUpgradeData UpgradeData;

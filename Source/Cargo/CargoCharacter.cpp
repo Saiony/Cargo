@@ -34,6 +34,12 @@ ACargoCharacter::ACargoCharacter()
 	MeshComponent->SetupAttachment(RootComponent);
 	MeshComponent->ComponentTags.AddUnique(UCargoTweenSubsystem::ShakeTargetTag);
 
+	UpgradePivots = CreateDefaultSubobject<USceneComponent>(TEXT("UpgradePivots"));
+	UpgradePivots->SetupAttachment(MeshComponent);
+
+	ChimneyPivot = CreateDefaultSubobject<USceneComponent>(TEXT("ChimneyPivot"));
+	ChimneyPivot->SetupAttachment(UpgradePivots);
+
 	FloatingMovement = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("FloatingMovement"));
 	FloatingMovement->MaxSpeed = 600.f;
 	FloatingMovement->Acceleration = 400.f;
@@ -46,6 +52,9 @@ ACargoCharacter::ACargoCharacter()
 	GridComp = CreateDefaultSubobject<UGridComponent>(TEXT("GridComp"));
 	GridComp->SetupAttachment(MeshComponent);
 	GridComp->ContainerFallAngle = 30;
+
+	ShipUpgradesComponent = CreateDefaultSubobject<UShipUpgradesComponent>(TEXT("ShipUpgradesComponent"));
+	ShipUpgradesComponent->SetChimneyPivot(ChimneyPivot);
 	
 	MovementAudioComp = CreateDefaultSubobject<UAudioComponent>(TEXT("MovementAudioComp"));	
 
@@ -304,6 +313,14 @@ void ACargoCharacter::SetShipBalanceRotation(float NewBalance)
 {
 	ShipBalanceRotation = NewBalance;
 	RotateShip(GetShipBalanceTotal());
+}
+
+void ACargoCharacter::InstallUpgrade(EUpgradeCategoryType CategoryType, UShipUpgradeDA* UpgradeDA)
+{
+	if (ShipUpgradesComponent)
+	{
+		ShipUpgradesComponent->InstallUpgrade(CategoryType, UpgradeDA);
+	}
 }
 
 float ACargoCharacter::GetCurrentShipRoll() const

@@ -4,6 +4,7 @@
 #include "UI/DryDock/DryDockMainWidget.h"
 
 #include "CargoGameMode.h"
+#include "CargoCharacter.h"
 #include "PrimaryGameLayout.h"
 #include "Components/HorizontalBoxSlot.h"
 #include "DataAssets/ShipUpgrades/ShipUpgradeCategoryDA.h"
@@ -87,38 +88,43 @@ void UDryDockMainWidget::UpdateUpgradeButtons()
 		Slot->SetSize(FSlateChildSize(ESlateSizeRule::Automatic));
 		Slot->SetVerticalAlignment(VAlign_Center);
 		
-		UpgradeButton->Initialize(Upgrade);		
-		UpgradeButton->OnClicked().AddWeakLambda(this, [Upgrade, this]()
+		UpgradeButton->Initialize(Upgrade);
+		const EUpgradeCategoryType CategoryType = SelectedCategory->Type;
+		UpgradeButton->OnClicked().AddWeakLambda(this, [Upgrade, CategoryType, this]()
 		{
-			OnUpgradeSelected(Upgrade);
+			OnUpgradeSelected(Upgrade, CategoryType);
 		});
 	}
 }
 
-void UDryDockMainWidget::OnUpgradeSelected(const TObjectPtr<UShipUpgradeDA> UpgradeDA)
+void UDryDockMainWidget::OnUpgradeSelected(const TObjectPtr<UShipUpgradeDA> UpgradeDA, const EUpgradeCategoryType CategoryType)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Upgrade selected: %s"), *UpgradeDA->Name.ToString());
 	
 	if (DryDockService->HasUpgradeBeenPurchased(UpgradeDA->Id))
 	{
-		InstallUpgrade(UpgradeDA);
+		InstallUpgrade(CategoryType, UpgradeDA);
 		return;
 	}
 	
 	const TWeakObjectPtr WeakThis(this);
-	ACargoGameMode::Get(this)->UIService->ShowSimplePurchaseWidget(UpgradeDA->Price, UpgradeDA->Name.ToString(), [WeakThis, UpgradeDA](const bool bPurchased)
+	ACargoGameMode::Get(this)->UIService->ShowSimplePurchaseWidget(UpgradeDA->Price, UpgradeDA->Name.ToString(), [WeakThis, UpgradeDA, CategoryType](const bool bPurchased)
 	{
 		if (!bPurchased)
 			return;
 		
 		WeakThis->DryDockService->PurchaseUpgrade(UpgradeDA->Id);
+		WeakThis->InstallUpgrade(CategoryType, UpgradeDA);
 		WeakThis->UpdateUpgradeButtons();
 	});
 }
 
-void UDryDockMainWidget::InstallUpgrade(TObjectPtr<UShipUpgradeDA> UpgradeDA)
+void UDryDockMainWidget::InstallUpgrade(const EUpgradeCategoryType CategoryType, const TObjectPtr<UShipUpgradeDA> UpgradeDA)
 {
-	
+	if (ACargoCharacter* Character = GetOwningPlayerPawn<ACargoCharacter>())
+	{
+		Character->InstallUpgrade(CategoryType, UpgradeDA);
+	}
 }
 
 void UDryDockMainWidget::OnCloseButtonClicked()
