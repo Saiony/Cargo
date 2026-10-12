@@ -19,6 +19,7 @@ enum class EShipUpgradeAttributeType : uint8
 	Stability,
 	MaxWeight,
 	Maneuverability,
+	FuelEfficiency,
 };
 
 USTRUCT(BlueprintType)

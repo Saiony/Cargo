@@ -132,7 +132,8 @@ void ACargoCharacter::DoMove(float Right, float Forward)
 	//fuel
 	if (ForwardDirection.Size() > 0.0f)
 	{
-		CargoPlayerState->GetFuelDomain()->RemoveFuel(FuelConsumptionPerTick);
+		const float EffectiveFuelConsumption = FuelConsumptionPerTick / ChimneyFuelEfficiency;
+		CargoPlayerState->GetFuelDomain()->RemoveFuel(EffectiveFuelConsumption);
 	}
 	
 	//Special Yaw rotation based on cargo imbalance
@@ -141,6 +142,7 @@ void ACargoCharacter::DoMove(float Right, float Forward)
 	AddActorLocalRotation(RotationIncrease);
 	
 	// Rotation
+	const float ManeuverabilityMultiplier = GetShipManeuverabilityMultiplier();
 	if (Right == 0.f)
 	{
 		if (bNeedsMovementRollReset)
@@ -153,12 +155,11 @@ void ACargoCharacter::DoMove(float Right, float Forward)
 	else
 	{				
 		//rotate Yaw
-		const FRotator Delta(0.f, Right * YawTurnSpeed * GetWorld()->GetDeltaSeconds(), 0.f);
-		AddActorLocalRotation(Delta);	
-		
+		const FRotator Delta(0.f, Right * YawTurnSpeed * ManeuverabilityMultiplier * GetWorld()->GetDeltaSeconds(), 0.f);
+		AddActorLocalRotation(Delta);			
 		
 		//rotate Roll	
-		const auto ContainersSideTilt_PlayerRotating = CargoSteeringInfluence_PlayerRotating* CargoWeightMoment / 10000;
+		const auto ContainersSideTilt_PlayerRotating = CargoSteeringInfluence_PlayerRotating * CargoWeightMoment / 10000;
 		Right += ContainersSideTilt_PlayerRotating;
 		
 		const float RollInputDirection = FMath::Clamp(Right, -1.f, 1.f);
@@ -166,7 +167,7 @@ void ACargoCharacter::DoMove(float Right, float Forward)
 		const float LoadRatio = CurrentWeight / MaxWeight;
 		const float SpeedRation = FloatingMovement->Velocity.Size() / FloatingMovement->MaxSpeed;
 		
-		const auto SpeedRotationIncrement = RollInputDirection * GetWorld()->GetDeltaSeconds() * MovementRollSensitivity * SpeedRation;
+		const auto SpeedRotationIncrement = RollInputDirection * GetWorld()->GetDeltaSeconds() * MovementRollSensitivity * SpeedRation / ManeuverabilityMultiplier;
 		
 		if (GEngine)
 		{
@@ -286,18 +287,32 @@ void ACargoCharacter::CalculateShipSpeedMultiplier()
 		ShipSpeedMultiplier = 1.f;
 }
 
+float ACargoCharacter::GetShipManeuverabilityMultiplier() const
+{
+	return FMath::Max(0.01f, 1.f + ShipManeuverability);
+}
+
+float ACargoCharacter::GetShipStabilityMultiplier() const
+{
+	return 1.f / FMath::Max(0.01f, 1.f + ShipStability);
+}
+
 void ACargoCharacter::AddWeight(float Weight)
 {
-	CurrentWeight += Weight;
-	CalculateShipSpeedMultiplier();
-	OnWeightChanged.Broadcast(CurrentWeight, MaxWeight);
+	SetCurrentWeight(CurrentWeight + Weight);
 }
 
 void ACargoCharacter::RemoveWeight(float Weight)
 {
-	CurrentWeight -= Weight;
+	SetCurrentWeight(CurrentWeight - Weight);
+}
+
+void ACargoCharacter::SetCurrentWeight(float NewCurrentWeight)
+{
+	CurrentWeight = NewCurrentWeight;
 	CalculateShipSpeedMultiplier();
 	OnWeightChanged.Broadcast(CurrentWeight, MaxWeight);
+	OnShipAttributeChanged.Broadcast(EShipUpgradeAttributeType::Weight, CurrentWeight);
 }
 
 void ACargoCharacter::SetMaxWeight(float NewMaxWeight)
@@ -305,7 +320,43 @@ void ACargoCharacter::SetMaxWeight(float NewMaxWeight)
 	MaxWeight = NewMaxWeight;
 	CalculateShipSpeedMultiplier();
 	OnWeightChanged.Broadcast(CurrentWeight, MaxWeight);
+	OnShipAttributeChanged.Broadcast(EShipUpgradeAttributeType::MaxWeight, MaxWeight);
 	UpdateSpeed();
+}
+
+void ACargoCharacter::SetShipSpeed(float NewShipSpeed)
+{
+	ShipSpeed = NewShipSpeed;
+	OnShipAttributeChanged.Broadcast(EShipUpgradeAttributeType::Speed, ShipSpeed);
+	UpdateSpeed();
+}
+
+void ACargoCharacter::SetShipStability(float NewShipStability)
+{
+	ShipStability = NewShipStability;
+	OnShipAttributeChanged.Broadcast(EShipUpgradeAttributeType::Stability, ShipStability);
+	if (GridComp)
+	{
+		BalanceShip();
+	}
+}
+
+void ACargoCharacter::SetShipManeuverability(float NewShipManeuverability)
+{
+	ShipManeuverability = NewShipManeuverability;
+	OnShipAttributeChanged.Broadcast(EShipUpgradeAttributeType::Maneuverability, ShipManeuverability);
+}
+
+void ACargoCharacter::SetChimneyFuelEfficiency(float NewChimneyFuelEfficiency)
+{
+	if (NewChimneyFuelEfficiency < 1.f)
+	{
+		UE_LOG(LogCargo, Error, TEXT("Chimney fuel efficiency cannot be less than 1. Received: %f"), NewChimneyFuelEfficiency);
+		return;
+	}
+
+	ChimneyFuelEfficiency = NewChimneyFuelEfficiency;
+	OnShipAttributeChanged.Broadcast(EShipUpgradeAttributeType::FuelEfficiency, ChimneyFuelEfficiency);
 }
 
 void ACargoCharacter::SetShipBalanceWeight(float NewBalance)
@@ -343,13 +394,14 @@ float ACargoCharacter::GetCurrentShipRoll() const
 void ACargoCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	InstallInitialUpgrades();
+	ShipUpgradesComponent->Init(this);
 	
 	GridComp->OnPlaceableAddedToGrid.AddDynamic(this, &ThisClass::OnPlaceableAdded);
 	GridComp->OnPlaceableRemovedFromGrid.AddDynamic(this, &ThisClass::OnPlaceableRemoved);	
 	
 	OriginalMaxSpeed = FloatingMovement->MaxSpeed;
 	OriginalAcceleration = FloatingMovement->Acceleration;
+	InstallInitialUpgrades();
 	
 	if (UPrimitiveComponent* CollisionComp = Cast<UPrimitiveComponent>(GetRootComponent()))
 	{
@@ -418,7 +470,7 @@ void ACargoCharacter::BalanceShip()
 	
 	UE_LOG(LogTemp, Log, TEXT("CargoWeightMoment: %f"), CargoWeightMoment);
 	
-	const float FinalAngle = FMath::Clamp(CargoWeightMoment * CargoRollSensitivity, CargoRollLimits.X, CargoRollLimits.Y);
+	const float FinalAngle = FMath::Clamp(CargoWeightMoment * CargoRollSensitivity * GetShipStabilityMultiplier(), CargoRollLimits.X, CargoRollLimits.Y);
 	SetShipBalanceWeight(FinalAngle);
 }
 
@@ -432,8 +484,13 @@ void ACargoCharacter::UpdateEngineSoundIntensity()
 
 void ACargoCharacter::UpdateSpeed()
 {
-	FloatingMovement->MaxSpeed = OriginalMaxSpeed * ShipSpeedMultiplier;
-	FloatingMovement->Acceleration = OriginalAcceleration * ShipSpeedMultiplier;
+	if (OriginalMaxSpeed < 0.f || OriginalAcceleration < 0.f)
+	{
+		return;
+	}
+
+	FloatingMovement->MaxSpeed = OriginalMaxSpeed * ShipSpeed * ShipSpeedMultiplier;
+	FloatingMovement->Acceleration = OriginalAcceleration * ShipSpeed * ShipSpeedMultiplier;
 }
 
 void ACargoCharacter::OnHasteCVarChanged(IConsoleVariable* ConsoleVariable)

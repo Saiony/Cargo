@@ -10,6 +10,11 @@ UShipUpgradesComponent::UShipUpgradesComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
+void UShipUpgradesComponent::Init(TObjectPtr<ACargoCharacter> InCargoCharacter)
+{
+	CargoCharacter = InCargoCharacter;
+}
+
 void UShipUpgradesComponent::SetChimneyPivot(USceneComponent* Pivot)
 {
 	ChimneyPivot = Pivot;
@@ -17,44 +22,75 @@ void UShipUpgradesComponent::SetChimneyPivot(USceneComponent* Pivot)
 
 void UShipUpgradesComponent::InstallUpgrade(EUpgradeCategoryType CategoryType, UShipUpgradeDA* UpgradeDA)
 {
-	if (!IsValid(UpgradeDA))
-	{
+	const auto PreviousUpgrade = GetInstalledUpgrade(CategoryType);
+	
+	if (PreviousUpgrade == UpgradeDA)
 		return;
-	}
 
 	switch (CategoryType)
 	{
-	case EUpgradeCategoryType::Chimney:
-		InstallChimney(UpgradeDA);
-		break;
-	case EUpgradeCategoryType::Paddle:
-		InstallPaddle(UpgradeDA);
-		break;
-	case EUpgradeCategoryType::Hull:
-		InstallHull(UpgradeDA);
-		break;
-	default:
-		break;
+		case EUpgradeCategoryType::Chimney:
+			if (!UpgradeDA->UpgradeActorClass || !IsValid(ChimneyPivot) || !GetWorld())
+			{
+				return;
+			}
+			InstallChimney(UpgradeDA);
+			break;
+		case EUpgradeCategoryType::Paddle:
+			InstallPaddle(UpgradeDA);
+			break;
+		case EUpgradeCategoryType::Hull:
+			InstallHull(UpgradeDA);
+			break;
+		default:
+			return;
 	}
 
-	InstalledUpgrades.RemoveAll([CategoryType](const FInstalledShipUpgrade& InstalledUpgrade)
+	if (PreviousUpgrade)
 	{
-		return InstalledUpgrade.Category == CategoryType;
-	});
+		CargoCharacter->RemoveWeight(PreviousUpgrade->Weight);
+		ApplyUpgradeAttributes(PreviousUpgrade, -1.f);
+	}
 
-	FInstalledShipUpgrade& InstalledUpgrade = InstalledUpgrades.AddDefaulted_GetRef();
-	InstalledUpgrade.Category = CategoryType;
-	InstalledUpgrade.UpgradeDA = UpgradeDA;
+	InstalledUpgrades.Add(CategoryType, UpgradeDA);
+	CargoCharacter->AddWeight(UpgradeDA->Weight);
+	ApplyUpgradeAttributes(UpgradeDA, 1.f);
+}
+
+void UShipUpgradesComponent::ApplyUpgradeAttributes(const UShipUpgradeDA* UpgradeDA, const float Sign)
+{
+	for (const FShipUpgradeAttribute& Attribute : UpgradeDA->UpgradeData)
+	{
+		const float Value = Attribute.Value * Sign;
+		switch (Attribute.Type)
+		{
+		case EShipUpgradeAttributeType::Weight:
+			CargoCharacter->AddWeight(Value);
+			break;
+		case EShipUpgradeAttributeType::Speed:
+			CargoCharacter->SetShipSpeed(CargoCharacter->GetShipSpeed() + Value);
+			break;
+		case EShipUpgradeAttributeType::Stability:
+			CargoCharacter->SetShipStability(CargoCharacter->GetShipStability() + Value);
+			break;
+		case EShipUpgradeAttributeType::MaxWeight:
+			CargoCharacter->SetMaxWeight(CargoCharacter->GetMaxWeight() + Value);
+			break;
+		case EShipUpgradeAttributeType::Maneuverability:
+			CargoCharacter->SetShipManeuverability(CargoCharacter->GetShipManeuverability() + Value);
+			break;
+		case EShipUpgradeAttributeType::FuelEfficiency:
+			CargoCharacter->SetChimneyFuelEfficiency(CargoCharacter->GetChimneyFuelEfficiency() + Value);
+			break;
+		default:
+			break;
+		}
+	}
 }
 
 UShipUpgradeDA* UShipUpgradesComponent::GetInstalledUpgrade(EUpgradeCategoryType CategoryType) const
 {
-	const FInstalledShipUpgrade* InstalledUpgrade = InstalledUpgrades.FindByPredicate([CategoryType](const FInstalledShipUpgrade& Entry)
-	{
-		return Entry.Category == CategoryType;
-	});
-
-	return InstalledUpgrade ? InstalledUpgrade->UpgradeDA.Get() : nullptr;
+	return InstalledUpgrades.FindRef(CategoryType);
 }
 
 void UShipUpgradesComponent::InstallChimney(UShipUpgradeDA* UpgradeDA)
@@ -85,11 +121,6 @@ void UShipUpgradesComponent::InstallPaddle(UShipUpgradeDA* UpgradeDA)
 
 void UShipUpgradesComponent::InstallHull(UShipUpgradeDA* UpgradeDA)
 {
-	if (UHullShipUpgradeDA* HullUpgradeDA = Cast<UHullShipUpgradeDA>(UpgradeDA))
-	{
-		if (ACargoCharacter* Ship = Cast<ACargoCharacter>(GetOwner()))
-		{
-			Ship->SetHull(HullUpgradeDA);
-		}
-	}
+	const auto HullUpgradeDA = Cast<UHullShipUpgradeDA>(UpgradeDA);
+	CargoCharacter->SetHull(HullUpgradeDA);
 }

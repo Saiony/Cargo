@@ -29,6 +29,7 @@ DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 DECLARE_MULTICAST_DELEGATE(FOnShipMovementChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnWeightChanged, float, NewCurrentWeight, float, MaxWeight);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBalanceChanged, float, NewBalance);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnShipAttributeChanged, EShipUpgradeAttributeType, AttributeType, float, NewValue);
 
 /**
  *  A simple player-controllable third-person character
@@ -40,6 +41,7 @@ class ACargoCharacter : public APawn
 	GENERATED_BODY()	
 	
 protected:
+	#pragma region Attributes
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Weight")
 	float CurrentWeight = 0.f;
 
@@ -49,11 +51,24 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Cargo|Weight")
 	float ShipSpeedMultiplier = 1.f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Attributes")
+	float ShipSpeed = 1.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Attributes")
+	float ShipStability = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Attributes")
+	float ShipManeuverability = 0.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Cargo|Attributes")
+	float ChimneyFuelEfficiency = 1.f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Balance")
 	float ShipBalanceWeight = 0.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Balance")
 	float ShipBalanceRotation = 0.f;
+	#pragma endregion Attributes
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UStaticMeshComponent* RootMeshComponent; 
@@ -127,6 +142,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Rotation|Yaw")
 	float CargoSteeringInfluence_StraightLine = 100;
 	
+	/* Ship imbalance multiplier based on weight ratio*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Rotation|Yaw")
 	float CargoSteeringInfluence_PlayerRotating = 2;
 
@@ -221,8 +237,12 @@ protected:
 	void OnHasteCVarChanged(IConsoleVariable* ConsoleVariable);
 	
 public:
+	#pragma region Attributes
 	UPROPERTY(BlueprintAssignable, Category="Cargo|Weight")
 	FOnWeightChanged OnWeightChanged;
+
+	UPROPERTY(BlueprintAssignable, Category="Cargo|Attributes")
+	FOnShipAttributeChanged OnShipAttributeChanged;
 
 	UPROPERTY(BlueprintAssignable, Category="Cargo|Balance")
 	FOnBalanceChanged OnBalanceChanged;
@@ -235,6 +255,18 @@ public:
 
 	UFUNCTION(BlueprintPure, Category="Cargo|Weight")
 	float GetShipSpeedMultiplier() const { return ShipSpeedMultiplier; }
+
+	UFUNCTION(BlueprintPure, Category="Cargo|Attributes")
+	float GetShipSpeed() const { return ShipSpeed; }
+
+	UFUNCTION(BlueprintPure, Category="Cargo|Attributes")
+	float GetShipStability() const { return ShipStability; }
+
+	UFUNCTION(BlueprintPure, Category="Cargo|Attributes")
+	float GetShipManeuverability() const { return ShipManeuverability; }
+
+	UFUNCTION(BlueprintPure, Category="Cargo|Attributes")
+	float GetChimneyFuelEfficiency() const { return ChimneyFuelEfficiency; }
 
 	UFUNCTION(BlueprintPure, Category="Cargo|Balance")
 	float GetShipBalanceTotal() const { return ShipBalanceWeight + ShipBalanceRotation; }
@@ -254,14 +286,30 @@ public:
 	UFUNCTION(Category="Cargo|Weight")
 	void RemoveWeight(float Weight);
 
-	UFUNCTION(Category="Cargo|Weight")
+	UFUNCTION(BlueprintCallable, Category="Cargo|Weight")
 	void SetMaxWeight(float NewMaxWeight);
+
+	UFUNCTION(BlueprintCallable, Category="Cargo|Weight")
+	void SetCurrentWeight(float NewCurrentWeight);
+
+	UFUNCTION(BlueprintCallable, Category="Cargo|Attributes")
+	void SetShipSpeed(float NewShipSpeed);
+
+	UFUNCTION(BlueprintCallable, Category="Cargo|Attributes")
+	void SetShipStability(float NewShipStability);
+
+	UFUNCTION(BlueprintCallable, Category="Cargo|Attributes")
+	void SetShipManeuverability(float NewShipManeuverability);
+
+	UFUNCTION(BlueprintCallable, Category="Cargo|Attributes")
+	void SetChimneyFuelEfficiency(float NewChimneyFuelEfficiency);
 
 	UFUNCTION(Category="Cargo|Balance")
 	void SetShipBalanceWeight(float NewBalance);
 
 	UFUNCTION(Category="Cargo|Balance")
 	void SetShipBalanceRotation(float NewBalance);
+	#pragma endregion Attributes
 
 	UFUNCTION(BlueprintCallable, Category="Cargo|Upgrades")
 	void InstallUpgrade(EUpgradeCategoryType CategoryType, UShipUpgradeDA* UpgradeDA);
@@ -323,6 +371,8 @@ protected:
 	
 	void InitializeShipName();
 	void CalculateShipSpeedMultiplier();
+	float GetShipManeuverabilityMultiplier() const;
+	float GetShipStabilityMultiplier() const;
 public:
 	/** Handles move inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category="Input")
