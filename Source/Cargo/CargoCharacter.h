@@ -17,6 +17,8 @@ class UBuoyancyComponent;
 class USphereComponent;
 class UFloatingPawnMovement;
 class APlaceable;
+class UPlayerConfigDA;
+class UHullShipUpgradeDA;
 class USpringArmComponent;
 class UCameraComponent;
 class USceneComponent;
@@ -57,7 +59,10 @@ protected:
 	UStaticMeshComponent* RootMeshComponent; 
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	UStaticMeshComponent* MeshComponent; 
+	UStaticMeshComponent* MeshComponent;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UStaticMeshComponent* BoatMeshComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Cargo|Upgrades")
 	TObjectPtr<USceneComponent> UpgradePivots;
@@ -76,6 +81,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Cargo|Upgrades")
 	TObjectPtr<UShipUpgradesComponent> ShipUpgradesComponent;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo|Configuration")
+	TObjectPtr<UPlayerConfigDA> PlayerConfigDA;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	TObjectPtr<UAudioComponent> MovementAudioComp;
@@ -257,6 +265,8 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="Cargo|Upgrades")
 	void InstallUpgrade(EUpgradeCategoryType CategoryType, UShipUpgradeDA* UpgradeDA);
+	void SetHull(UHullShipUpgradeDA* HullUpgradeDA);
+	void InstallInitialUpgrades();
 
 	/** Constructor */
 	ACargoCharacter();	
@@ -321,6 +331,12 @@ public:
 	/** Handles look inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoLook(float Yaw, float Pitch);
+
+	UFUNCTION(BlueprintCallable, Category="Cargo|Movement")
+	void EnableGravity();
+
+	UFUNCTION(BlueprintCallable, Category="Cargo|Movement")
+	void DisableGravity();
 	
 	void AttachPlaceable(APlaceable* Placeable, FVector WorldPos);
 

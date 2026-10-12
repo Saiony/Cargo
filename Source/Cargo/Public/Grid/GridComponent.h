@@ -80,6 +80,7 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
     
 	void ClearGrid();
+	void SetGridComponentDA(UGridComponentDA* NewGridComponentDA);
 
 	void UpdateStackLean(float ShipRoll);
 

@@ -1,6 +1,8 @@
 #include "CharacterComponents/ShipUpgradesComponent.h"
 
 #include "DataAssets/ShipUpgrades/ShipUpgradeDA.h"
+#include "DataAssets/ShipUpgrades/HullShipUpgradeDA.h"
+#include "CargoCharacter.h"
 #include "GameFramework/Pawn.h"
 
 UShipUpgradesComponent::UShipUpgradesComponent()
@@ -73,6 +75,11 @@ void UShipUpgradesComponent::InstallPaddle(UShipUpgradeDA* UpgradeDA)
 
 void UShipUpgradesComponent::InstallHull(UShipUpgradeDA* UpgradeDA)
 {
-	//for now, we only adjust hull scale
-	
+	if (UHullShipUpgradeDA* HullUpgradeDA = Cast<UHullShipUpgradeDA>(UpgradeDA))
+	{
+		if (ACargoCharacter* Ship = Cast<ACargoCharacter>(GetOwner()))
+		{
+			Ship->SetHull(HullUpgradeDA);
+		}
+	}
 }

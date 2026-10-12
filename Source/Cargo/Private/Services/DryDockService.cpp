@@ -3,6 +3,7 @@
 
 #include "Services/DryDockService.h"
 
+#include "CargoCharacter.h"
 #include "CargoGameMode.h"
 #include "DataAssets/ShipUpgrades/ShipUpgradeCategoryDA.h"
 #include "Subsystem/LevelManagerSubsystem.h"
@@ -57,6 +58,12 @@ void UDryDockService::GoToDryDock(TObjectPtr<ACargoIsland> From)
 		{
 			UE_LOG(LogTemp, Log, TEXT("DryDockService: Teleporting to Dry Dock"));
 			ULevelManagerSubsystem* Subsystem = WeakLevelManagerSubsystem.Get();
+			
+			const auto PlayerController = UGameplayStatics::GetPlayerController(GetOwner()->GetWorld(), 0);
+			const auto PlayerPawn = Cast<ACargoCharacter>(PlayerController->GetPawn());
+			PlayerPawn->SetActorEnableCollision(false);
+			PlayerPawn->DisableGravity();
+			
 			Subsystem->TeleportPlayer(ELevelType::DryDock);
 
 			ACargoGameMode::Get(GetOwner())->UIService->FadeOut(FadeDuration, nullptr);
@@ -78,10 +85,15 @@ void UDryDockService::LeaveDryDock()
 
 		//get spawn location
 		const auto PlayerController = GetOwner()->GetGameInstance()->GetPrimaryPlayerController();
-		const auto PlayerPawn = PlayerController->GetPawn();
+		const auto PlayerPawn = Cast<ACargoCharacter>(PlayerController->GetPawn());
 		const auto SpawnLocation = PreviousIsland->GetPort()->GetPlayerSpawnLocation();
 
 		PlayerPawn->TeleportTo(SpawnLocation.GetLocation(), SpawnLocation.GetRotation().Rotator());
+		
+		PlayerPawn->SetActorEnableCollision(true);
+		PlayerPawn->EnableGravity();
+		// PlayerPawn->
+		
 		ACargoGameMode::Get(GetOwner())->UIService->FadeOut(FadeDuration, nullptr);
 	});
 }

@@ -1,6 +1,9 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "CargoCharacter.h"
+#include "DataAssets/ShipUpgrades/HullShipUpgradeDA.h"
+#include "DataAssets/ShipUpgrades/ShipUpgradeDA.h"
+#include "DataAssets/PlayerConfigDA.h"
 #include "CargoGameMode.h"
 #include "DeveloperSettings/CargoSettings.h"
 #include "Private/UI/Prompt/SimplePrompt.h"
@@ -36,6 +39,9 @@ ACargoCharacter::ACargoCharacter()
 
 	UpgradePivots = CreateDefaultSubobject<USceneComponent>(TEXT("UpgradePivots"));
 	UpgradePivots->SetupAttachment(MeshComponent);
+	
+	BoatMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BoatMeshComponent"));
+	BoatMeshComponent->SetupAttachment(MeshComponent);
 
 	ChimneyPivot = CreateDefaultSubobject<USceneComponent>(TEXT("ChimneyPivot"));
 	ChimneyPivot->SetupAttachment(UpgradePivots);
@@ -323,6 +329,12 @@ void ACargoCharacter::InstallUpgrade(EUpgradeCategoryType CategoryType, UShipUpg
 	}
 }
 
+void ACargoCharacter::SetHull(UHullShipUpgradeDA* HullUpgradeDA)
+{
+	BoatMeshComponent->SetStaticMesh(HullUpgradeDA->HullMesh);
+	GridComp->SetGridComponentDA(HullUpgradeDA->GridComponentDA);
+}
+
 float ACargoCharacter::GetCurrentShipRoll() const
 {
 	return MeshComponent ? MeshComponent->GetRelativeRotation().Roll : 0.f;
@@ -331,6 +343,7 @@ float ACargoCharacter::GetCurrentShipRoll() const
 void ACargoCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	InstallInitialUpgrades();
 	
 	GridComp->OnPlaceableAddedToGrid.AddDynamic(this, &ThisClass::OnPlaceableAdded);
 	GridComp->OnPlaceableRemovedFromGrid.AddDynamic(this, &ThisClass::OnPlaceableRemoved);	
@@ -357,6 +370,18 @@ void ACargoCharacter::BeginPlay()
 	CargoPlayerState->OnShipNameChanged.AddDynamic(this, &ThisClass::OnShipNameChanged);
 	
 	InitializeShipName();
+}
+
+void ACargoCharacter::InstallInitialUpgrades()
+{
+	if (!PlayerConfigDA)
+		return;
+
+	if (PlayerConfigDA->InitialHull)
+		InstallUpgrade(EUpgradeCategoryType::Hull, PlayerConfigDA->InitialHull);
+
+	if (PlayerConfigDA->InitialChimney)
+		InstallUpgrade(EUpgradeCategoryType::Chimney, PlayerConfigDA->InitialChimney);
 }
 
 void ACargoCharacter::OnFuelDepleted()
@@ -543,6 +568,18 @@ void ACargoCharacter::PopContainersFromZ(int32 Z)
 		const FVector RandomDirection = FMath::VRandCone(FVector::UpVector,FMath::DegreesToRadians(25.0f));
 		Placeable->FallIntoSea(RandomDirection, FloatingMovement->Velocity);
 	}		
+}
+
+void ACargoCharacter::EnableGravity()
+{
+	RootMeshComponent->SetEnableGravity(true);
+	RootMeshComponent->SetSimulatePhysics(true);
+}
+
+void ACargoCharacter::DisableGravity()
+{
+	RootMeshComponent->SetEnableGravity(false);
+	RootMeshComponent->SetSimulatePhysics(false);
 }
 
 void ACargoCharacter::RotateShip(float TargetAngle)
