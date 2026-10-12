@@ -5,6 +5,14 @@
 
 #include "CargoGameMode.h"
 
+UDryDockUpgradeButton::UDryDockUpgradeButton()
+{
+	// Upgrade buttons are selected programmatically only after installation.
+	// Letting CommonButtonBase select on click makes a pending purchase look installed.
+	bSelectable = false;
+	bTriggerClickedAfterSelection = true;
+}
+
 void UDryDockUpgradeButton::Initialize(TObjectPtr<UShipUpgradeDA> ShipUpgradeDA)
 {
 	Super::Initialize(ShipUpgradeDA->Name, ShipUpgradeDA->Icon);

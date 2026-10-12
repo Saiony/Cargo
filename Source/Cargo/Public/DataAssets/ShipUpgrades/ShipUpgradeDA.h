@@ -25,9 +25,12 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category="Upgrade")
 	TSubclassOf<AActor> UpgradeActorClass;
+
+	UPROPERTY(EditDefaultsOnly, Category="Upgrade")
+	float Weight = 0.f;
 	
 	UPROPERTY(EditDefaultsOnly)
-	FShipUpgradeData UpgradeData;
+	TArray<FShipUpgradeAttribute> UpgradeData;
 	
 	UPROPERTY(EditDefaultsOnly)
 	FGuid Id;

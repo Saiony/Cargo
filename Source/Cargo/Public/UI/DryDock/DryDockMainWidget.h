@@ -11,6 +11,7 @@
 #include "Components/VerticalBox.h"
 #include "DataAssets/ShipUpgrades/ShipUpgradesDatabase.h"
 #include "DataAssets/ShipUpgrades/UpgradeCategoryType.h"
+#include "UpgradeInfoPanel.h"
 #include "DryDockMainWidget.generated.h"
 
 class UCommonButtonGroupBase;
@@ -32,6 +33,9 @@ class CARGO_API UDryDockMainWidget : public UFrogsmithActivatableWidget
 	
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UHorizontalBox> UpgradesBox;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UUpgradeInfoPanel> UpgradeInfoPanel;
 	
 	UPROPERTY(EditDefaultsOnly, Category="Cargo")
 	TSubclassOf<UDryDockUpgradeButton> UpgradeButtonClass;

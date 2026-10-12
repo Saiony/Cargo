@@ -25,5 +25,6 @@ class CARGO_API UDryDockUpgradeButton : public UGenericButton
 	TObjectPtr<UWidget> PricePlate;
 		
 public:
+	UDryDockUpgradeButton();
 	void Initialize(TObjectPtr<UShipUpgradeDA> ShipUpgradeDA);
 };

@@ -36,6 +36,25 @@ void UShipUpgradesComponent::InstallUpgrade(EUpgradeCategoryType CategoryType, U
 	default:
 		break;
 	}
+
+	InstalledUpgrades.RemoveAll([CategoryType](const FInstalledShipUpgrade& InstalledUpgrade)
+	{
+		return InstalledUpgrade.Category == CategoryType;
+	});
+
+	FInstalledShipUpgrade& InstalledUpgrade = InstalledUpgrades.AddDefaulted_GetRef();
+	InstalledUpgrade.Category = CategoryType;
+	InstalledUpgrade.UpgradeDA = UpgradeDA;
+}
+
+UShipUpgradeDA* UShipUpgradesComponent::GetInstalledUpgrade(EUpgradeCategoryType CategoryType) const
+{
+	const FInstalledShipUpgrade* InstalledUpgrade = InstalledUpgrades.FindByPredicate([CategoryType](const FInstalledShipUpgrade& Entry)
+	{
+		return Entry.Category == CategoryType;
+	});
+
+	return InstalledUpgrade ? InstalledUpgrade->UpgradeDA.Get() : nullptr;
 }
 
 void UShipUpgradesComponent::InstallChimney(UShipUpgradeDA* UpgradeDA)
@@ -52,17 +71,8 @@ void UShipUpgradesComponent::InstallChimney(UShipUpgradeDA* UpgradeDA)
 	}
 
 	const FTransform SpawnTransform = ChimneyPivot->GetComponentTransform();
-	AActor* Chimney = GetWorld()->SpawnActorDeferred<AActor>(
-		UpgradeDA->UpgradeActorClass,
-		SpawnTransform,
-		GetOwner(),
-		Cast<APawn>(GetOwner()),
-		ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-
-	if (!Chimney)
-	{
-		return;
-	}
+	AActor* Chimney = GetWorld()->SpawnActorDeferred<AActor>(UpgradeDA->UpgradeActorClass, SpawnTransform, GetOwner(),
+			  Cast<APawn>(GetOwner()),ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 
 	Chimney->FinishSpawning(SpawnTransform);
 	Chimney->AttachToComponent(ChimneyPivot, FAttachmentTransformRules::SnapToTargetNotIncludingScale);

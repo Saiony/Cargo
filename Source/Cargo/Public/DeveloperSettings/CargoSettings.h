@@ -96,6 +96,9 @@ public:
 	
 	UPROPERTY(EditAnywhere, Config, Category = "Upgrade")
 	TSoftObjectPtr<UShipUpgradesDatabase> ShipUpgradesDatabase;
+
+	UPROPERTY(EditAnywhere, Config, Category = "Upgrade", meta = (RequiredAssetDataTags = "RowStructure=/Script/Cargo.ShipUpgradeAttributeRow"))
+	TSoftObjectPtr<UDataTable> ShipUpgradeAttributeTable;
 	
 	UPROPERTY(EditAnywhere, Config, Category = "Upgrade")
 	TArray<FGuid> InitiallyUnlockedUpgrades;

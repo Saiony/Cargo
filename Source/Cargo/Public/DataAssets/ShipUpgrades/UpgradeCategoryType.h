@@ -11,23 +11,24 @@ enum class EUpgradeCategoryType
 	Hull,
 };
 
-USTRUCT()
-struct FShipUpgradeData
+UENUM(BlueprintType)
+enum class EShipUpgradeAttributeType : uint8
+{
+	Weight,
+	Speed,
+	Stability,
+	MaxWeight,
+	Maneuverability,
+};
+
+USTRUCT(BlueprintType)
+struct FShipUpgradeAttribute
 {
 	GENERATED_BODY()
-	
-	UPROPERTY(EditDefaultsOnly)
-	float UpgradeWeight = 0.f;
-	
-	UPROPERTY(EditDefaultsOnly)
-	float Speed = 0.f;	
 
-	UPROPERTY(EditDefaultsOnly)
-	float Stability = 0.f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	EShipUpgradeAttributeType Type = EShipUpgradeAttributeType::Speed;
 
-	UPROPERTY(EditDefaultsOnly)
-	float MaxWeight = 0.f;
-
-	UPROPERTY(EditDefaultsOnly)
-	float Maneuverability = 0.f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	float Value = 0.f;
 };

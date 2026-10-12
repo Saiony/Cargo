@@ -8,6 +8,18 @@
 class UShipUpgradeDA;
 class USceneComponent;
 
+USTRUCT(BlueprintType)
+struct FInstalledShipUpgrade
+{
+	GENERATED_BODY()
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	EUpgradeCategoryType Category = EUpgradeCategoryType::Unknown;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TObjectPtr<UShipUpgradeDA> UpgradeDA;
+};
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class CARGO_API UShipUpgradesComponent : public UActorComponent
 {
@@ -19,6 +31,9 @@ class CARGO_API UShipUpgradesComponent : public UActorComponent
 	UPROPERTY()
 	TObjectPtr<AActor> InstalledChimney;
 
+	UPROPERTY()
+	TArray<FInstalledShipUpgrade> InstalledUpgrades;
+
 	void InstallChimney(UShipUpgradeDA* UpgradeDA);
 	void InstallPaddle(UShipUpgradeDA* UpgradeDA);
 	void InstallHull(UShipUpgradeDA* UpgradeDA);
@@ -29,4 +44,6 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="Upgrades")
 	void InstallUpgrade(EUpgradeCategoryType CategoryType, UShipUpgradeDA* UpgradeDA);
+
+	UShipUpgradeDA* GetInstalledUpgrade(EUpgradeCategoryType CategoryType) const;
 };

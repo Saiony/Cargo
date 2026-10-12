@@ -5,6 +5,7 @@
 
 #include "CargoGameMode.h"
 #include "CargoCharacter.h"
+#include "CharacterComponents/ShipUpgradesComponent.h"
 #include "PrimaryGameLayout.h"
 #include "Components/HorizontalBoxSlot.h"
 #include "DataAssets/ShipUpgrades/ShipUpgradeCategoryDA.h"
@@ -22,7 +23,7 @@ void UDryDockMainWidget::NativeOnInitialized()
 	CategoryButtonGroup->SetSelectionRequired(true);
 	
 	UpgradeButtonGroup = NewObject<UCommonButtonGroupBase>(this);
-	CategoryButtonGroup->SetSelectionRequired(true);
+	UpgradeButtonGroup->SetSelectionRequired(true);
 	
 	CloseButton->OnClicked.AddDynamic(this, &UDryDockMainWidget::OnCloseButtonClicked);
 	
@@ -70,7 +71,6 @@ void UDryDockMainWidget::CreateCategoryButtons(TObjectPtr<UShipUpgradesDatabase>
 
 void UDryDockMainWidget::OnCategorySelected(const TObjectPtr<UShipUpgradeCategoryDA> Category)
 {		 
-	UE_LOG(LogTemp, Warning, TEXT("Category selected: %s"), *Category->Name.ToString());
 	SelectedCategory = Category;
 	ACargoGameMode::Get(this)->DryDockService->SetSelectedCategory(Category);
 
@@ -80,6 +80,12 @@ void UDryDockMainWidget::OnCategorySelected(const TObjectPtr<UShipUpgradeCategor
 void UDryDockMainWidget::UpdateUpgradeButtons()
 {
 	UpgradesBox->ClearChildren();
+	UpgradeButtonGroup = NewObject<UCommonButtonGroupBase>(this);
+	UpgradeButtonGroup->SetSelectionRequired(false);	
+	UpgradeButtonGroup->DeselectAll();
+	
+	const auto ShipUpgrades = GetOwningPlayerPawn<ACargoCharacter>()->FindComponentByClass<UShipUpgradesComponent>();
+	const auto InstalledUpgrade = ShipUpgrades->GetInstalledUpgrade(SelectedCategory->Type);
 	
 	for (const auto& Upgrade : SelectedCategory->ShipUpgrades)
 	{
@@ -88,6 +94,12 @@ void UDryDockMainWidget::UpdateUpgradeButtons()
 		Slot->SetSize(FSlateChildSize(ESlateSizeRule::Automatic));
 		Slot->SetVerticalAlignment(VAlign_Center);
 		
+		UpgradeButtonGroup->AddWidget(UpgradeButton);
+		
+		//This upgrade is the one already equipped, so select it
+		if (Upgrade == InstalledUpgrade)
+			UpgradeButtonGroup->SelectButtonAtIndex(UpgradeButtonGroup->GetButtonCount() - 1);
+		
 		UpgradeButton->Initialize(Upgrade);
 		const EUpgradeCategoryType CategoryType = SelectedCategory->Type;
 		UpgradeButton->OnClicked().AddWeakLambda(this, [Upgrade, CategoryType, this]()
@@ -95,18 +107,27 @@ void UDryDockMainWidget::UpdateUpgradeButtons()
 			OnUpgradeSelected(Upgrade, CategoryType);
 		});
 	}
+	
+	if (InstalledUpgrade)
+	{
+		UpgradeInfoPanel->Initialize(InstalledUpgrade);
+		UpgradeInfoPanel->SetVisibility(ESlateVisibility::Visible);
+	}
 }
 
 void UDryDockMainWidget::OnUpgradeSelected(const TObjectPtr<UShipUpgradeDA> UpgradeDA, const EUpgradeCategoryType CategoryType)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Upgrade selected: %s"), *UpgradeDA->Name.ToString());
+	UpgradeInfoPanel->Initialize(UpgradeDA);
+	UpgradeInfoPanel->SetVisibility(ESlateVisibility::Visible);
 	
 	if (DryDockService->HasUpgradeBeenPurchased(UpgradeDA->Id))
 	{
 		InstallUpgrade(CategoryType, UpgradeDA);
+		UpdateUpgradeButtons();
 		return;
 	}
-	
+
 	const TWeakObjectPtr WeakThis(this);
 	ACargoGameMode::Get(this)->UIService->ShowSimplePurchaseWidget(UpgradeDA->Price, UpgradeDA->Name.ToString(), [WeakThis, UpgradeDA, CategoryType](const bool bPurchased)
 	{
