@@ -14,12 +14,11 @@
 
 class UPrimaryGameLayout;
 
-void UUIService::FadeIn(float Duration, TFunction<void()> Callback)
+void UUIService::FadeIn(const float Duration, TFunction<void()> Callback)
 {
 	const auto CameraManager = UGameplayStatics::GetPlayerCameraManager(this, 0);
 
-	CameraManager->StartCameraFade(
-		0.f, 1.f, Duration, FLinearColor::Black, false, true);
+	CameraManager->StartCameraFade(0.f, 1.f, Duration, FLinearColor::Black, false, true);
 
 	GetWorld()->GetTimerManager().SetTimer(
 		FadeTimer,
@@ -32,7 +31,7 @@ void UUIService::FadeIn(float Duration, TFunction<void()> Callback)
 		false);
 }
 
-void UUIService::FadeOut(float Duration, TFunction<void()> Callback)
+void UUIService::FadeOut(const float Duration, TFunction<void()> Callback)
 {
 	const auto CameraManager = UGameplayStatics::GetPlayerCameraManager(this, 0);
 
