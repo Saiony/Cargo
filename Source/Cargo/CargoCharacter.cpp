@@ -43,6 +43,10 @@ ACargoCharacter::ACargoCharacter()
 	BoatMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BoatMeshComponent"));
 	BoatMeshComponent->SetupAttachment(MeshComponent);
 
+	BoatFloorMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BoatFloorMeshComponent"));
+	BoatFloorMeshComponent->SetupAttachment(MeshComponent);
+	BoatFloorMeshComponent->SetRelativeScale3D(FVector::OneVector);
+
 	ChimneyPivot = CreateDefaultSubobject<USceneComponent>(TEXT("ChimneyPivot"));
 	ChimneyPivot->SetupAttachment(UpgradePivots);
 
@@ -382,7 +386,8 @@ void ACargoCharacter::InstallUpgrade(EUpgradeCategoryType CategoryType, UShipUpg
 
 void ACargoCharacter::SetHull(UHullShipUpgradeDA* HullUpgradeDA)
 {
-	BoatMeshComponent->SetStaticMesh(HullUpgradeDA->HullMesh);
+	BoatMeshComponent->SetStaticMesh(HullUpgradeDA->HullStaticMesh);
+	BoatFloorMeshComponent->SetRelativeScale3D(HullUpgradeDA->ShipFloorScale);
 	GridComp->SetGridComponentDA(HullUpgradeDA->GridComponentDA);
 }
 

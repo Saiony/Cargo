@@ -18,7 +18,7 @@ class CARGO_API UAudioSubsystem : public UGameInstanceSubsystem
 	TObjectPtr<UAudioComponent> BGMAudioComp;
 
 	UPROPERTY(EditDefaultsOnly, Category="Cargo")
-	float FadeDuration = 3.0f;	
+	float FadeDuration = 2.0f;	
 	
 public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;	

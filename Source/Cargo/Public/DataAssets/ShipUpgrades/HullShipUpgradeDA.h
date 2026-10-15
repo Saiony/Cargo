@@ -5,6 +5,7 @@
 #include "HullShipUpgradeDA.generated.h"
 
 class UGridComponentDA;
+class UStaticMesh;
 
 UCLASS()
 class CARGO_API UHullShipUpgradeDA : public UShipUpgradeDA
@@ -13,7 +14,10 @@ class CARGO_API UHullShipUpgradeDA : public UShipUpgradeDA
 
 public:
 	UPROPERTY(EditDefaultsOnly, Category="Hull")
-	TObjectPtr<UStaticMesh> HullMesh;
+	TObjectPtr<UStaticMesh> HullStaticMesh;
+
+	UPROPERTY(EditDefaultsOnly, Category="Hull")
+	FVector ShipFloorScale = FVector::OneVector;
 
 	UPROPERTY(EditDefaultsOnly, Category="Hull")
 	TObjectPtr<UGridComponentDA> GridComponentDA;

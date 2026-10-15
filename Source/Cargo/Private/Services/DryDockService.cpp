@@ -92,7 +92,6 @@ void UDryDockService::LeaveDryDock()
 		
 		PlayerPawn->SetActorEnableCollision(true);
 		PlayerPawn->EnableGravity();
-		// PlayerPawn->
 		
 		ACargoGameMode::Get(GetOwner())->UIService->FadeOut(FadeDuration, nullptr);
 	});

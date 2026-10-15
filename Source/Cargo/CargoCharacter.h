@@ -79,6 +79,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UStaticMeshComponent* BoatMeshComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UStaticMeshComponent* BoatFloorMeshComponent;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Cargo|Upgrades")
 	TObjectPtr<USceneComponent> UpgradePivots;
 

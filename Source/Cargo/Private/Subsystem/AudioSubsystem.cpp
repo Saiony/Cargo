@@ -17,7 +17,7 @@ void UAudioSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 }
 
 void UAudioSubsystem::PlayBGM(USoundBase* BGM)
-{
+{	
 	BGMAudioComp->FadeOut(FadeDuration, 0.0f);
 
 	BGMAudioComp = UGameplayStatics::SpawnSound2D(this, BGM, 1.0f, 1.0f, 0.0f, nullptr, true, true);
