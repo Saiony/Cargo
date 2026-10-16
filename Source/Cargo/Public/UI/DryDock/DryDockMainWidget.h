@@ -40,8 +40,14 @@ class CARGO_API UDryDockMainWidget : public UFrogsmithActivatableWidget
 	UPROPERTY(EditDefaultsOnly, Category="Cargo")
 	TSubclassOf<UDryDockUpgradeButton> UpgradeButtonClass;
 
-	UPROPERTY(EditDefaultsOnly, Category="Camera")
+	UPROPERTY(EditDefaultsOnly, Category="Cargo|Layout", meta=(ClampMin="0.0"))
+	float ButtonSpacing = 12.f;
+
+	UPROPERTY(EditDefaultsOnly, Category="Cargo")
 	TObjectPtr<UCameraAsset> DryDockCameraAsset;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Cargo")
+	float CategoryButtonSize;
 
 	UPROPERTY()
 	TObjectPtr<UGameplayCameraComponent> ShipCameraComponent;

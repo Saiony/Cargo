@@ -4,12 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "FORGServiceBase.h"
+#include "GameplayTagContainer.h"
 #include "DataAssets/ShipUpgrades/UpgradeCategoryType.h"
 #include "Island/CargoIsland.h"
 #include "Utils/GuidArray.h"
 #include "DryDockService.generated.h"
 
-class UCameraRigAsset;
 class UShipUpgradeCategoryDA;
 
 
@@ -42,7 +42,7 @@ public:
 	void SetSelectedCategory(UShipUpgradeCategoryDA* Category);
 
 	UFUNCTION(BlueprintPure, Category="Dry Dock|Camera")
-	UCameraRigAsset* GetSelectedCameraRig() const;
+	FGameplayTag GetSelectedCameraRig() const;
 	
 	void GoToDryDock(TObjectPtr<ACargoIsland> From);
 	void LeaveDryDock();

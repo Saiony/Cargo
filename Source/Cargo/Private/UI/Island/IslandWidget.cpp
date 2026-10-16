@@ -35,7 +35,11 @@ void UIslandWidget::Initialize(TObjectPtr<ACargoIsland> IslandRef)
 	DrawDialogueButtons();
 	DrawIslandOptions();
 	
-	DefaultDialogueButton->Init(FText::FromString("Conversar"), IslandRef->GetIslandData()->DefaultInteractionDialogue.LoadSynchronous(), IslandRef, this);
+	const auto DefaultDialogue = IslandRef->GetIslandData()->DefaultInteractionDialogue.LoadSynchronous();
+	if (DefaultDialogue != nullptr)
+		DefaultDialogueButton->Init(FText::FromString("Conversar"), IslandRef->GetIslandData()->DefaultInteractionDialogue.LoadSynchronous(), IslandRef, this);
+	else
+		DefaultDialogueButton->SetVisibility(ESlateVisibility::Collapsed);	
 }
 
 void UIslandWidget::DrawIslandOptions()

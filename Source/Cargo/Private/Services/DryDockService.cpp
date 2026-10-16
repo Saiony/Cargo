@@ -33,9 +33,9 @@ void UDryDockService::SetSelectedCategory(UShipUpgradeCategoryDA* Category)
 	SelectedCategory = Category;
 }
 
-UCameraRigAsset* UDryDockService::GetSelectedCameraRig() const
+FGameplayTag UDryDockService::GetSelectedCameraRig() const
 {
-	return SelectedCategory ? SelectedCategory->CameraRig.Get() : nullptr;
+	return SelectedCategory ? SelectedCategory->CameraRigTag : FGameplayTag();
 }
 
 void UDryDockService::GoToDryDock(TObjectPtr<ACargoIsland> From)

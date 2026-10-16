@@ -3,12 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "UpgradeCategoryType.h"
 #include "Engine/DataAsset.h"
 #include "ShipUpgradeCategoryDA.generated.h"
 
 class UShipUpgradeDA;
-class UCameraRigAsset;
 /**
  * 
  */
@@ -27,8 +27,8 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UTexture2D> Icon;
 
-	UPROPERTY(EditDefaultsOnly, Category="Camera")
-	TObjectPtr<UCameraRigAsset> CameraRig;
+	UPROPERTY(EditDefaultsOnly, Category="Camera", meta=(Categories="Camera"))
+	FGameplayTag CameraRigTag;
 	
 	UPROPERTY(EditDefaultsOnly)
 	TArray<TObjectPtr<UShipUpgradeDA>> ShipUpgrades;

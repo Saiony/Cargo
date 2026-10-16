@@ -8,12 +8,16 @@
 #include "CharacterComponents/ShipUpgradesComponent.h"
 #include "PrimaryGameLayout.h"
 #include "Components/HorizontalBoxSlot.h"
+#include "Components/SizeBox.h"
+#include "Components/VerticalBoxSlot.h"
 #include "DataAssets/ShipUpgrades/ShipUpgradeCategoryDA.h"
 #include "Groups/CommonButtonGroupBase.h"
 #include "UI/Generic/GenericButton.h"
 #include "GameFramework/GameplayCameraComponent.h"
 #include "Core/CameraAsset.h"
 
+
+class USizeBox;
 
 void UDryDockMainWidget::NativeOnInitialized()
 {
@@ -58,7 +62,14 @@ void UDryDockMainWidget::CreateCategoryButtons(TObjectPtr<UShipUpgradesDatabase>
 	for (const auto Category : UpgradesDatabase->ShipUpgradeCategories)
 	{
 		const auto Button = CreateWidget<UGenericButton>(this, GenericButtonClass);
-		CategoryBox->AddChild(Button);
+		
+		const auto ButtonSizeBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+		ButtonSizeBox->SetWidthOverride(CategoryButtonSize);
+		ButtonSizeBox->SetHeightOverride(CategoryButtonSize);
+		ButtonSizeBox->AddChild(Button);
+		
+		const auto Slot = CategoryBox->AddChildToVerticalBox(ButtonSizeBox);
+		Slot->SetPadding(FMargin(0.f, 0.f, 0.f, ButtonSpacing));
 		CategoryButtonGroup->AddWidget(Button);		
 		
 		Button->Initialize(FText::GetEmpty(), Category->Icon);
@@ -87,10 +98,11 @@ void UDryDockMainWidget::UpdateUpgradeButtons()
 	const auto ShipUpgrades = GetOwningPlayerPawn<ACargoCharacter>()->FindComponentByClass<UShipUpgradesComponent>();
 	const auto InstalledUpgrade = ShipUpgrades->GetInstalledUpgrade(SelectedCategory->Type);
 	
-	for (const auto& Upgrade : SelectedCategory->ShipUpgrades)
+	for (const auto Upgrade : SelectedCategory->ShipUpgrades)
 	{
 		const auto UpgradeButton = CreateWidget<UDryDockUpgradeButton>(this, UpgradeButtonClass.Get());
 		const auto Slot = UpgradesBox->AddChildToHorizontalBox(UpgradeButton);
+		Slot->SetPadding(FMargin(0.f, 0.f, ButtonSpacing, 0.f));
 		Slot->SetSize(FSlateChildSize(ESlateSizeRule::Automatic));
 		Slot->SetVerticalAlignment(VAlign_Center);
 		
