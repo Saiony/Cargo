@@ -3,6 +3,8 @@
 
 #include "Island/CargoIsland.h"
 
+#include "CargoGameMode.h"
+#include "Mission/DeliveryMissionStatus.h"
 #include "PrimaryGameLayout.h"
 #include "Components/WidgetComponent.h"
 #include "TagDeclaration/UITypes.h"

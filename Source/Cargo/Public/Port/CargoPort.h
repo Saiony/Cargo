@@ -32,6 +32,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Port|Interaction")
 	FTransform PortBellRelativeTransform;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Port")
+	FTransform PlayerSpawnLocation;
+	
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
     
@@ -76,6 +79,8 @@ public:
 	void OpenPortForPickup();
 
 	void ClosePort();
+	
+	FTransform GetPlayerSpawnLocation() const { return PlayerSpawnLocation * GetComponentTransform(); }
 private:		
 	FGuid CurrentMissionId;
 	

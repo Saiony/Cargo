@@ -1,0 +1,41 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "UpgradeCategoryType.h"
+#include "Engine/DataAsset.h"
+#include "ShipUpgradeDA.generated.h"
+
+
+UCLASS()
+class CARGO_API UShipUpgradeDA : public UPrimaryDataAsset
+{
+	GENERATED_BODY()
+	
+public:
+	UPROPERTY(EditDefaultsOnly)
+	FText Name;
+	
+	UPROPERTY(EditDefaultsOnly)
+	int32 Price;
+	
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UTexture2D> Icon;
+
+	UPROPERTY(EditDefaultsOnly, Category="Upgrade")
+	TSubclassOf<AActor> UpgradeActorClass;
+
+	UPROPERTY(EditDefaultsOnly, Category="Upgrade")
+	float Weight = 0.f;
+	
+	UPROPERTY(EditDefaultsOnly)
+	TArray<FShipUpgradeAttribute> UpgradeData;
+	
+	UPROPERTY(EditDefaultsOnly)
+	FGuid Id;
+	
+	virtual void PostDuplicate(bool bDuplicateForPIE) override;
+	
+	UShipUpgradeDA();
+};

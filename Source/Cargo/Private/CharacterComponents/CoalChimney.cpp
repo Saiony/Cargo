@@ -32,13 +32,13 @@ ACoalChimney::ACoalChimney()
 void ACoalChimney::BeginPlay()
 {
 	Super::BeginPlay();
+	
 	// Blueprints may retain a previously saved Auto Activate value.
 	SmokeNiagaraComp->DeactivateImmediate();
 	SmokeNiagaraComp->SetVariableFloat(TEXT("User.SmokeIntensity"), 0.f);
 
-	Ship = Cast<ACargoCharacter>(GetParentActor());
-	if (!Ship.IsValid())
-		return;
+	Ship = Cast<ACargoCharacter>(GetOwner());
+	check(Ship.IsValid());
 
 	Ship->OnMovementStarted.AddUObject(this, &ThisClass::PlaySmoke);
 	Ship->OnMovementStopped.AddUObject(this, &ThisClass::StopSmoke);

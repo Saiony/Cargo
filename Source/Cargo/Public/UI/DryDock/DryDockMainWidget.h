@@ -1,0 +1,90 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "CargoGameMode.h"
+#include "DryDockUpgradeButton.h"
+#include "FrogsmithActivatableWidget.h"
+#include "Components/Button.h"
+#include "Components/HorizontalBox.h"
+#include "Components/VerticalBox.h"
+#include "DataAssets/ShipUpgrades/ShipUpgradesDatabase.h"
+#include "DataAssets/ShipUpgrades/UpgradeCategoryType.h"
+#include "UpgradeInfoPanel.h"
+#include "DryDockMainWidget.generated.h"
+
+class UCommonButtonGroupBase;
+class UCameraAsset;
+class UGameplayCameraComponent;
+/**
+ * 
+ */
+UCLASS()
+class CARGO_API UDryDockMainWidget : public UFrogsmithActivatableWidget
+{
+	GENERATED_BODY()
+	
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> CloseButton;
+	
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UVerticalBox> CategoryBox;
+	
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UHorizontalBox> UpgradesBox;
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UUpgradeInfoPanel> UpgradeInfoPanel;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Cargo")
+	TSubclassOf<UDryDockUpgradeButton> UpgradeButtonClass;
+
+	UPROPERTY(EditDefaultsOnly, Category="Cargo|Layout", meta=(ClampMin="0.0"))
+	float ButtonSpacing = 12.f;
+
+	UPROPERTY(EditDefaultsOnly, Category="Cargo")
+	TObjectPtr<UCameraAsset> DryDockCameraAsset;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Cargo")
+	float CategoryButtonSize;
+
+	UPROPERTY()
+	TObjectPtr<UGameplayCameraComponent> ShipCameraComponent;
+
+	UPROPERTY()
+	TObjectPtr<UCameraAsset> GameplayCameraAsset;
+	
+	UPROPERTY()
+	TObjectPtr<UCommonButtonGroupBase> CategoryButtonGroup;
+	
+	UPROPERTY()
+	TObjectPtr<UCommonButtonGroupBase> UpgradeButtonGroup;
+	
+	UPROPERTY()
+	TObjectPtr<UShipUpgradeCategoryDA> SelectedCategory;
+	
+	UPROPERTY()
+	TObjectPtr<UDryDockService> DryDockService;
+
+	void CreateCategoryButtons(TObjectPtr<UShipUpgradesDatabase> UpgradesDatabase);
+	
+	void OnCategorySelected(TObjectPtr<UShipUpgradeCategoryDA> Category);
+	
+	void UpdateUpgradeButtons();
+
+	void OnUpgradeSelected(TObjectPtr<UShipUpgradeDA> UpgradeDA, EUpgradeCategoryType CategoryType);
+	void InstallUpgrade(EUpgradeCategoryType CategoryType, TObjectPtr<UShipUpgradeDA> UpgradeDA);
+	
+	void SetCameraAsset(UCameraAsset* CameraAsset) const;
+	void RestoreGameplayCamera();
+
+protected:
+	virtual void NativeOnInitialized() override;
+	virtual void NativeOnActivated() override;
+	
+	UFUNCTION()
+	void OnCloseButtonClicked();
+	
+	void Hide();
+};

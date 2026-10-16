@@ -14,12 +14,11 @@
 
 class UPrimaryGameLayout;
 
-void UUIService::FadeIn(float Duration, TFunction<void()> Callback)
+void UUIService::FadeIn(const float Duration, TFunction<void()> Callback)
 {
 	const auto CameraManager = UGameplayStatics::GetPlayerCameraManager(this, 0);
 
-	CameraManager->StartCameraFade(
-		0.f, 1.f, Duration, FLinearColor::Black, false, true);
+	CameraManager->StartCameraFade(0.f, 1.f, Duration, FLinearColor::Black, false, true);
 
 	GetWorld()->GetTimerManager().SetTimer(
 		FadeTimer,
@@ -32,12 +31,11 @@ void UUIService::FadeIn(float Duration, TFunction<void()> Callback)
 		false);
 }
 
-void UUIService::FadeOut(float Duration, TFunction<void()> Callback)
+void UUIService::FadeOut(const float Duration, TFunction<void()> Callback)
 {
 	const auto CameraManager = UGameplayStatics::GetPlayerCameraManager(this, 0);
 
-	CameraManager->StartCameraFade(
-		1.f, 0.f, Duration, FLinearColor::Black, false, false);
+	CameraManager->StartCameraFade(1.f, 0.f, Duration, FLinearColor::Black, false, false);
 
 	GetWorld()->GetTimerManager().SetTimer(
 		FadeTimer,
@@ -94,4 +92,17 @@ UCargoInputTextWidget* UUIService::ShowInputTextWidget() const
 	const auto InputTextWidget = ShowWidget(InputTextWidgetClass);
 	
 	return Cast<UCargoInputTextWidget>(InputTextWidget);
+}
+
+USimplePurchaseWidget* UUIService::ShowSimplePurchaseWidget(const int32 Price, const FString& Description, TFunction<void(bool)> PurchaseCallback) const
+{
+	const auto WidgetClass = GetDefault<UCargoSettings>()->SimplePurchaseWidgetClass.LoadSynchronous();
+	const auto Widget = ShowWidget<USimplePurchaseWidget>(WidgetClass);
+	if (!Widget)
+	{
+		return nullptr;
+	}
+
+	Widget->Initialize(Price, Description, MoveTemp(PurchaseCallback));
+	return Widget;
 }

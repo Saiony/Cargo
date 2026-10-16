@@ -3,6 +3,7 @@
 #include "CargoGameMode.h"
 
 #include "Debug/CameraDebugCategories.h"
+#include "Services/DryDockService.h"
 
 void ACargoGameMode::BeginPlay()
 {
@@ -56,10 +57,12 @@ ACargoGameMode::ACargoGameMode(const FObjectInitializer& ObjectInitializer)
 	QuestService = ObjectInitializer.CreateDefaultSubobject<UQuestService>(this, TEXT("MissionsService"));
 	EconomyService = ObjectInitializer.CreateDefaultSubobject<UEconomyService>(this, TEXT("EconomyService"));
 	UIService = ObjectInitializer.CreateDefaultSubobject<UUIService>(this, TEXT("UIService"));
+	DryDockService = ObjectInitializer.CreateDefaultSubobject<UDryDockService>(this, TEXT("DryDockService"));
 		
 	ServicesMap.Add(QuestService->GetClass(), QuestService);
 	ServicesMap.Add(EconomyService->GetClass(), EconomyService);
 	ServicesMap.Add(UIService->GetClass(), UIService);
+	ServicesMap.Add(DryDockService->GetClass(), DryDockService);
 }
 
 void ACargoGameMode::BootService(const int32 Index)

@@ -11,7 +11,7 @@
 class UWidgetComponent;
 
 UCLASS()
-class CARGO_API AUnlockableObstacle : public AActor, public ICargoInteractable, public ISimplePurchaseWidgetListener
+class CARGO_API AUnlockableObstacle : public AActor, public ICargoInteractable
 {
 	GENERATED_BODY()
 protected:
@@ -20,9 +20,6 @@ protected:
 	
 	UPROPERTY(visibleAnywhere, BlueprintReadOnly, Category="Cargo")
 	TObjectPtr<UStaticMeshComponent> ObstacleMeshComp;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
-	TSubclassOf<USimplePurchaseWidget> SimplePurchaseWidgetClass;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo")
 	int32 CostToUnlock = 50;
@@ -39,5 +36,4 @@ public:
 	virtual void Focus() override;
 	virtual void Unfocus() override;
 	virtual void Interact_Implementation(AActor* Interactor) override;
-	virtual void OnSimplePurchaseWidgetCallback(bool Purchased) override;
 };

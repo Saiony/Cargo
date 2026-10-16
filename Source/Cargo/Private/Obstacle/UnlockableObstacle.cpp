@@ -3,9 +3,9 @@
 
 #include "Obstacle/UnlockableObstacle.h"
 
-#include "PrimaryGameLayout.h"
+#include "CargoGameMode.h"
 #include "Components/WidgetComponent.h"
-#include "TagDeclaration/UITypes.h"
+#include "Services/UIService.h"
 
 
 // Sets default values
@@ -49,16 +49,15 @@ void AUnlockableObstacle::Interact_Implementation(AActor* Interactor)
 {
 	ICargoInteractable::Interact_Implementation(Interactor);
 	
-	const auto PrimaryGameLayout = UPrimaryGameLayout::GetPrimaryGameLayoutForPrimaryPlayer(this);
-	const auto IslandWidget = PrimaryGameLayout->PushWidgetToLayerStack<USimplePurchaseWidget>(TAG_UI_Layer_GameMenu, SimplePurchaseWidgetClass);
-	
-	IslandWidget->Initialize(CostToUnlock, "Desbloquear obstaculo por:", this);
-}
-
-void AUnlockableObstacle::OnSimplePurchaseWidgetCallback(bool Purchased)
-{
-	if (Purchased)
-		Unlock();
+	const auto UIService = ACargoGameMode::Get(this)->GetService<UUIService>();
+	const TWeakObjectPtr<AUnlockableObstacle> WeakThis(this);
+	UIService->ShowSimplePurchaseWidget(CostToUnlock, "Desbloquear obstaculo por:", [WeakThis](bool bPurchased)
+	{
+		if (bPurchased && WeakThis.IsValid())
+		{
+			WeakThis->Unlock();
+		}
+	});
 }
 
 void AUnlockableObstacle::Unlock()

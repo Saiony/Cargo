@@ -143,6 +143,10 @@ void UGridComponent::OnPlaceableAdded(APlaceable* Placeable)
 
 void UGridComponent::InitializeGrid()
 {
+	if (!GridComponentDA || !InstancedMeshComp)
+		return;
+
+	InstancedMeshComp->ClearInstances();
 	const auto GridCellSize = GetDefault<UCargoSettings>()->GridCellSize;
 	const auto Origin = FIntVector(0, 0, 0);
 	const auto GridSize = GridComponentDA->GridSize;	
@@ -156,6 +160,15 @@ void UGridComponent::InitializeGrid()
 		const auto LocalPos = GridToLocalPos(Cell);
 		InstancedMeshComp->AddInstance(FTransform(LocalPos));
 	}
+}
+
+void UGridComponent::SetGridComponentDA(UGridComponentDA* NewGridComponentDA)
+{
+	if (!IsValid(NewGridComponentDA))
+		return;
+
+	GridComponentDA = NewGridComponentDA;
+	InitializeGrid();
 }
 
 FVector UGridComponent::WorldToLocal(const FVector& WorldLocation)

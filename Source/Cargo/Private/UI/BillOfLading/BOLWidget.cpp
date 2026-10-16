@@ -104,11 +104,13 @@ void UBOLWidget::Hide()
 void UBOLWidget::OnConfirmButtonClicked()
 {
 	ConfirmButton->SetIsEnabled(false);
+	
 	if (!FinishAnimation)
 	{
 		OnFinishAnimationFinished();
 		return;
 	}
+	
 	UnbindAllFromAnimationFinished(FinishAnimation);
 	FWidgetAnimationDynamicEvent FinishedEvent;
 	FinishedEvent.BindDynamic(this, &ThisClass::OnFinishAnimationFinished);

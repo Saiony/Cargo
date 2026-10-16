@@ -6,22 +6,8 @@
 #include "CommonTextBlock.h"
 #include "FrogsmithActivatableWidget.h"
 #include "Components/Button.h"
+#include "Templates/Function.h"
 #include "SimplePurchaseWidget.generated.h"
-
-
-UINTERFACE()
-class USimplePurchaseWidgetListener : public UInterface
-{
-	GENERATED_BODY()
-};
-
-class ISimplePurchaseWidgetListener
-{
-	GENERATED_BODY()
-
-public:
-	virtual void OnSimplePurchaseWidgetCallback(bool Purchased) = 0;
-};
 
 /**
  * 
@@ -54,9 +40,9 @@ protected:
 	
 	int32 Price;
 	
-	ISimplePurchaseWidgetListener* Listener;
+	TFunction<void(bool)> PurchaseCallback;
 	
 	void Hide();
 public:
-	void Initialize(int32 Price, const FString& Description, ISimplePurchaseWidgetListener* Listener);
+	void Initialize(int32 Price, const FString& Description, TFunction<void(bool)> PurchaseCallback);
 };

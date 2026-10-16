@@ -6,10 +6,13 @@
 #include "DataAssets/ContainerDA.h"
 #include "Engine/DeveloperSettings.h"
 #include "GameplayTagContainer.h"
+#include "DataAssets/LevelDatabase.h"
+#include "DataAssets/ShipUpgrades/ShipUpgradesDatabase.h"
 #include "Island/IslandData.h"
 #include "Mission/MissionsDatabase.h"
 #include "UI/MapWidget.h"
 #include "UI/Generic/CargoInputTextWidget.h"
+#include "UI/Shop/SimplePurchaseWidget.h"
 #include "CargoSettings.generated.h"
 
 class UGenericButton;
@@ -63,6 +66,9 @@ public:
 	UPROPERTY(EditAnywhere, Config, Category = "UI")
 	TSoftClassPtr<UCargoInputTextWidget> InputTextWidgetClass;	
 
+	UPROPERTY(EditAnywhere, Config, Category = "UI")
+	TSoftClassPtr<USimplePurchaseWidget> SimplePurchaseWidgetClass;
+
 	UPROPERTY(EditAnywhere, Config, Category="UI")
 	TSoftClassPtr<UStoreWidget> StoreWidgetClass;
 
@@ -84,6 +90,18 @@ public:
 	
 	UPROPERTY(EditAnywhere, Config, Category = "Debug")
 	TSoftObjectPtr<UStaticMesh> SimpleCube;
+	
+	UPROPERTY(EditAnywhere, Config, BlueprintReadOnly, Category = "Level")
+	TSoftObjectPtr<ULevelDatabase> LevelDatabase;
+	
+	UPROPERTY(EditAnywhere, Config, Category = "Upgrade")
+	TSoftObjectPtr<UShipUpgradesDatabase> ShipUpgradesDatabase;
+
+	UPROPERTY(EditAnywhere, Config, Category = "Upgrade", meta = (RequiredAssetDataTags = "RowStructure=/Script/Cargo.ShipUpgradeAttributeRow"))
+	TSoftObjectPtr<UDataTable> ShipUpgradeAttributeTable;
+	
+	UPROPERTY(EditAnywhere, Config, Category = "Upgrade")
+	TArray<FGuid> InitiallyUnlockedUpgrades;
 	
 	TObjectPtr<UMissionsDatabase> GetMissionsDatabase() const;
 	

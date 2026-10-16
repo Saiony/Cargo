@@ -9,8 +9,10 @@
 #include "DeveloperSettings/CargoSettings.h"
 #include "Island/CargoIsland.h"
 #include "Island/IslandStoreOptionData.h"
+#include "Island/Options/IslandDryDockOptionDA.h"
 #include "Quest/QuestStatus.h"
 #include "Services/UIService.h"
+#include "Subsystem/LevelManagerSubsystem.h"
 #include "TagDeclaration/UITypes.h"
 #include "UI/Generic/GenericButton.h"
 #include "UI/Shop/StoreWidget.h"
@@ -33,27 +35,42 @@ void UIslandWidget::Initialize(TObjectPtr<ACargoIsland> IslandRef)
 	DrawDialogueButtons();
 	DrawIslandOptions();
 	
-	DefaultDialogueButton->Init(FText::FromString("Conversar"), IslandRef->GetIslandData()->DefaultInteractionDialogue.LoadSynchronous(), IslandRef, this);
+	const auto DefaultDialogue = IslandRef->GetIslandData()->DefaultInteractionDialogue.LoadSynchronous();
+	if (DefaultDialogue != nullptr)
+		DefaultDialogueButton->Init(FText::FromString("Conversar"), IslandRef->GetIslandData()->DefaultInteractionDialogue.LoadSynchronous(), IslandRef, this);
+	else
+		DefaultDialogueButton->SetVisibility(ESlateVisibility::Collapsed);	
 }
 
 void UIslandWidget::DrawIslandOptions()
 {
 	for (const auto& Option : Island->GetIslandData()->Options)
 	{
-		const auto StoreOption = Cast<UIslandStoreOptionData>(Option);
-		if (!StoreOption)
-			continue;
-
 		const auto GenericButtonClass = GetDefault<UCargoSettings>()->GenericButtonClass.LoadSynchronous();
 		const auto Button = CreateWidget<UGenericButton>(this, GenericButtonClass);
-		Button->SetText(StoreOption->GetButtonText());
-		Button->OnClicked().AddWeakLambda(this, [this, StoreOption]()
+		Button->Initialize(Option->GetButtonText(), nullptr);
+		
+		
+		if (const auto StoreOption = Cast<UIslandStoreOptionData>(Option))
 		{
-			const auto UIService = ACargoGameMode::Get(this)->GetService<UUIService>();
-			const auto StoreWidgetClass = GetDefault<UCargoSettings>()->StoreWidgetClass.LoadSynchronous();
-			const auto Widget = UIService->ShowWidget<UStoreWidget>(StoreWidgetClass);
-			Widget->Init(StoreOption->StoreCatalog, Island);
-		});
+			Button->OnClicked().AddWeakLambda(this, [this, StoreOption]()
+			{
+				const auto UIService = ACargoGameMode::Get(this)->GetService<UUIService>();
+				const auto StoreWidgetClass = GetDefault<UCargoSettings>()->StoreWidgetClass.LoadSynchronous();
+				const auto Widget = UIService->ShowWidget<UStoreWidget>(StoreWidgetClass);
+				Widget->Init(StoreOption->StoreCatalog, Island);
+			});			
+		}
+		else if (const auto DryDockOption = Cast<UIslandDryDockOptionDA>(Option))
+		{
+			Button->OnClicked().AddWeakLambda(this, [this]()
+			{
+				const auto DryDockService2 = ACargoGameMode::Get(this)->DryDockService;
+				DryDockService2->GoToDryDock(Island);
+				Hide();
+			});	
+		}		
+
 
 		const auto ChildrenSlot = OptionsContainer->AddChildToVerticalBox(Button);
 		ChildrenSlot->SetPadding(FMargin(0.f, 0.f, 0.f, DialogueOptionsContainerPadding));
@@ -160,5 +177,4 @@ void UIslandWidget::OnCloseButtonClicked()
 void UIslandWidget::Hide()
 {
 	UPrimaryGameLayout::GetPrimaryGameLayoutForPrimaryPlayer(this)->FindAndRemoveWidgetFromLayer(this);
-
 }
