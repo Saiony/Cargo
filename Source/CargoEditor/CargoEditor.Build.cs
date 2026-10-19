@@ -26,6 +26,7 @@ public class CargoEditor : ModuleRules
                 "UnrealEd",
                 "InputCore",
                 "DeveloperSettings",
+                "GameplayTags",
                 "NavigationSystem",
                 "Landscape",
                 "Water"

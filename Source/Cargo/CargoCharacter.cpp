@@ -81,6 +81,17 @@ ACargoCharacter::ACargoCharacter()
 	bUseControllerRotationRoll = false;		
 }
 
+void ACargoCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// Solta os corpos das malhas anexadas antes de o corpo fisico raiz ser destruido.
+	if (RootMeshComponent)
+	{
+		RootMeshComponent->UnWeldChildren();
+	}
+
+	Super::EndPlay(EndPlayReason);
+}
+
 void ACargoCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	// Set up action bindings

@@ -238,6 +238,8 @@ protected:
 	TObjectPtr<ACargoPlayerState> CargoPlayerState;
 
 	void OnHasteCVarChanged(IConsoleVariable* ConsoleVariable);
+
+	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
 	
 public:
 	#pragma region Attributes
