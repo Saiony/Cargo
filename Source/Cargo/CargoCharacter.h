@@ -189,6 +189,10 @@ protected:
 	float CargoWeightMoment = 0;
 	/** Combined movement and cargo roll target in degrees. */
 	float TargetRoll = 0.f;
+	/** Temporary roll from external impacts; decays back to the normal balance target. */
+	float ExternalRollImpact = 0.f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo|Rotation|Roll", meta=(ClampMin="0.0"))
+	float ExternalRollRecoverySpeed = 0.7f;
 	/** Whether releasing steering must clear movement roll. */
 	bool bNeedsMovementRollReset = false;
 	/** Whether the current roll target is being reached via steering recovery. */
@@ -284,6 +288,12 @@ public:
 
 	UFUNCTION(BlueprintPure, Category="Cargo|Balance")
 	float GetCurrentShipRoll() const;
+	/** Adds an external roll impulse to the ship, using the normal roll and cargo-lean update path. */
+	UFUNCTION(BlueprintCallable, Category="Cargo|Balance")
+	void ApplyExternalRollImpact(float RollDegrees);
+	/** Applies a horizontal push away from an impact point and adds a temporary roll. */
+	UFUNCTION(BlueprintCallable, Category="Cargo|Balance")
+	void ApplyExternalImpact(const FVector& ImpactOrigin, float RollDegrees, float PushStrength);
 
 	UFUNCTION(Category="Cargo|Weight")
 	void AddWeight(float Weight);

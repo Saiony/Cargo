@@ -247,6 +247,15 @@ void ACargoCharacter::Tick(float DeltaSeconds)
 	UpdateEngineSoundIntensity();
 
 	FRotator Rotation = MeshComponent->GetRelativeRotation();
+	if (!FMath::IsNearlyZero(ExternalRollImpact))
+	{
+		ExternalRollImpact = FMath::FInterpTo(ExternalRollImpact, 0.f, DeltaSeconds, ExternalRollRecoverySpeed);
+		if (FMath::IsNearlyZero(ExternalRollImpact, 0.01f))
+		{
+			ExternalRollImpact = 0.f;
+		}
+		RotateShip(GetShipBalanceTotal());
+	}
 	const float ActiveRollResponseSpeed = bIsReturningMovementRoll ? ResetRollResponseSpeed : RollResponseSpeed;
 	Rotation.Roll = FMath::FInterpTo(Rotation.Roll, TargetRoll, DeltaSeconds, ActiveRollResponseSpeed);
 	if (!FMath::IsNearlyEqual(Rotation.Roll, MeshComponent->GetRelativeRotation().Roll, 0.001f))
@@ -405,6 +414,38 @@ void ACargoCharacter::SetHull(UHullShipUpgradeDA* HullUpgradeDA)
 float ACargoCharacter::GetCurrentShipRoll() const
 {
 	return MeshComponent ? MeshComponent->GetRelativeRotation().Roll : 0.f;
+}
+
+void ACargoCharacter::ApplyExternalRollImpact(const float RollDegrees)
+{
+	if (FMath::IsNearlyZero(RollDegrees))
+	{
+		return;
+	}
+
+	bIsReturningMovementRoll = false;
+	ExternalRollImpact = FMath::Clamp(ExternalRollImpact + RollDegrees, CargoRollLimits.X, CargoRollLimits.Y);
+	RotateShip(GetShipBalanceTotal());
+}
+
+void ACargoCharacter::ApplyExternalImpact(const FVector& ImpactOrigin, const float RollDegrees, const float PushStrength)
+{
+	ApplyExternalRollImpact(RollDegrees);
+
+	if (PushStrength <= 0.0f)
+	{
+		return;
+	}
+
+	FVector PushDirection = GetActorLocation() - ImpactOrigin;
+	PushDirection.Z = 0.0f;
+	if (PushDirection.IsNearlyZero())
+	{
+		PushDirection = GetActorForwardVector();
+		PushDirection.Z = 0.0f;
+	}
+
+	KnockbackVelocity += PushDirection.GetSafeNormal() * PushStrength;
 }
 
 void ACargoCharacter::BeginPlay()
@@ -657,7 +698,7 @@ void ACargoCharacter::DisableGravity()
 
 void ACargoCharacter::RotateShip(float TargetAngle)
 {
-	TargetRoll = TargetAngle;
+	TargetRoll = TargetAngle + ExternalRollImpact;
 }
 
 void ACargoCharacter::OnEditModeChanged(bool bEditMode)
