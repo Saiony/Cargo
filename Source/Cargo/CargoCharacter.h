@@ -7,6 +7,7 @@
 #include "GameplayFramework/CargoPlayerState.h"
 #include "Grid/GridComponent.h"
 #include "CharacterComponents/ShipUpgradesComponent.h"
+#include "GameFramework/FloatingPawnMovement.h"
 #include "Logging/LogMacros.h"
 #include "CargoCharacter.generated.h"
 
@@ -87,6 +88,12 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Cargo|Upgrades")
 	TObjectPtr<USceneComponent> ChimneyPivot;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Cargo|Upgrades")
+	TObjectPtr<USceneComponent> PaddlePivot_L;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Cargo|Upgrades")
+	TObjectPtr<USceneComponent> PaddlePivot_R;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UFloatingPawnMovement* FloatingMovement;
@@ -240,6 +247,8 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<ACargoPlayerState> CargoPlayerState;
+	
+	bool IsMoving;
 
 	void OnHasteCVarChanged(IConsoleVariable* ConsoleVariable);
 
@@ -266,7 +275,9 @@ public:
 	float GetShipSpeedMultiplier() const { return ShipSpeedMultiplier; }
 
 	UFUNCTION(BlueprintPure, Category="Cargo|Attributes")
-	float GetShipSpeed() const { return ShipSpeed; }
+	float GetShipBaseSpeed() const { return ShipSpeed; }
+	
+	float GetShipCurrentSpeed() const { return FloatingMovement->Velocity.Length(); }
 
 	UFUNCTION(BlueprintPure, Category="Cargo|Attributes")
 	float GetShipStability() const { return ShipStability; }
@@ -336,10 +347,8 @@ public:
 
 	FOnShipMovementChanged OnMovementStarted;
 	FOnShipMovementChanged OnMovementStopped;
-	bool IsShipMoving() const { return bShipMoving; }
 
 protected:
-	bool bShipMoving = false;
 	void UpdateMovementState(float Forward);
 	void StopMovementInput();
 
@@ -411,5 +420,8 @@ public:
 	virtual void BeginPlay() override;
 	
 	virtual void Tick(float DeltaSeconds) override;
+	
+	TObjectPtr<USceneComponent> GetPaddlePivot_L() const{ return PaddlePivot_L; }
+	TObjectPtr<USceneComponent> GetPaddlePivot_R() const{ return PaddlePivot_R; }
 };
 

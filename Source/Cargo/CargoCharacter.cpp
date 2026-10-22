@@ -49,6 +49,12 @@ ACargoCharacter::ACargoCharacter()
 
 	ChimneyPivot = CreateDefaultSubobject<USceneComponent>(TEXT("ChimneyPivot"));
 	ChimneyPivot->SetupAttachment(UpgradePivots);
+	
+	PaddlePivot_L = CreateDefaultSubobject<USceneComponent>(TEXT("PaddlePivot_L"));
+	PaddlePivot_L->SetupAttachment(UpgradePivots);
+	
+	PaddlePivot_R = CreateDefaultSubobject<USceneComponent>(TEXT("PaddlePivot_R"));
+	PaddlePivot_R->SetupAttachment(UpgradePivots);
 
 	FloatingMovement = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("FloatingMovement"));
 	FloatingMovement->MaxSpeed = 600.f;
@@ -286,11 +292,11 @@ void ACargoCharacter::StopMovementInput()
 void ACargoCharacter::UpdateMovementState(float Forward)
 {
 	const bool bMovingNow = !FMath::IsNearlyZero(Forward);
-	if (bMovingNow == bShipMoving)
+	if (bMovingNow == IsMoving)
 		return;
 
-	bShipMoving = bMovingNow;
-	if (bShipMoving)
+	IsMoving = bMovingNow;
+	if (IsMoving)
 		OnMovementStarted.Broadcast();
 	else
 		OnMovementStopped.Broadcast();
@@ -491,6 +497,9 @@ void ACargoCharacter::InstallInitialUpgrades()
 
 	if (PlayerConfigDA->InitialChimney)
 		InstallUpgrade(EUpgradeCategoryType::Chimney, PlayerConfigDA->InitialChimney);
+	
+	if(PlayerConfigDA->InitialPaddle)
+		InstallUpgrade(EUpgradeCategoryType::Paddle, PlayerConfigDA->InitialPaddle);
 }
 
 void ACargoCharacter::OnFuelDepleted()

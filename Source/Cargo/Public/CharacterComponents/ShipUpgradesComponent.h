@@ -19,6 +19,9 @@ class CARGO_API UShipUpgradesComponent : public UActorComponent
 
 	UPROPERTY()
 	TObjectPtr<AActor> InstalledChimney;
+	
+	UPROPERTY()
+	TArray<TObjectPtr<AActor>> InstalledPaddles;
 
 	UPROPERTY()
 	TMap<EUpgradeCategoryType, TObjectPtr<UShipUpgradeDA>> InstalledUpgrades;
