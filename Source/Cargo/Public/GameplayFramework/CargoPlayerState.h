@@ -33,6 +33,8 @@ protected:
 
 	TMap<FGameplayTag, FString> PlayerDataTags;
 	
+	int8 Patent = 0;
+	
 public:
 	// --- Events ---
 
@@ -60,4 +62,6 @@ public:
 	void NotifyShipCollision(AActor* OtherActor, ShipCollisionType CollisionType);
 	
 	void AddPlayerDataTag(FGameplayTag Tag, FString Text);
+	
+	int8 GetPatent() { return Patent; }
 };
