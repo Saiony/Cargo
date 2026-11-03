@@ -94,6 +94,9 @@ protected:
 
     UFUNCTION()
     void OnEnteredWater(const FSphericalPontoon& Pontoon);
+    
+    UFUNCTION(BlueprintImplementableEvent)
+    void OnContainerPlaced(UGridComponent* GridActor);
 
 public:
 

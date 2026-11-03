@@ -17,4 +17,7 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category="Player|Initial Upgrades")
 	TObjectPtr<UShipUpgradeDA> InitialChimney;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Player|Initial Upgrades")
+	TObjectPtr<UShipUpgradeDA> InitialPaddle;
 };

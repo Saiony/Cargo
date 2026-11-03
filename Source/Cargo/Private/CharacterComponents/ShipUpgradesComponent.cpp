@@ -3,6 +3,7 @@
 #include "DataAssets/ShipUpgrades/ShipUpgradeDA.h"
 #include "DataAssets/ShipUpgrades/HullShipUpgradeDA.h"
 #include "CargoCharacter.h"
+#include "CharacterComponents/ShipPaddle.h"
 #include "GameFramework/Pawn.h"
 
 UShipUpgradesComponent::UShipUpgradesComponent()
@@ -68,7 +69,7 @@ void UShipUpgradesComponent::ApplyUpgradeAttributes(const UShipUpgradeDA* Upgrad
 			CargoCharacter->AddWeight(Value);
 			break;
 		case EShipUpgradeAttributeType::Speed:
-			CargoCharacter->SetShipSpeed(CargoCharacter->GetShipSpeed() + Value);
+			CargoCharacter->SetShipSpeed(CargoCharacter->GetShipBaseSpeed() + Value);
 			break;
 		case EShipUpgradeAttributeType::Stability:
 			CargoCharacter->SetShipStability(CargoCharacter->GetShipStability() + Value);
@@ -107,7 +108,7 @@ void UShipUpgradesComponent::InstallChimney(UShipUpgradeDA* UpgradeDA)
 	}
 
 	const FTransform SpawnTransform = ChimneyPivot->GetComponentTransform();
-	AActor* Chimney = GetWorld()->SpawnActorDeferred<AActor>(UpgradeDA->UpgradeActorClass, SpawnTransform, GetOwner(),
+	const auto Chimney = GetWorld()->SpawnActorDeferred<AActor>(UpgradeDA->UpgradeActorClass, SpawnTransform, GetOwner(),
 			  Cast<APawn>(GetOwner()),ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 
 	Chimney->FinishSpawning(SpawnTransform);
@@ -117,6 +118,35 @@ void UShipUpgradesComponent::InstallChimney(UShipUpgradeDA* UpgradeDA)
 
 void UShipUpgradesComponent::InstallPaddle(UShipUpgradeDA* UpgradeDA)
 {
+	//Remove previous paddles
+	for (const auto Paddle : InstalledPaddles)
+	{
+		Paddle->Destroy();
+	}
+	
+	InstalledPaddles.Empty();
+	
+	//Left
+	const auto PaddlePivot_L = CargoCharacter->GetPaddlePivot_L();
+	const auto SpawnTransform = PaddlePivot_L->GetComponentTransform();
+	
+	const auto Paddle_L = GetWorld()->SpawnActorDeferred<AActor>(UpgradeDA->UpgradeActorClass, SpawnTransform, GetOwner(),
+			  Cast<APawn>(GetOwner()),ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+
+	Paddle_L->FinishSpawning(SpawnTransform);
+	Paddle_L->AttachToComponent(PaddlePivot_L, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	
+	//Right
+	const auto PaddlePivot_R = CargoCharacter->GetPaddlePivot_R();
+	const auto Paddle_R = GetWorld()->SpawnActorDeferred<AActor>(UpgradeDA->UpgradeActorClass, SpawnTransform, GetOwner(),
+			  Cast<APawn>(GetOwner()),ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+
+	Paddle_R->FinishSpawning(SpawnTransform);
+	Paddle_R->AttachToComponent(PaddlePivot_R, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	
+	//add to array
+	InstalledPaddles.Add(Paddle_L);
+	InstalledPaddles.Add(Paddle_R);
 }
 
 void UShipUpgradesComponent::InstallHull(UShipUpgradeDA* UpgradeDA)

@@ -13,7 +13,7 @@
 				"AIModule",
 				"UMG"
 			]
-		},	
+		},
 		{
 			"Name": "CargoEditor",
 			"Type": "Editor",
@@ -54,6 +54,14 @@
 		},
 		{
 			"Name": "CommonUI",
+			"Enabled": true
+		},
+		{
+			"Name": "FunctionalTestingEditor",
+			"Enabled": true
+		},
+		{
+			"Name": "Gauntlet",
 			"Enabled": true
 		}
 	]

@@ -91,6 +91,7 @@ public:
 
 	void AddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const FVector& WorldLocation, float Rotation);
 	void AddPlaceableToGridIndex(TObjectPtr<APlaceable> Placeable, FIntVector PlaceablePivotGridIndex, float Rotation);
+	void SpawnSingleContainer(FGameplayTag CargoType);
 
 	void RemovePlaceableFromGrid(TObjectPtr<APlaceable> Placeable);
 

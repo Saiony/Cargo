@@ -27,6 +27,7 @@ public:
 #if WITH_EDITOR
 	static void AddTagConsole(const TArray<FString>& Args, UWorld* World);
 	static void KlapauciusConsole(const TArray<FString>& Args, UWorld* World);
+	static void SetPatentConsole(const TArray<FString>& Args, UWorld* World);
 #endif
 
 private:

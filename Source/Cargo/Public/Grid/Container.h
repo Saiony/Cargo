@@ -13,8 +13,11 @@ class CARGO_API AContainer : public APlaceable
 	GENERATED_BODY()
 
 	void Init();
+			
+protected:
+	virtual void BeginPlay() override;	
+	
 public:
-	// Sets default values for this actor's properties
 	AContainer();
 
 	void Init(TObjectPtr<UContainerDA> InContainerDA);
@@ -27,12 +30,7 @@ public:
 	void StopShake();
 
 	void SetShakeIntensity(float Intensity);
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
-	
 
-public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 

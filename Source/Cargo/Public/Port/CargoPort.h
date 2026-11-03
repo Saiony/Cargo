@@ -9,7 +9,6 @@
 #include "CargoPort.generated.h"
 
 struct FCargoRequirement;
-class AContainer;
 class APortBellInteractable;
 struct FGameplayTag;
 
@@ -23,9 +22,6 @@ public:
 
 protected:  
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
-	TSubclassOf<AContainer> ContainerClass;	
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Port|Interaction")
 	TSubclassOf<APortBellInteractable> PortBellClass;
 
@@ -72,7 +68,6 @@ public:
 	void Clear();
 	
 	void SpawnCargo(const TArray<FCargoRequirement>& Requirements);
-	void SpawnSingleContainer(FGameplayTag CargoType);
 
 	void OpenPort();
 	

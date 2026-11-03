@@ -112,6 +112,8 @@ void APlaceable::Place(TObjectPtr<UGridComponent> GridActor, int32 GridPosX, int
 	this->GridLevel = GridLevel;
  
 	UGameplayStatics::PlaySoundAtLocation(this, PlaceSound, GetActorLocation());
+	
+	OnContainerPlaced(GridActor);	
 }
 
 void APlaceable::Release()

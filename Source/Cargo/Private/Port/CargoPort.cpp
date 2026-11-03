@@ -138,58 +138,6 @@ void UCargoPortComponent::HandlePlaceableRemovedFromGrid(APlaceable* Placeable)
 		ClosePort();		
 }
 
-void UCargoPortComponent::SpawnSingleContainer(FGameplayTag CargoType)
-{
-	const auto SoftDA = GetDefault<UCargoSettings>()->ContainersMap.Find(CargoType);
-	if (!SoftDA)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("CargoPortComponent: No container data asset found for cargo type %s"), *CargoType.ToString());
-		return;
-	}
-
-	auto ContainerDA = SoftDA->LoadSynchronous();
-
-	constexpr float GridRelativeRotation = 0.0f;
-	const FRotator SpawnRotation = GetComponentRotation();
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = GetOwner();
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-
-	AContainer* NewContainer = GetWorld()->SpawnActor<AContainer>(ContainerClass, GetComponentLocation(), SpawnRotation, SpawnParams);
-
-	if (!NewContainer)
-	{
-		UE_LOG(LogTemp, Error, TEXT("CargoPortComponent: Failed to spawn container"));
-		return;
-	}
-
-	NewContainer->Init(ContainerDA); // agora o Size já está correto ANTES de qualquer validação
-
-	//finds first empty location
-	for (int32 Z = PlaceableGrid.GetMin().Z; Z <= PlaceableGrid.GetMax().Z; Z++)
-	{
-		for (int32 X = PlaceableGrid.GetMin().X; X <= PlaceableGrid.GetMax().X; X++)
-		{
-			for (int32 Y = PlaceableGrid.GetMin().Y; Y <= PlaceableGrid.GetMax().Y; Y++)
-			{
-				if (!CanAddPlaceableToGridIndex(NewContainer, FIntVector(X, Y, Z),
-				                                NewContainer->GetPlaceableRotation()))
-					continue;
-
-				AddPlaceableIndex(NewContainer, FIntVector(X, Y, Z), GridRelativeRotation);
-
-				UE_LOG(LogTemp, Log, TEXT("- Spawned %s at %s"), *NewContainer->GetName(),
-				       *FIntVector(X, Y, Z).ToString());
-				return;
-			}
-		}
-	}
-
-	UE_LOG(LogTemp, Error, TEXT("CargoPortComponent: No valid grid slot found for cargo type %s"), *CargoType.ToString());
-	NewContainer->Destroy();
-}
-
 void UCargoPortComponent::StartMissionDelivery(const FGuid MissionId)
 {
 	OpenPort();
