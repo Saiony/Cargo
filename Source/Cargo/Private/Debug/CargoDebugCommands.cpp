@@ -8,6 +8,7 @@
 #include "DataAssets/ContainerDA.h"
 #include "Grid/Container.h"
 #include "Grid/GridComponent.h"
+#include "GameplayFramework/CargoPlayerState.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 
@@ -34,6 +35,12 @@ static FAutoConsoleCommandWithWorldAndArgs CmdCargoKlapaucius(
 	TEXT("Cargo.Klapaucius"),
 	TEXT("Adds 1000 money to the economy service. Usage: Cargo.Klapaucius"),
 	FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(&UCargoDebugCommands::KlapauciusConsole)
+);
+
+static FAutoConsoleCommandWithWorldAndArgs CmdCargoSetPatent(
+	TEXT("Cargo.SetPatent"),
+	TEXT("Sets the player's patent. Usage: Cargo.SetPatent [int32]"),
+	FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(&UCargoDebugCommands::SetPatentConsole)
 );
 #endif
 
@@ -337,5 +344,26 @@ void UCargoDebugCommands::AddTagConsole(const TArray<FString>& Args, UWorld* Wor
 
 	GameMode->AddInGameEventTag(Tag);
 	UE_LOG(LogTemp, Log, TEXT("Cargo.AddTag: Added '%s'"), *Tag.ToString());
+}
+
+void UCargoDebugCommands::SetPatentConsole(const TArray<FString>& Args, UWorld* World)
+{
+	int32 Patent = 0;
+	if (Args.Num() != 1 || !LexTryParseString(Patent, *Args[0]))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cargo.SetPatent: Usage: Cargo.SetPatent [int32]"));
+		return;
+	}
+
+	APlayerController* PlayerController = World ? World->GetFirstPlayerController() : nullptr;
+	ACargoPlayerState* PlayerState = PlayerController ? PlayerController->GetPlayerState<ACargoPlayerState>() : nullptr;
+	if (!PlayerState)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cargo.SetPatent: CargoPlayerState not found"));
+		return;
+	}
+
+	PlayerState->SetPatent(Patent);
+	UE_LOG(LogTemp, Log, TEXT("Cargo.SetPatent: Set player patent to %d"), Patent);
 }
 #endif

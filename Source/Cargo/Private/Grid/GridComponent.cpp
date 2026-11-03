@@ -301,6 +301,50 @@ void UGridComponent::AddPlaceableToGridIndex(TObjectPtr<APlaceable> Placeable, c
 	OnPlaceableAdded(Placeable);
 }
 
+void UGridComponent::SpawnSingleContainer(FGameplayTag CargoType)
+{
+	const TSoftObjectPtr<UContainerDA>* ContainerDataAsset = GetDefault<UCargoSettings>()->ContainersMap.Find(CargoType);
+	if (!ContainerDataAsset)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GridComponent: No container data asset found for cargo type %s"), *CargoType.ToString());
+		return;
+	}
+
+	FActorSpawnParameters SpawnParameters;
+	SpawnParameters.Owner = GetOwner();
+	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+	AContainer* Container = GetWorld()->SpawnActor<AContainer>(GetDefault<UCargoSettings>()->ContainerClass,
+		GetComponentLocation(), GetComponentRotation(), SpawnParameters);
+	if (!Container)
+	{
+		UE_LOG(LogTemp, Error, TEXT("GridComponent: Failed to spawn container"));
+		return;
+	}
+
+	Container->Init(ContainerDataAsset->LoadSynchronous());
+	for (int32 Z = PlaceableGrid.GetMin().Z; Z <= PlaceableGrid.GetMax().Z; ++Z)
+	{
+		for (int32 X = PlaceableGrid.GetMin().X; X <= PlaceableGrid.GetMax().X; ++X)
+		{
+			for (int32 Y = PlaceableGrid.GetMin().Y; Y <= PlaceableGrid.GetMax().Y; ++Y)
+			{
+				const FIntVector GridIndex(X, Y, Z);
+				if (!CanAddPlaceableToGridIndex(Container, GridIndex, Container->GetPlaceableRotation()))
+				{
+					continue;
+				}
+
+				AddPlaceableToGridIndex(Container, GridIndex, 0.0f);
+				UE_LOG(LogTemp, Log, TEXT("Spawned %s at %s"), *Container->GetName(), *GridIndex.ToString());
+				return;
+			}
+		}
+	}
+
+	UE_LOG(LogTemp, Error, TEXT("GridComponent: No valid grid slot found for cargo type %s"), *CargoType.ToString());
+	Container->Destroy();
+}
+
 void UGridComponent::RemovePlaceableFromGrid(TObjectPtr<APlaceable> Placeable)
 {
 	if(!Placeable)

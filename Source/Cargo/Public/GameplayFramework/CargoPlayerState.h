@@ -33,7 +33,7 @@ protected:
 
 	TMap<FGameplayTag, FString> PlayerDataTags;
 	
-	int8 Patent = 0;
+	int32 Patent = 0;
 	
 public:
 	// --- Events ---
@@ -63,5 +63,6 @@ public:
 	
 	void AddPlayerDataTag(FGameplayTag Tag, FString Text);
 	
-	int8 GetPatent() { return Patent; }
+	int32 GetPatent() const { return Patent; }
+	void SetPatent(int32 NewPatent) { Patent = NewPatent; }
 };

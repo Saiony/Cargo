@@ -7,6 +7,7 @@
 #include "MilitarBarrier.generated.h"
 
 class UBoxComponent;
+class ACargoCharacter;
 class UDialogueData;
 
 UCLASS()
@@ -29,11 +30,17 @@ protected:
 	TObjectPtr<UDialogueData> DialogueData;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo")
-	int8 RequiredPatent;
+	int32 RequiredPatent;
+
+	TWeakObjectPtr<ACargoCharacter> DetectedPlayer;
 
 	UFUNCTION()
 	void OnDetectionBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void OnDetectionBoxEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 protected:
 	// Called when the game starts or when spawned
