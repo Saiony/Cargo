@@ -3,3 +3,6 @@
 
 [mcp_servers.rider.tools.get_asset_properties]
 approval_mode = "approve"
+
+[mcp_servers.rider.tools.take_screenshot]
+approval_mode = "approve"

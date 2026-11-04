@@ -3,23 +3,30 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "CargoIsland.h"
+#include "Port/PuzzleCargoPort.h"
 #include "PuzzleIsland.generated.h"
 
 UCLASS()
-class CARGO_API APuzzleIsland : public ACargoIsland
+class CARGO_API APuzzleIsland : public AActor
 {
 	GENERATED_BODY()
 
-public:
-	// Sets default values for this actor's properties
-	APuzzleIsland();
-
 protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<USceneComponent> Root;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Island")
+	TObjectPtr<UStaticMeshComponent> IslandMeshComp;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Cargo")
+	TObjectPtr<UPuzzleCargoPort> PuzzleCargoPortComp;
+	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 public:
+	APuzzleIsland();
+	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 };

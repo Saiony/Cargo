@@ -127,6 +127,9 @@ bool UGridComponent::TryAcceptDrop(APlaceable* Placeable, APlaceablePreview* Pre
 UGridComponent::UGridComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+	
+	InstancedMeshComp = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("InstancedMeshComp"));
+	InstancedMeshComp->SetupAttachment(this);
 }
 
 // Called when the game starts

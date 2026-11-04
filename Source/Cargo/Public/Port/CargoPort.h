@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameplayTagContainer.h"
 #include "Components/SceneComponent.h"
 #include "Grid/GridComponent.h"
 #include "CargoPort.generated.h"
@@ -20,8 +19,7 @@ class CARGO_API UCargoPortComponent : public UGridComponent
 public: 
 	UCargoPortComponent();
 
-protected:  
-	
+protected:  	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Cargo|Port|Interaction")
 	TSubclassOf<APortBellInteractable> PortBellClass;
 
@@ -32,6 +30,7 @@ protected:
 	FTransform PlayerSpawnLocation;
 	
 	virtual void BeginPlay() override;
+	
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
     
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
@@ -40,8 +39,7 @@ protected:
 	void HandlePlaceableAddedToGrid(APlaceable* Placeable);
 
 	UFUNCTION()
-	void HandlePlaceableRemovedFromGrid(APlaceable* Placeable);
-	
+	void HandlePlaceableRemovedFromGrid(APlaceable* Placeable);	
 
 	UFUNCTION()
 	void OnBellClicked();
@@ -76,7 +74,7 @@ public:
 	void ClosePort();
 	
 	FTransform GetPlayerSpawnLocation() const { return PlayerSpawnLocation * GetComponentTransform(); }
-private:		
-	FGuid CurrentMissionId;
 	
+private:		
+	FGuid CurrentMissionId;	
 };
