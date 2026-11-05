@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "CargoPort.h"
+#include "Grid/GridComponent.h"
 #include "PuzzleCargoPort.generated.h"
 
 
@@ -19,25 +19,11 @@ public:
 	UPuzzleCargoPort();
 
 protected:		
-	UPROPERTY(EditDefaultsOnly, Category="Cargo")
-	TObjectPtr<UGridComponentDA> PuzzleGridDA;
-	
-	UPROPERTY()
-	TMap<FIntVector, bool> PuzzleSlots;
-	
-	TMap<TWeakObjectPtr<APlaceable>, TArray<FIntVector>> PlaceablePuzzlePositions;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
-	TObjectPtr<UInstancedStaticMeshComponent> PuzzleIMC;
+	TSet<FIntVector> PuzzleSlots;
 	
 	IPuzzleCargoPortListener* Listener;
 	
 	virtual void BeginPlay() override;
-	virtual void OnRegister() override;
-	
-	void InitializePuzzleSlots();
-	void UpdatePuzzleSlotsForPlaceable(APlaceable* Placeable, bool bOccupied);
-	
 	virtual void OnPlaceableAdded(APlaceable* Placeable) override;	
 
 	UFUNCTION()
