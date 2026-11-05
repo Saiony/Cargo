@@ -6,6 +6,7 @@
 #include "Algo/AllOf.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Grid/Placeable.h"
+#include "Island/PuzzleIsland.h"
 
 
 UPuzzleCargoPort::UPuzzleCargoPort()
@@ -20,6 +21,10 @@ UPuzzleCargoPort::UPuzzleCargoPort()
 void UPuzzleCargoPort::BeginPlay()
 {
 	Super::BeginPlay();
+}
+
+void UPuzzleCargoPort::Init(IPuzzleCargoPortListener* InListener)
+{
 	OnPlaceableRemovedFromGrid.AddDynamic(this, &ThisClass::HandlePlaceableRemovedFromGrid);
 	
 	//we use invalid slots as valid here just because it's easier
@@ -29,6 +34,8 @@ void UPuzzleCargoPort::BeginPlay()
 	}
 	
 	InitializePuzzleSlots();
+	
+	Listener = InListener;
 }
 
 void UPuzzleCargoPort::OnRegister()
@@ -101,16 +108,17 @@ void UPuzzleCargoPort::UpdatePuzzleSlotsForPlaceable(APlaceable* Placeable, bool
 	PlaceablePuzzlePositions.Remove(TWeakObjectPtr<APlaceable>(Placeable));
 }
 
-void UPuzzleCargoPort::CheckIfPuzzleFinished() const
+void UPuzzleCargoPort::CheckIfPuzzleFinished()
 {
 	const auto Finished = Algo::AllOf(PuzzleSlots, [](const auto& Slot)
 	{
 		return Slot.Value;
 	});
 	
-	if (Finished)
+	if (Finished && Listener)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Puzzle finished!"));
+		Listener->OnPuzzleFinished();
+		Listener = nullptr;
 	}
 }
 

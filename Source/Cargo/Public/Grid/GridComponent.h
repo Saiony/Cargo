@@ -79,18 +79,22 @@ public:
     
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
     
+	UFUNCTION(BlueprintCallable)
 	void ClearGrid();
+	
 	void SetGridComponentDA(UGridComponentDA* NewGridComponentDA);
 
 	void UpdateStackLean(float ShipRoll);
 
 	bool CanAddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const FVector WorldLocation, float Rotation);
 	
-	bool CanAddPlaceableToGridIndex(TObjectPtr<APlaceable> Placeable, FIntVector PlaceablePivotGridIndex,
-	                                float Rotation);
+	bool CanAddPlaceableToGridIndex(TObjectPtr<APlaceable> Placeable, FIntVector PlaceablePivotGridIndex, float Rotation);
 
 	void AddPlaceableToGrid(TObjectPtr<APlaceable> Placeable, const FVector& WorldLocation, float Rotation);
+	
 	void AddPlaceableToGridIndex(TObjectPtr<APlaceable> Placeable, FIntVector PlaceablePivotGridIndex, float Rotation);
+	
+	UFUNCTION(BlueprintCallable, Category="Cargo")
 	void SpawnSingleContainer(FGameplayTag CargoType);
 
 	void RemovePlaceableFromGrid(TObjectPtr<APlaceable> Placeable);
@@ -102,17 +106,23 @@ public:
 	FVector GetNextFreeZPositionWorld(const FVector& WorldLocation);
 	
 	FIntVector GetNextFreeZPositionGrid(const FVector& WorldLocation);
+	
 	FVector GridToLocalPos(FIntVector GridPos);
+	
 	FVector GetLWorldLocationFromGridIndex(FIntVector GridPos);
 
 	bool IsPlaceableBlocked(TObjectPtr<APlaceable> Placeable);
+	
 	int32 GetHighestOccupiedZ();
+	
 	TArray<FIntVector> GetPositionsFromLevel(int Z);
 
 	TObjectPtr<APlaceable> GetPlaceableFromLevel(int Z);
 
 	FIntVector GetMin() const { return PlaceableGrid.GetMin(); }
+	
 	FIntVector GetMax() const { return PlaceableGrid.GetMax(); }
+	
 	float GetCellSize() const { return PlaceableGrid.GetCellSize(); }
 	
 	void ShowIndicators();

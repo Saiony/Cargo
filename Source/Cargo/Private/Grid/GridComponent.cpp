@@ -316,8 +316,8 @@ void UGridComponent::SpawnSingleContainer(FGameplayTag CargoType)
 	FActorSpawnParameters SpawnParameters;
 	SpawnParameters.Owner = GetOwner();
 	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-	AContainer* Container = GetWorld()->SpawnActor<AContainer>(GetDefault<UCargoSettings>()->ContainerClass,
-		GetComponentLocation(), GetComponentRotation(), SpawnParameters);
+	AContainer* Container = GetWorld()->SpawnActor<AContainer>(GetDefault<UCargoSettings>()->ContainerClass, GetComponentLocation(), GetComponentRotation(), SpawnParameters);
+	
 	if (!Container)
 	{
 		UE_LOG(LogTemp, Error, TEXT("GridComponent: Failed to spawn container"));

@@ -82,7 +82,7 @@ public:
 	UPROPERTY(EditAnywhere, Config, Category = "UI|Dialogue")
 	FLinearColor DialoguePlayerDataColor = FLinearColor(1.0f, 0.65f, 0.1f, 1.0f);
 	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo|Island")
+	UPROPERTY(EditDefaultsOnly, Config, BlueprintReadOnly, Category="Cargo|Island")
 	TSubclassOf<AContainer> ContainerClass;	
 	
 	UPROPERTY(EditAnywhere, Config, Category = "Cargo|Island", meta = (Categories = "Location"))

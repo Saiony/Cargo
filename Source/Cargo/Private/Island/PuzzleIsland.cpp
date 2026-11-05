@@ -24,11 +24,18 @@ APuzzleIsland::APuzzleIsland()
 void APuzzleIsland::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	PuzzleCargoPortComp->Init(this);
 }
 
 // Called every frame
 void APuzzleIsland::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+}
+
+void APuzzleIsland::OnPuzzleFinished()
+{
+	OnPuzzleFinished_BP();
 }
 

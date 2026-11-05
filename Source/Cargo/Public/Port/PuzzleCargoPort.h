@@ -7,6 +7,8 @@
 #include "PuzzleCargoPort.generated.h"
 
 
+class IPuzzleCargoPortListener;
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class CARGO_API UPuzzleCargoPort : public UGridComponent
 {
@@ -22,10 +24,13 @@ protected:
 	
 	UPROPERTY()
 	TMap<FIntVector, bool> PuzzleSlots;
+	
 	TMap<TWeakObjectPtr<APlaceable>, TArray<FIntVector>> PlaceablePuzzlePositions;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Cargo")
 	TObjectPtr<UInstancedStaticMeshComponent> PuzzleIMC;
+	
+	IPuzzleCargoPortListener* Listener;
 	
 	virtual void BeginPlay() override;
 	virtual void OnRegister() override;
@@ -38,9 +43,10 @@ protected:
 	UFUNCTION()
 	void HandlePlaceableRemovedFromGrid(APlaceable* Placeable);
 	
-	void CheckIfPuzzleFinished() const;
+	void CheckIfPuzzleFinished();
 
-public:
-	// Called every frame
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+public:		
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;	
+	
+	void Init(IPuzzleCargoPortListener* InListener);
 };

@@ -77,8 +77,7 @@ void UDIalogueWidget::SetupAndPlayDialogue()
 	}
 
 	CurrentLineIndex = -1;
-	UE_LOG(LogTemp, Warning, TEXT("About to call ShowNextLine, CurrentLineIndex: %d, CurrentDialogueData: %p"), 
-		CurrentLineIndex, CurrentDialogueData.Get());
+	UE_LOG(LogTemp, Warning, TEXT("About to call ShowNextLine, CurrentLineIndex: %d, CurrentDialogueData: %p"),  CurrentLineIndex, CurrentDialogueData.Get());
 	ShowNextLine();
 	UE_LOG(LogTemp, Warning, TEXT("ShowNextLine returned"));
 }
@@ -136,8 +135,7 @@ void UDIalogueWidget::ShowNextLine()
 
 	if(!CurrentDialogueData->DialogueLines.IsValidIndex(CurrentLineIndex))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("ShowNextLine: No more lines (CurrentLineIndex: %d, Array Num: %d), calling Hide"), 
-			CurrentLineIndex, CurrentDialogueData->DialogueLines.Num());
+		UE_LOG(LogTemp, Warning, TEXT("ShowNextLine: No more lines (CurrentLineIndex: %d, Array Num: %d), calling Hide"), CurrentLineIndex, CurrentDialogueData->DialogueLines.Num());
 		OnDialogueFinished();
 		return;
 	}
@@ -159,10 +157,10 @@ void UDIalogueWidget::ShowNextLine()
 void UDIalogueWidget::UpdateVisualsForLine(const FARCDialogueLine& Line)
 {
 	bool bShouldUpdatePortraits = false;
-	if(Line.PortraitSide == Left && ImageLeftPortrait)
+	if(Line.PortraitSide == Left)
 	{
 		ImageRightPortrait->SetVisibility(ESlateVisibility::Hidden);
-		ImageLeftPortrait->SetVisibility(ESlateVisibility::Visible);
+		ImageLeftPortrait->SetVisibility(ESlateVisibility::Visible);		
 
 		if(Line.bOverridePortrait)
 		{
@@ -174,11 +172,23 @@ void UDIalogueWidget::UpdateVisualsForLine(const FARCDialogueLine& Line)
 			bShouldUpdatePortraits = ImageLeftPortrait->GetBrush() != CurrentDialogueData->DefaultPortrait;
 			ImageLeftPortrait->SetBrush(CurrentDialogueData->DefaultPortrait);
 		}
+		
+		if (!ImageLeftPortrait->GetBrush().GetResourceObject())
+			ImageLeftPortrait->SetVisibility(ESlateVisibility::Hidden);
+			
 	}
-	else if(Line.PortraitSide == Right && ImageRightPortrait)
+	else if(Line.PortraitSide == Right)
 	{
-		ImageRightPortrait->SetVisibility(ESlateVisibility::Visible);
 		ImageLeftPortrait->SetVisibility(ESlateVisibility::Hidden);
+		
+		if (ImageRightPortrait)
+		{
+			ImageRightPortrait->SetVisibility(ESlateVisibility::Visible);			
+		}
+		else
+		{
+			ImageRightPortrait->SetVisibility(ESlateVisibility::Hidden);
+		}
 
 		if(Line.bOverridePortrait)
 		{
@@ -190,6 +200,8 @@ void UDIalogueWidget::UpdateVisualsForLine(const FARCDialogueLine& Line)
 			bShouldUpdatePortraits = ImageRightPortrait->GetBrush() != CurrentDialogueData->DefaultPortrait;
 			ImageRightPortrait->SetBrush(CurrentDialogueData->DefaultPortrait);
 		}
+		if (!ImageRightPortrait->GetBrush().GetResourceObject())
+			ImageRightPortrait->SetVisibility(ESlateVisibility::Hidden);
 	}
 
 	if (bShouldUpdatePortraits && LineTransitionAnimation && CurrentLineIndex > 0)
@@ -249,14 +261,14 @@ void UDIalogueWidget::InitializeDialogue(UDialogueData* InDialogueDefinition)
 		if(InDialogueDefinition->DialogueLines[0].PortraitSide == Left)
 		{
 			ImageLeftPortrait->SetBrush(InDialogueDefinition->DefaultPortrait);
-			ImageLeftPortrait->SetVisibility(ESlateVisibility::Visible);
+			ImageLeftPortrait->SetVisibility(ImageLeftPortrait->GetBrush().GetResourceObject() ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
 			ImageRightPortrait->SetVisibility(ESlateVisibility::Hidden);
 		}
 		else
 		{
 			ImageRightPortrait->SetBrush(InDialogueDefinition->DefaultPortrait);
 			ImageLeftPortrait->SetVisibility(ESlateVisibility::Hidden);
-			ImageRightPortrait->SetVisibility(ESlateVisibility::Visible);
+			ImageRightPortrait->SetVisibility(ImageRightPortrait->GetBrush().GetResourceObject() ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
 		}
 		PlayAnimation(ShowAnimation);
 		UE_LOG(LogTemp, Warning, TEXT("PlayAnimation called for ShowAnimation"));
