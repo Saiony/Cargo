@@ -306,17 +306,23 @@ void UGridComponent::AddPlaceableToGridIndex(TObjectPtr<APlaceable> Placeable, c
 
 void UGridComponent::SpawnSingleContainer(FGameplayTag CargoType)
 {
-	const TSoftObjectPtr<UContainerDA>* ContainerDataAsset = GetDefault<UCargoSettings>()->ContainersMap.Find(CargoType);
-	if (!ContainerDataAsset)
+	const TSoftObjectPtr<UContainerDA>* ContainerDataAssetSoft = GetDefault<UCargoSettings>()->ContainersMap.Find(CargoType);
+	if (!ContainerDataAssetSoft)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("GridComponent: No container data asset found for cargo type %s"), *CargoType.ToString());
 		return;
 	}
-
+	
+	const auto ContainerData = ContainerDataAssetSoft->LoadSynchronous();
+	
 	FActorSpawnParameters SpawnParameters;
 	SpawnParameters.Owner = GetOwner();
 	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-	AContainer* Container = GetWorld()->SpawnActor<AContainer>(GetDefault<UCargoSettings>()->ContainerClass, GetComponentLocation(), GetComponentRotation(), SpawnParameters);
+	
+	//checks if it has container class override
+	const auto ContainerClass = ContainerData->OverrideContainerClass ? ContainerData->OverrideContainerClass : GetDefault<UCargoSettings>()->ContainerClass;
+	
+	AContainer* Container = GetWorld()->SpawnActor<AContainer>(ContainerClass, GetComponentLocation(), GetComponentRotation(), SpawnParameters);
 	
 	if (!Container)
 	{
@@ -324,7 +330,7 @@ void UGridComponent::SpawnSingleContainer(FGameplayTag CargoType)
 		return;
 	}
 
-	Container->Init(ContainerDataAsset->LoadSynchronous());
+	Container->Init(ContainerData);
 	for (int32 Z = PlaceableGrid.GetMin().Z; Z <= PlaceableGrid.GetMax().Z; ++Z)
 	{
 		for (int32 X = PlaceableGrid.GetMin().X; X <= PlaceableGrid.GetMax().X; ++X)

@@ -25,9 +25,18 @@ class UCameraComponent;
 class USceneComponent;
 class UInputAction;
 struct FInputActionValue;
+	
+struct FMovementDistanceSubscription
+{
+	FGuid Key;
+	float TargetCm = 0.f;
+	float CurrentCm = 0.f;
+};
+	
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 DECLARE_MULTICAST_DELEGATE(FOnShipMovementChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMovementDistanceReached, float, DistanceInMeters, FGuid, Key);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnWeightChanged, float, NewCurrentWeight, float, MaxWeight);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBalanceChanged, float, NewBalance);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnShipAttributeChanged, EShipUpgradeAttributeType, AttributeType, float, NewValue);
@@ -222,6 +231,10 @@ protected:
 	FDelegateHandle HasteCVarDelegateHandle;
 	
 	float OriginalMaxSpeed = -1;
+
+	FVector LastMovementDistanceLocation = FVector::ZeroVector;
+	
+	TArray<FMovementDistanceSubscription> MovementDistanceSubscriptions;
 	
 	float OriginalAcceleration = -1;
 	
@@ -247,6 +260,8 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<ACargoPlayerState> CargoPlayerState;
+	
+	
 	
 	bool IsMoving;
 
@@ -347,8 +362,17 @@ public:
 
 	FOnShipMovementChanged OnMovementStarted;
 	FOnShipMovementChanged OnMovementStopped;
+	
+	/** Notifies once when the character has traveled this many meters. */
+	UFUNCTION(BlueprintCallable, Category="Cargo|Movement")
+	FGuid SubscribeOnMovement(float DistanceInMeters);
+
+	UPROPERTY(BlueprintAssignable, Category="Cargo|Movement")
+	FOnMovementDistanceReached OnMovementDistanceReached;
 
 protected:
+	void UpdateMovementDistance();
+
 	void UpdateMovementState(float Forward);
 	void StopMovementInput();
 

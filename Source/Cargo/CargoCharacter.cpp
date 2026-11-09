@@ -249,6 +249,7 @@ void ACargoCharacter::OnPlaceableRemoved(APlaceable* Placeable)
 void ACargoCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	UpdateMovementDistance();
 	
 	UpdateEngineSoundIntensity();
 
@@ -275,6 +276,43 @@ void ACargoCharacter::Tick(float DeltaSeconds)
 	{
 		AddActorWorldOffset(KnockbackVelocity * DeltaSeconds, true);
 		KnockbackVelocity = FMath::VInterpTo(KnockbackVelocity, FVector::ZeroVector, DeltaSeconds, KnockbackSpeed);
+	}
+}
+
+FGuid ACargoCharacter::SubscribeOnMovement(float DistanceInMeters)
+{
+	if (DistanceInMeters <= 0.f)
+	{
+		UE_LOG(LogTemp, Error, TEXT("DistanceInMeters must be greater than zero"));
+		return FGuid();
+	}
+
+	const auto TargetCm = DistanceInMeters * 100.f;
+	const auto Key = FGuid::NewGuid();
+	MovementDistanceSubscriptions.Add({ Key, TargetCm, 0.f });
+	
+	return Key;
+}
+
+void ACargoCharacter::UpdateMovementDistance()
+{
+	const FVector CurrentLocation = GetActorLocation();
+	const float DistanceCm = FVector::Dist2D(CurrentLocation, LastMovementDistanceLocation);
+	LastMovementDistanceLocation = CurrentLocation;
+	
+	if (DistanceCm <= KINDA_SMALL_NUMBER)
+		return;
+	
+	for (int32 Index = MovementDistanceSubscriptions.Num() - 1; Index >= 0; --Index)
+	{
+		FMovementDistanceSubscription& Subscription = MovementDistanceSubscriptions[Index];
+		Subscription.CurrentCm += DistanceCm;
+		
+		if (Subscription.CurrentCm >= Subscription.TargetCm)
+		{
+			OnMovementDistanceReached.Broadcast(Subscription.TargetCm / 100.f, Subscription.Key);
+			MovementDistanceSubscriptions.RemoveAtSwap(Index);
+		}
 	}
 }
 
@@ -457,6 +495,7 @@ void ACargoCharacter::ApplyExternalImpact(const FVector& ImpactOrigin, const flo
 void ACargoCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	LastMovementDistanceLocation = GetActorLocation();
 	ShipUpgradesComponent->Init(this);
 	
 	GridComp->OnPlaceableAddedToGrid.AddDynamic(this, &ThisClass::OnPlaceableAdded);

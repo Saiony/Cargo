@@ -52,8 +52,5 @@ void APlaceableVisual::ClearMeshes()
 // Called when the game starts
 void APlaceableVisual::BeginPlay()
 {
-	Super::BeginPlay();
-
-	// ...
-	
+	Super::BeginPlay();	
 }

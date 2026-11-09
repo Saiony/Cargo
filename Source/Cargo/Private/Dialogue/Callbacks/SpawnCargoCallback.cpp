@@ -20,6 +20,7 @@ void USpawnCargoCallback::ExecuteCallback(UDialogueData* DialogueDefinition, ACa
 	USceneComponent* GridRoot = NewObject<USceneComponent>(GridOwner, TEXT("Root"));
 	GridOwner->SetRootComponent(GridRoot);
 	GridRoot->RegisterComponent();
+	GridOwner->AttachToActor(Instigator, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 
 	UGridComponentDA* GridData = NewObject<UGridComponentDA>(GridOwner);
 	GridData->GridSize = FIntVector(GridSizeXY.X, GridSizeXY.Y, CargoToSpawn.Quantity - 1);

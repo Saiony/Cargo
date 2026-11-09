@@ -8,6 +8,7 @@
 #include "Grid/FROGGridShapeDefinition.h"
 #include "ContainerDA.generated.h"
 
+class AContainer;
 class APlaceableVisual;
 /**
  * 
@@ -38,4 +39,7 @@ public:
 	
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<APlaceableVisual> VisualBPClass;
+	
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<AContainer> OverrideContainerClass;
 };
