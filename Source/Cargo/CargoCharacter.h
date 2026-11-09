@@ -408,6 +408,15 @@ protected:
 	
 	UFUNCTION(Exec)
 	void PopContainersFromZ(int32 Z);
+	
+	UFUNCTION(BlueprintCallable, Category="Cargo")
+	APlaceable* GetRandomPlaceableFromTop() const;
+	
+	UFUNCTION(BlueprintCallable, Category="Cargo")
+	APlaceable* GetRandomPlaceableFromTop_Except(const TArray<FGameplayTag>& Exceptions) const;
+
+	UFUNCTION(BlueprintCallable, Category="Cargo")
+	void RemovePlaceable(APlaceable* Placeable) const;
 
 	void RotateShip(float TargetAngle);
 

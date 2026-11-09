@@ -6,6 +6,7 @@
 #include "Components/BoxComponent.h"
 #include "DataAssets/GridComponentDA.h"
 #include "DeveloperSettings/CargoSettings.h"
+#include "GameplayTagContainer.h"
 #include "Grid/FROGGrid.h"
 #include "Interaction/CargoDropTarget.h"
 #include "GridComponent.generated.h"
@@ -116,6 +117,7 @@ public:
 	int32 GetHighestOccupiedZ();
 	
 	TArray<FIntVector> GetPositionsFromLevel(int Z);
+	TArray<FIntVector> GetPositionsFromLevel(int Z, const TArray<FGameplayTag>& Exceptions);
 
 	TObjectPtr<APlaceable> GetPlaceableFromLevel(int Z);
 

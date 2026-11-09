@@ -261,6 +261,11 @@ void APlaceable::BakeStackLean()
 	SetActorTransform(VisualPose, false, nullptr, ETeleportType::TeleportPhysics);
 }
 
+void APlaceable::DestroyItself()
+{
+	Destroy();
+}
+
 float APlaceable::GetWeightPerCell() const
 {
 	return Weight / GridShapeDefinition.Cells.Num();

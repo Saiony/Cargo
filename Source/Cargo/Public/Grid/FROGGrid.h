@@ -170,8 +170,6 @@ public:
 	{
 		TArray<FIntVector> Positions;
 
-		int32 HighestZ = TNumericLimits<int32>::Lowest();
-
 		for (const auto& Elem : OccupiedSlots)
 		{
 			if (Elem.Key.Z != Z)

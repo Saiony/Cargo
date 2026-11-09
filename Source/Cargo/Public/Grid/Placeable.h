@@ -78,6 +78,8 @@ public:
     void SetStackLean(const FTransform& GridDeformation, const FTransform& GridWorldTransform);
     void BakeStackLean();
 	FTransform GetStackWorldTransform() const { return StackLeanPivot->GetComponentTransform(); }
+    
+    void DestroyItself();
 
 protected:
 

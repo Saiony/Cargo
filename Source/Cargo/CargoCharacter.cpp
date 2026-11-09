@@ -685,24 +685,10 @@ void ACargoCharacter::OnShipHit(UPrimitiveComponent* HitComponent, AActor* Other
 
 void ACargoCharacter::PopRandomContainerFromTop(const FVector& HitDir)
 {
-	const auto HighestOccupiedZ = GridComp->GetHighestOccupiedZ();
-	const auto PositionsTop = GridComp->GetPositionsFromLevel(HighestOccupiedZ);
-	
-	if (PositionsTop.Num() == 0)
-	{
-		UE_LOG(LogTemp, Log, TEXT("No positions to pop"));
-		return;
-	}
-	
-	UE_LOG(LogTemp, Log, TEXT("Popping random container"));
-	const FVector ShipVelocity = FloatingMovement->Velocity;
-	
-	const auto RandomIndex = FMath::RandRange(0, PositionsTop.Num() - 1);
-	const auto RandomPosition = PositionsTop[RandomIndex];	
-	
-	auto Placeable = GridComp->GetPlaceableAt(RandomPosition);		
+	const auto Placeable = GetRandomPlaceableFromTop();
 	GridComp->RemovePlaceableFromGrid(Placeable);
 	
+	const FVector ShipVelocity = FloatingMovement->Velocity;
 	Placeable->FallIntoSea(HitDir, ShipVelocity);
 }
 
@@ -730,6 +716,49 @@ void ACargoCharacter::PopContainersFromZ(int32 Z)
 		const FVector RandomDirection = FMath::VRandCone(FVector::UpVector,FMath::DegreesToRadians(25.0f));
 		Placeable->FallIntoSea(RandomDirection, FloatingMovement->Velocity);
 	}		
+}
+
+APlaceable* ACargoCharacter::GetRandomPlaceableFromTop() const
+{
+	const auto HighestOccupiedZ = GridComp->GetHighestOccupiedZ();
+	const auto PositionsTop = GridComp->GetPositionsFromLevel(HighestOccupiedZ);
+	
+	if (PositionsTop.Num() == 0)
+	{
+		UE_LOG(LogTemp, Log, TEXT("No containers on top"));
+		return nullptr;
+	}	
+	
+	const auto RandomIndex = FMath::RandRange(0, PositionsTop.Num() - 1);
+	const auto RandomPosition = PositionsTop[RandomIndex];
+
+	const auto Placeable = GridComp->GetPlaceableAt(RandomPosition);		
+	return Placeable;
+}
+
+APlaceable* ACargoCharacter::GetRandomPlaceableFromTop_Except(const TArray<FGameplayTag>& Exceptions) const
+{
+	const auto HighestOccupiedZ = GridComp->GetHighestOccupiedZ();
+	
+	for (int32 Z = HighestOccupiedZ; Z >= 0; --Z)
+	{
+		const auto PositionsAtLevel = GridComp->GetPositionsFromLevel(Z, Exceptions);
+		
+		if (PositionsAtLevel.IsEmpty())
+			continue;
+		
+		const int32 RandomIndex = FMath::RandRange(0, PositionsAtLevel.Num() - 1);
+		return GridComp->GetPlaceableAt(PositionsAtLevel[RandomIndex]);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("No eligible placeables found from top to level zero"));
+	return nullptr;
+}
+
+void ACargoCharacter::RemovePlaceable(APlaceable* Placeable) const
+{
+	GridComp->RemovePlaceableFromGrid(Placeable);
+	Placeable->DestroyItself();
 }
 
 void ACargoCharacter::EnableGravity()

@@ -502,6 +502,23 @@ TArray<FIntVector> UGridComponent::GetPositionsFromLevel(int Z)
 	return PlaceableGrid.GetOccupiedPositionsAtZ(Z);
 }
 
+TArray<FIntVector> UGridComponent::GetPositionsFromLevel(int Z, const TArray<FGameplayTag>& Exceptions)
+{
+	TArray<FIntVector> EligiblePositions;
+	
+	for (const auto Position : GetPositionsFromLevel(Z))
+	{
+		const auto Placeable = GetPlaceableAt(Position);
+		
+		if (!Placeable || Exceptions.Contains(Placeable->PlaceableTag))
+			continue;
+		
+		EligiblePositions.Add(Position);
+	}
+
+	return EligiblePositions;
+}
+
 void UGridComponent::ShowIndicators()
 {
 	InstancedMeshComp->SetVisibility(true);
