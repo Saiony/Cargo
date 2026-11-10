@@ -2,6 +2,7 @@
 
 
 #include "Grid/PlaceablePreview.h"
+#include "Grid/Visuals/BasePlaceableVisual.h"
 
 
 // Sets default values

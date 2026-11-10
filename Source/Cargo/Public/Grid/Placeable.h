@@ -4,7 +4,7 @@
 #include "BuoyancyComponent.h"
 #include "FROGGridShapeDefinition.h"
 #include "GridComponent.h"
-#include "PlaceableVisual.h"
+#include "Grid/Visuals/BasePlaceableVisual.h"
 #include "GameFramework/Actor.h"
 #include "Components/BoxComponent.h"
 #include "Interaction/CargoDropTarget.h"
@@ -73,7 +73,7 @@ public:
 
     TObjectPtr<UGridComponent> OwningGridActor;    
     
-    TObjectPtr<APlaceableVisual> GetVisual() { return Cast<APlaceableVisual>(PlaceableVisualComp->GetChildActor()); }
+    TObjectPtr<ABasePlaceableVisual> GetVisual() { return Cast<ABasePlaceableVisual>(PlaceableVisualComp->GetChildActor()); }
 
     void SetStackLean(const FTransform& GridDeformation, const FTransform& GridWorldTransform);
     void BakeStackLean();

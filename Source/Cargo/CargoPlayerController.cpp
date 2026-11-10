@@ -5,6 +5,7 @@
 #include "GameFramework/GameplayCamerasPlayerCameraManager.h"
 #include "CargoCharacter.h"
 #include "Public/Grid/Placeable.h"
+#include "Grid/Visuals/BasePlaceableVisual.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
@@ -150,7 +151,7 @@ TScriptInterface<ICargoDropTarget> ACargoPlayerController::ResolveDropTarget(con
         return TScriptInterface<ICargoDropTarget>(HitActor);
 
     // The visible cells belong to a child actor; the placeable handles stacking.
-    if (APlaceableVisual* Visual = Cast<APlaceableVisual>(HitActor))
+    if (ABasePlaceableVisual* Visual = Cast<ABasePlaceableVisual>(HitActor))
     {
         AActor* Owner = Visual->GetOwner();
         if (Owner != DraggingObject && Cast<ICargoDropTarget>(Owner))

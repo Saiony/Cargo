@@ -9,7 +9,6 @@
 #include "ContainerDA.generated.h"
 
 class AContainer;
-class APlaceableVisual;
 /**
  * 
  */
@@ -36,9 +35,6 @@ public:
 	
 	UPROPERTY(EditAnywhere)
 	FFROGGridShapeDefinition Shape;
-	
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<APlaceableVisual> VisualBPClass;
 	
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<AContainer> OverrideContainerClass;

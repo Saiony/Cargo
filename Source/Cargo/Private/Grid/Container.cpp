@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Grid/Container.h"
+#include "Grid/Visuals/BasePlaceableVisual.h"
 #include "Engine/World.h"
 #include "Subsystem/CargoTweenSubsystem.h"
 
@@ -23,7 +24,10 @@ void AContainer::Init()
 	if (!PlaceableVisualComp->GetChildActor())
 		PlaceableVisualComp->CreateChildActor();
 	
-	Cast<APlaceableVisual>(PlaceableVisualComp->GetChildActor())->Initialize(PlaceableDA);
+	if (ABasePlaceableVisual* Visual = Cast<ABasePlaceableVisual>(PlaceableVisualComp->GetChildActor()))
+	{
+		Visual->Initialize(PlaceableDA);
+	}
 	
 	Weight = PlaceableDA->Weight;
 	Name = PlaceableDA->DisplayName;	
