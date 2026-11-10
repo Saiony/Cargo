@@ -23,7 +23,7 @@ AMilitarBarrier::AMilitarBarrier()
 	DetectionBox->SetGenerateOverlapEvents(true);
 	DetectionBox->OnComponentBeginOverlap.AddDynamic(this, &AMilitarBarrier::OnDetectionBoxBeginOverlap);
 	DetectionBox->OnComponentEndOverlap.AddDynamic(this, &AMilitarBarrier::OnDetectionBoxEndOverlap);
-		
+
 	BlockingBox = CreateDefaultSubobject<UBoxComponent>(TEXT("BlockingBox"));
 	BlockingBox->SetupAttachment(RootComponent);
 	BlockingBox->SetBoxExtent(FVector(100.0f));
@@ -48,7 +48,7 @@ void AMilitarBarrier::OnDetectionBoxBeginOverlap(UPrimitiveComponent* Overlapped
 		return;
 
 	DetectedPlayer = PlayerCharacter;
-	
+
 	const ACargoPlayerState* PlayerState = PlayerCharacter->GetPlayerState<ACargoPlayerState>();
 	if (!PlayerState)
 	{
@@ -68,7 +68,7 @@ void AMilitarBarrier::OnDetectionBoxBeginOverlap(UPrimitiveComponent* Overlapped
 }
 
 void AMilitarBarrier::OnDetectionBoxEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+                                               UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	if (OtherActor == DetectedPlayer.Get() && !DetectionBox->IsOverlappingActor(OtherActor))
 	{
@@ -76,4 +76,3 @@ void AMilitarBarrier::OnDetectionBoxEndOverlap(UPrimitiveComponent* OverlappedCo
 		BlockingBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 }
-
