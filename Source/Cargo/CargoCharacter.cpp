@@ -686,6 +686,10 @@ void ACargoCharacter::OnShipHit(UPrimitiveComponent* HitComponent, AActor* Other
 void ACargoCharacter::PopRandomContainerFromTop(const FVector& HitDir)
 {
 	const auto Placeable = GetRandomPlaceableFromTop();
+	
+	if (!Placeable)
+		return;
+	
 	GridComp->RemovePlaceableFromGrid(Placeable);
 	
 	const FVector ShipVelocity = FloatingMovement->Velocity;
@@ -757,6 +761,9 @@ APlaceable* ACargoCharacter::GetRandomPlaceableFromTop_Except(const TArray<FGame
 
 void ACargoCharacter::RemovePlaceable(APlaceable* Placeable) const
 {
+	if (!Placeable)
+		return;
+	
 	GridComp->RemovePlaceableFromGrid(Placeable);
 	Placeable->DestroyItself();
 }
